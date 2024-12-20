@@ -1,0 +1,14 @@
+FROM rust:1.81
+
+WORKDIR /app
+
+# Install cargo-watch for live reloading
+RUN cargo install cargo-watch
+
+COPY . .
+
+EXPOSE 3001
+
+# Run with cargo-watch to enable live reloading
+CMD ["cargo", "watch", "-x", "run"]
+
