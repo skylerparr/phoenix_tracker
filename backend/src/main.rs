@@ -1,17 +1,21 @@
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
+    http::{HeaderName, HeaderValue, Method},
     response::IntoResponse,
     routing::get,
     Router,
-    http::{Method, HeaderName, HeaderValue},
 };
+use sea_orm::{Database, DatabaseConnection};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
-use tower_http::{services::ServeDir, cors::CorsLayer};
+use tower_http::{cors::CorsLayer, services::ServeDir};
 
 fn main() {
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
+        let database_url = "sqlite:data/app.db";
+        let conn = Database::connect(database_url).await.unwrap();
+
         let cors = CorsLayer::new()
             .allow_origin(HeaderValue::from_static("http://localhost:3000"))
             .allow_methods(vec![Method::GET, Method::POST])
@@ -25,7 +29,8 @@ fn main() {
         let app = Router::new()
             .route("/ws", get(ws_handler))
             .route("/", get(|| async { "Tracker Root" }))
-            .layer(cors);
+            .layer(cors)
+            .with_state(conn);
 
         let port = std::env::var("PORT")
             .unwrap_or_else(|_| "3001".to_string())
