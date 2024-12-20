@@ -1,0 +1,2 @@
+alias be="tra && cd backend"
+alias fe="tra && cd frontend"

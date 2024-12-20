@@ -1,0 +1,2 @@
+alias container="docker ps | grep backend | cut -d ' ' -f 1"
+alias fmt="docker exec -it `container` cargo fmt"

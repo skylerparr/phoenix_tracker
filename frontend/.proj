@@ -1,0 +1,9 @@
+alias frontend_container="docker ps | grep frontend | cut -d ' ' -f 1"
+alias pret="docker exec -it `frontend_container` npm run prettier '**/*.{ts,tsx,js,jsx}'"
+alias npm_install="docker exec -it `frontend_container` npm install"
+function npm_add() {
+  docker exec -it `frontend_container` npm install $1 --save
+}
+function npm_audit_fix() {
+  docker exec -it `frontend_container` npm audit fix --force
+}
