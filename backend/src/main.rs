@@ -9,6 +9,9 @@ use sea_orm::{Database, DatabaseConnection};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tower_http::{cors::CorsLayer, services::ServeDir};
+mod crud;
+mod endpoints;
+use endpoints::user::user_routes;
 
 fn main() {
     let rt = tokio::runtime::Runtime::new().unwrap();
@@ -29,6 +32,7 @@ fn main() {
         let app = Router::new()
             .route("/ws", get(ws_handler))
             .route("/", get(|| async { "Tracker Root" }))
+            .merge(user_routes())
             .layer(cors)
             .with_state(conn);
 

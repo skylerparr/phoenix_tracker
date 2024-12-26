@@ -16,23 +16,24 @@ impl UserCrud {
             email: Set(email),
             ..Default::default()
         };
-        
+
         user.insert(&self.db).await
     }
 
     pub async fn find_by_id(&self, id: i32) -> Result<Option<user::Model>, DbErr> {
-        user::Entity::find_by_id(id)
-            .one(&self.db)
-            .await
+        user::Entity::find_by_id(id).one(&self.db).await
     }
 
     pub async fn find_all(&self) -> Result<Vec<user::Model>, DbErr> {
-        user::Entity::find()
-            .all(&self.db)
-            .await
+        user::Entity::find().all(&self.db).await
     }
 
-    pub async fn update(&self, id: i32, name: Option<String>, email: Option<String>) -> Result<user::Model, DbErr> {
+    pub async fn update(
+        &self,
+        id: i32,
+        name: Option<String>,
+        email: Option<String>,
+    ) -> Result<user::Model, DbErr> {
         let user = user::Entity::find_by_id(id)
             .one(&self.db)
             .await?
@@ -52,8 +53,6 @@ impl UserCrud {
     }
 
     pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {
-        user::Entity::delete_by_id(id)
-            .exec(&self.db)
-            .await
+        user::Entity::delete_by_id(id).exec(&self.db).await
     }
 }
