@@ -1,6 +1,5 @@
+use crate::entities::user;
 use sea_orm::*;
-use sea_orm::entity::user;
-
 
 #[derive(Clone, Debug)]
 pub struct UserCrud {

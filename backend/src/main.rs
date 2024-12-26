@@ -11,6 +11,7 @@ use tokio::net::TcpListener;
 use tower_http::{cors::CorsLayer, services::ServeDir};
 mod crud;
 mod endpoints;
+mod entities;
 use endpoints::user::user_routes;
 
 fn main() {
