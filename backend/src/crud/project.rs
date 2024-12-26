@@ -1,6 +1,6 @@
+use crate::entities::project;
 use sea_orm::*;
 
-#[derive(Clone, Debug)]
 pub struct ProjectCrud {
     db: DatabaseConnection,
 }
@@ -10,29 +10,37 @@ impl ProjectCrud {
         Self { db }
     }
 
-    pub async fn create(&self, name: String, owner_id: i32) -> Result<project::Model, DbErr> {
+    pub async fn create(
+        &self,
+        name: String,
+        description: String,
+        owner_id: i32,
+    ) -> Result<project::Model, DbErr> {
         let project = project::ActiveModel {
             name: Set(name),
+            description: Set(description),
             owner_id: Set(owner_id),
             ..Default::default()
         };
-        
+
         project.insert(&self.db).await
     }
 
     pub async fn find_by_id(&self, id: i32) -> Result<Option<project::Model>, DbErr> {
-        project::Entity::find_by_id(id)
-            .one(&self.db)
-            .await
+        project::Entity::find_by_id(id).one(&self.db).await
     }
 
     pub async fn find_all(&self) -> Result<Vec<project::Model>, DbErr> {
-        project::Entity::find()
-            .all(&self.db)
-            .await
+        project::Entity::find().all(&self.db).await
     }
 
-    pub async fn update(&self, id: i32, name: Option<String>, owner_id: Option<i32>) -> Result<project::Model, DbErr> {
+    pub async fn update(
+        &self,
+        id: i32,
+        name: Option<String>,
+        description: Option<String>,
+        owner_id: Option<i32>,
+    ) -> Result<project::Model, DbErr> {
         let project = project::Entity::find_by_id(id)
             .one(&self.db)
             .await?
@@ -44,6 +52,10 @@ impl ProjectCrud {
             project.name = Set(name);
         }
 
+        if let Some(description) = description {
+            project.description = Set(description);
+        }
+
         if let Some(owner_id) = owner_id {
             project.owner_id = Set(owner_id);
         }
@@ -52,8 +64,6 @@ impl ProjectCrud {
     }
 
     pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {
-        project::Entity::delete_by_id(id)
-            .exec(&self.db)
-            .await
+        project::Entity::delete_by_id(id).exec(&self.db).await
     }
 }

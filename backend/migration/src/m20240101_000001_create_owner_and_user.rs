@@ -12,12 +12,11 @@ pub struct Migration;
                       .col(ColumnDef::new(User::Id).integer().primary_key().auto_increment())
                       .col(ColumnDef::new(User::Name).string().not_null())
                       .col(ColumnDef::new(User::Email).string().not_null().unique_key())
-                      .col(ColumnDef::new(User::CreatedAt).timestamp().not_null())
-                      .col(ColumnDef::new(User::UpdatedAt).timestamp().not_null())
+                      .col(ColumnDef::new(User::CreatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
+                      .col(ColumnDef::new(User::UpdatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
                       .to_owned(),
               )
               .await?;
-
           manager
               .create_table(
                   Table::create()

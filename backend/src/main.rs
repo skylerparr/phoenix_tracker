@@ -8,11 +8,24 @@ use axum::{
 use sea_orm::{Database, DatabaseConnection};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
-use tower_http::{cors::CorsLayer, services::ServeDir};
+use tower_http::cors::CorsLayer;
 mod crud;
 mod endpoints;
 mod entities;
-use endpoints::user::user_routes;
+use endpoints::{
+    comment::comment_routes, issue::issue_routes, owner::owner_routes, project::project_routes,
+    user::user_routes,
+};
+
+fn create_router(db: DatabaseConnection) -> Router {
+    Router::new()
+        .merge(user_routes())
+        .merge(issue_routes())
+        .merge(comment_routes())
+        .merge(owner_routes())
+        .merge(project_routes())
+        .with_state(db)
+}
 
 fn main() {
     let rt = tokio::runtime::Runtime::new().unwrap();
@@ -30,12 +43,10 @@ fn main() {
             ])
             .allow_credentials(true);
 
-        let app = Router::new()
+        let app = create_router(conn)
             .route("/ws", get(ws_handler))
             .route("/", get(|| async { "Tracker Root" }))
-            .merge(user_routes())
-            .layer(cors)
-            .with_state(conn);
+            .layer(cors);
 
         let port = std::env::var("PORT")
             .unwrap_or_else(|_| "3001".to_string())

@@ -1,3 +1,4 @@
+use crate::entity::comment;
 use sea_orm::*;
 
 #[derive(Clone, Debug)]
@@ -22,20 +23,16 @@ impl CommentCrud {
             user_id: Set(user_id),
             ..Default::default()
         };
-        
+
         comment.insert(&self.db).await
     }
 
     pub async fn find_by_id(&self, id: i32) -> Result<Option<comment::Model>, DbErr> {
-        comment::Entity::find_by_id(id)
-            .one(&self.db)
-            .await
+        comment::Entity::find_by_id(id).one(&self.db).await
     }
 
     pub async fn find_all(&self) -> Result<Vec<comment::Model>, DbErr> {
-        comment::Entity::find()
-            .all(&self.db)
-            .await
+        comment::Entity::find().all(&self.db).await
     }
 
     pub async fn find_by_issue_id(&self, issue_id: i32) -> Result<Vec<comment::Model>, DbErr> {
@@ -52,11 +49,7 @@ impl CommentCrud {
             .await
     }
 
-    pub async fn update(
-        &self,
-        id: i32,
-        content: Option<String>,
-    ) -> Result<comment::Model, DbErr> {
+    pub async fn update(&self, id: i32, content: Option<String>) -> Result<comment::Model, DbErr> {
         let comment = comment::Entity::find_by_id(id)
             .one(&self.db)
             .await?
@@ -72,8 +65,6 @@ impl CommentCrud {
     }
 
     pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {
-        comment::Entity::delete_by_id(id)
-            .exec(&self.db)
-            .await
+        comment::Entity::delete_by_id(id).exec(&self.db).await
     }
 }

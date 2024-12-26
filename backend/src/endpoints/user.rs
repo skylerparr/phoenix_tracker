@@ -1,6 +1,4 @@
 use crate::crud::user::UserCrud;
-use crate::entities::user;
-use axum::handler::Handler;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -9,7 +7,7 @@ use axum::{
     Json, Router,
 };
 use sea_orm::DatabaseConnection;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct CreateUserRequest {
@@ -39,7 +37,10 @@ async fn create_user(
     let user_crud = UserCrud::new(db);
     match user_crud.create(payload.name, payload.email).await {
         Ok(user) => Ok(Json(user)),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => {
+            println!("Error creating user: {:?}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
     }
 }
 
@@ -48,7 +49,10 @@ async fn get_all_users(State(db): State<DatabaseConnection>) -> impl IntoRespons
     let user_crud = UserCrud::new(db);
     match user_crud.find_all().await {
         Ok(users) => Ok(Json(users)),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => {
+            println!("Error getting all users: {:?}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
     }
 }
 
@@ -58,7 +62,10 @@ async fn get_user(State(db): State<DatabaseConnection>, Path(id): Path<i32>) -> 
     match user_crud.find_by_id(id).await {
         Ok(Some(user)) => Ok(Json(user)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => {
+            println!("Error getting user {}: {:?}", id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
     }
 }
 #[axum::debug_handler]
@@ -74,6 +81,7 @@ async fn update_user(
             if e.to_string().contains("User not found") {
                 Err(StatusCode::NOT_FOUND)
             } else {
+                println!("Error updating user {}: {:?}", id, e);
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
@@ -85,6 +93,9 @@ async fn delete_user(State(db): State<DatabaseConnection>, Path(id): Path<i32>) 
     let user_crud = UserCrud::new(db);
     match user_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        Err(e) => {
+            println!("Error deleting user {}: {:?}", id, e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
     }
 }

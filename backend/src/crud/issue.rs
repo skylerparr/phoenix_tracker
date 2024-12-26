@@ -1,3 +1,4 @@
+use crate::entities::issue;
 use sea_orm::*;
 
 #[derive(Clone, Debug)]
@@ -22,26 +23,22 @@ impl IssueCrud {
         let issue = issue::ActiveModel {
             title: Set(title),
             description: Set(description),
-            priority: Set(priority),
+            priority: Set(priority.to_string()),
             status: Set(status),
             project_id: Set(project_id),
             created_by_id: Set(created_by_id),
             ..Default::default()
         };
-        
+
         issue.insert(&self.db).await
     }
 
     pub async fn find_by_id(&self, id: i32) -> Result<Option<issue::Model>, DbErr> {
-        issue::Entity::find_by_id(id)
-            .one(&self.db)
-            .await
+        issue::Entity::find_by_id(id).one(&self.db).await
     }
 
     pub async fn find_all(&self) -> Result<Vec<issue::Model>, DbErr> {
-        issue::Entity::find()
-            .all(&self.db)
-            .await
+        issue::Entity::find().all(&self.db).await
     }
 
     pub async fn update(
@@ -65,11 +62,11 @@ impl IssueCrud {
         }
 
         if let Some(description) = description {
-            issue.description = Set(description);
+            issue.description = Set(description.unwrap_or_default());
         }
 
         if let Some(priority) = priority {
-            issue.priority = Set(priority);
+            issue.priority = Set(priority.to_string());
         }
 
         if let Some(status) = status {
@@ -84,8 +81,6 @@ impl IssueCrud {
     }
 
     pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {
-        issue::Entity::delete_by_id(id)
-            .exec(&self.db)
-            .await
+        issue::Entity::delete_by_id(id).exec(&self.db).await
     }
 }
