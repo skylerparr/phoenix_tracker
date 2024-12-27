@@ -1,4 +1,5 @@
 use crate::crud::user::UserCrud;
+use axum::extract::Query;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -8,6 +9,7 @@ use axum::{
 };
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
+use std::collections::HashMap;
 
 #[derive(Deserialize)]
 pub struct CreateUserRequest {
@@ -28,6 +30,7 @@ pub fn user_routes() -> Router<DatabaseConnection> {
         .route("/users/:id", get(get_user))
         .route("/users/:id", put(update_user))
         .route("/users/:id", delete(delete_user))
+        .route("/users/by-email", get(get_user_by_email))
 }
 #[axum::debug_handler]
 async fn create_user(
@@ -64,6 +67,27 @@ async fn get_user(State(db): State<DatabaseConnection>, Path(id): Path<i32>) -> 
         Ok(None) => Err(StatusCode::NOT_FOUND),
         Err(e) => {
             println!("Error getting user {}: {:?}", id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+#[axum::debug_handler]
+async fn get_user_by_email(
+    State(db): State<DatabaseConnection>,
+    Query(params): Query<HashMap<String, String>>,
+) -> impl IntoResponse {
+    let email = match params.get("email") {
+        Some(email) => email,
+        None => return Err(StatusCode::BAD_REQUEST),
+    };
+
+    let user_crud = UserCrud::new(db);
+    match user_crud.find_by_email(email.to_string()).await {
+        Ok(Some(user)) => Ok(Json(user)),
+        Ok(None) => Err(StatusCode::NOT_FOUND),
+        Err(e) => {
+            println!("Error getting user by email {}: {:?}", email, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }

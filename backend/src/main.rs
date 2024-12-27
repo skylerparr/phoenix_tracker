@@ -12,21 +12,94 @@ use tower_http::cors::CorsLayer;
 mod crud;
 mod endpoints;
 mod entities;
+use crate::crud::token::TokenCrud;
+use axum::body::Body;
+use axum::extract::Request;
+use axum::http::StatusCode;
+use axum::response::Response;
 use endpoints::{
-    comment::comment_routes, issue::issue_routes, owner::owner_routes, project::project_routes,
-    user::user_routes,
+    auth::auth_routes, comment::comment_routes, issue::issue_routes, owner::owner_routes,
+    project::project_routes, user::user_routes,
 };
+use futures::future::BoxFuture;
+use tower_service::Service;
+
+#[derive(Clone)]
+struct AuthMiddleware<S>(S);
+
+impl<S> Service<Request<Body>> for AuthMiddleware<S>
+where
+    S: Service<Request<Body>, Response = Response<Body>> + Clone + Send + 'static,
+    S::Future: Send + 'static,
+{
+    type Response = Response<Body>;
+    type Error = S::Error;
+    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
+
+    fn poll_ready(
+        &mut self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
+        self.0.poll_ready(cx)
+    }
+
+    fn call(&mut self, req: Request<Body>) -> Self::Future {
+        let mut inner = self.0.clone();
+        Box::pin(async move {
+            if req.uri().path().starts_with("/auth") {
+                return inner.call(req).await;
+            }
+
+            let auth_header = req
+                .headers()
+                .get(axum::http::header::AUTHORIZATION)
+                .and_then(|value| value.to_str().ok())
+                .and_then(|value| value.strip_prefix("Bearer "));
+
+            match auth_header {
+                Some(token) => {
+                    let db = req.extensions().get::<DatabaseConnection>().cloned();
+                    if let Some(db) = db {
+                        let token_crud = TokenCrud::new(db);
+                        let now = chrono::Utc::now();
+
+                        match token_crud
+                            .find_valid_token(token.to_string(), now.into())
+                            .await
+                        {
+                            Ok(Some(_)) => inner.call(req).await,
+                            _ => Ok(Response::builder()
+                                .status(StatusCode::UNAUTHORIZED)
+                                .body(Body::empty())
+                                .unwrap()),
+                        }
+                    } else {
+                        Ok(Response::builder()
+                            .status(StatusCode::INTERNAL_SERVER_ERROR)
+                            .body(Body::empty())
+                            .unwrap())
+                    }
+                }
+                None => Ok(Response::builder()
+                    .status(StatusCode::UNAUTHORIZED)
+                    .body(Body::empty())
+                    .unwrap()),
+            }
+        })
+    }
+}
 
 fn create_router(db: DatabaseConnection) -> Router {
     Router::new()
+        .merge(auth_routes())
         .merge(user_routes())
         .merge(issue_routes())
         .merge(comment_routes())
         .merge(owner_routes())
         .merge(project_routes())
+        .route_layer(tower::layer::layer_fn(AuthMiddleware))
         .with_state(db)
 }
-
 fn main() {
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {

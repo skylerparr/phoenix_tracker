@@ -20,13 +20,19 @@ impl UserCrud {
 
         user.insert(&self.db).await
     }
-
     pub async fn find_by_id(&self, id: i32) -> Result<Option<user::Model>, DbErr> {
         user::Entity::find_by_id(id).one(&self.db).await
     }
 
     pub async fn find_all(&self) -> Result<Vec<user::Model>, DbErr> {
         user::Entity::find().all(&self.db).await
+    }
+
+    pub async fn find_by_email(&self, email: String) -> Result<Option<user::Model>, DbErr> {
+        user::Entity::find()
+            .filter(user::Column::Email.eq(email))
+            .one(&self.db)
+            .await
     }
 
     pub async fn update(

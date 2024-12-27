@@ -1,2 +1,2 @@
-alias be="tra && cd backend"
-alias fe="tra && cd frontend"
+alias be="pt && cd backend"
+alias fe="pt && cd frontend"

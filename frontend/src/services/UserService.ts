@@ -38,6 +38,15 @@ export class UserService {
     return response.json();
   }
 
+  async getUserByEmail(email: string): Promise<User | null> {
+    const response = await fetch(
+      `${this.baseUrl}/by-email?email=${encodeURIComponent(email)}`,
+    );
+    if (response.status === 404) return null;
+    if (!response.ok) throw new Error("Failed to fetch user by email");
+    return response.json();
+  }
+
   async updateUser(id: number, request: UpdateUserRequest): Promise<User> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "PUT",
