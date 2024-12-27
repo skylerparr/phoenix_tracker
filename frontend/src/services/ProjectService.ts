@@ -19,7 +19,10 @@ export class ProjectService {
   async createProject(request: CreateProjectRequest): Promise<Project> {
     const response = await fetch(this.baseUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+      },
       body: JSON.stringify(request),
     });
     if (!response.ok) throw new Error("Failed to create project");
@@ -27,13 +30,21 @@ export class ProjectService {
   }
 
   async getAllProjects(): Promise<Project[]> {
-    const response = await fetch(this.baseUrl);
+    const response = await fetch(this.baseUrl, {
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+      },
+    });
     if (!response.ok) throw new Error("Failed to fetch projects");
     return response.json();
   }
 
   async getProject(id: number): Promise<Project> {
-    const response = await fetch(`${this.baseUrl}/${id}`);
+    const response = await fetch(`${this.baseUrl}/${id}`, {
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+      },
+    });
     if (!response.ok) throw new Error("Failed to fetch project");
     return response.json();
   }
@@ -44,7 +55,10 @@ export class ProjectService {
   ): Promise<Project> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+      },
       body: JSON.stringify(request),
     });
     if (!response.ok) throw new Error("Failed to update project");
@@ -54,6 +68,9 @@ export class ProjectService {
   async deleteProject(id: number): Promise<void> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+      },
     });
     if (!response.ok) throw new Error("Failed to delete project");
   }

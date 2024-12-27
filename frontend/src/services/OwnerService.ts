@@ -15,7 +15,10 @@ export class OwnerService {
   async createOwner(request: CreateOwnerRequest): Promise<Owner> {
     const response = await fetch(this.baseUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+      },
       body: JSON.stringify(request),
     });
     if (!response.ok) throw new Error("Failed to create owner");
@@ -23,13 +26,21 @@ export class OwnerService {
   }
 
   async getAllOwners(): Promise<Owner[]> {
-    const response = await fetch(this.baseUrl);
+    const response = await fetch(this.baseUrl, {
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+      },
+    });
     if (!response.ok) throw new Error("Failed to fetch owners");
     return response.json();
   }
 
   async getOwner(id: number): Promise<Owner> {
-    const response = await fetch(`${this.baseUrl}/${id}`);
+    const response = await fetch(`${this.baseUrl}/${id}`, {
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+      },
+    });
     if (!response.ok) throw new Error("Failed to fetch owner");
     return response.json();
   }
@@ -37,7 +48,10 @@ export class OwnerService {
   async updateOwner(id: number, request: UpdateOwnerRequest): Promise<Owner> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+      },
       body: JSON.stringify(request),
     });
     if (!response.ok) throw new Error("Failed to update owner");
@@ -47,6 +61,9 @@ export class OwnerService {
   async deleteOwner(id: number): Promise<void> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+      },
     });
     if (!response.ok) throw new Error("Failed to delete owner");
   }

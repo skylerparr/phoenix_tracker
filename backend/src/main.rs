@@ -1,7 +1,6 @@
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     http::{HeaderName, HeaderValue, Method},
-    response::IntoResponse,
     routing::get,
     Router,
 };
@@ -15,7 +14,11 @@ mod entities;
 use crate::crud::token::TokenCrud;
 use axum::body::Body;
 use axum::extract::Request;
+use axum::extract::State;
+use axum::http::header::AUTHORIZATION;
+use axum::http::HeaderMap;
 use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use axum::response::Response;
 use endpoints::{
     auth::auth_routes, comment::comment_routes, issue::issue_routes, owner::owner_routes,
@@ -52,7 +55,7 @@ where
 
             let auth_header = req
                 .headers()
-                .get(axum::http::header::AUTHORIZATION)
+                .get(AUTHORIZATION)
                 .and_then(|value| value.to_str().ok())
                 .and_then(|value| value.strip_prefix("Bearer "));
 
@@ -89,17 +92,6 @@ where
     }
 }
 
-fn create_router(db: DatabaseConnection) -> Router {
-    Router::new()
-        .merge(auth_routes())
-        .merge(user_routes())
-        .merge(issue_routes())
-        .merge(comment_routes())
-        .merge(owner_routes())
-        .merge(project_routes())
-        .route_layer(tower::layer::layer_fn(AuthMiddleware))
-        .with_state(db)
-}
 fn main() {
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
@@ -113,14 +105,21 @@ fn main() {
                 HeaderName::from_static("content-type"),
                 HeaderName::from_static("upgrade"),
                 HeaderName::from_static("connection"),
+                HeaderName::from_static("authorization"),
             ])
             .allow_credentials(true);
-
-        let app = create_router(conn)
+        let app = Router::new()
+            .merge(auth_routes())
+            .merge(user_routes())
+            .merge(issue_routes())
+            .merge(comment_routes())
+            .merge(owner_routes())
+            .merge(project_routes())
             .route("/ws", get(ws_handler))
             .route("/", get(|| async { "Tracker Root" }))
-            .layer(cors);
-
+            .route_layer(tower::layer::layer_fn(AuthMiddleware))
+            .layer(cors)
+            .with_state(conn);
         let port = std::env::var("PORT")
             .unwrap_or_else(|_| "3001".to_string())
             .parse::<u16>()
@@ -132,11 +131,35 @@ fn main() {
     });
 }
 
-async fn ws_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
-    println!("WebSocket connection upgraded");
-    ws.on_upgrade(handle_socket)
-}
+async fn ws_handler(
+    ws: WebSocketUpgrade,
+    State(db): State<DatabaseConnection>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    let auth_header = headers
+        .get(AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Bearer "));
 
+    match auth_header {
+        Some(token) => {
+            let token_crud = TokenCrud::new(db);
+            let now = chrono::Utc::now();
+
+            match token_crud
+                .find_valid_token(token.to_string(), now.into())
+                .await
+            {
+                Ok(Some(_)) => {
+                    println!("WebSocket connection upgraded");
+                    ws.on_upgrade(handle_socket)
+                }
+                _ => StatusCode::UNAUTHORIZED.into_response(),
+            }
+        }
+        None => StatusCode::UNAUTHORIZED.into_response(),
+    }
+}
 async fn handle_socket(mut socket: WebSocket) {
     while let Some(msg) = socket.recv().await {
         if let Ok(msg) = msg {

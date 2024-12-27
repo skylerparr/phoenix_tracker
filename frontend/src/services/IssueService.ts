@@ -21,10 +21,17 @@ interface UpdateIssueRequest {
 export class IssueService {
   private baseUrl = `${API_BASE_URL}/issues`;
 
+  private getHeaders(): HeadersInit {
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+    };
+  }
+
   async createIssue(request: CreateIssueRequest): Promise<Issue> {
     const response = await fetch(this.baseUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getHeaders(),
       body: JSON.stringify(request),
     });
     if (!response.ok) throw new Error("Failed to create issue");
@@ -32,13 +39,17 @@ export class IssueService {
   }
 
   async getAllIssues(): Promise<Issue[]> {
-    const response = await fetch(this.baseUrl);
+    const response = await fetch(this.baseUrl, {
+      headers: this.getHeaders(),
+    });
     if (!response.ok) throw new Error("Failed to fetch issues");
     return response.json();
   }
 
   async getIssue(id: number): Promise<Issue> {
-    const response = await fetch(`${this.baseUrl}/${id}`);
+    const response = await fetch(`${this.baseUrl}/${id}`, {
+      headers: this.getHeaders(),
+    });
     if (!response.ok) throw new Error("Failed to fetch issue");
     return response.json();
   }
@@ -46,7 +57,7 @@ export class IssueService {
   async updateIssue(id: number, request: UpdateIssueRequest): Promise<Issue> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getHeaders(),
       body: JSON.stringify(request),
     });
     if (!response.ok) throw new Error("Failed to update issue");
@@ -56,6 +67,7 @@ export class IssueService {
   async deleteIssue(id: number): Promise<void> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "DELETE",
+      headers: this.getHeaders(),
     });
     if (!response.ok) throw new Error("Failed to delete issue");
   }

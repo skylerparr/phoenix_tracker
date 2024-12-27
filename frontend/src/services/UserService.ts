@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "../config/ApiConfig";
 import { User } from "../models/User";
+import { sessionStorage } from "../store/Session";
 
 interface CreateUserRequest {
   name: string;
@@ -19,6 +20,7 @@ export class UserService {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
       },
       body: JSON.stringify(request),
     });
@@ -27,13 +29,21 @@ export class UserService {
   }
 
   async getAllUsers(): Promise<User[]> {
-    const response = await fetch(this.baseUrl);
+    const response = await fetch(this.baseUrl, {
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+      },
+    });
     if (!response.ok) throw new Error("Failed to fetch users");
     return response.json();
   }
 
   async getUser(id: number): Promise<User> {
-    const response = await fetch(`${this.baseUrl}/${id}`);
+    const response = await fetch(`${this.baseUrl}/${id}`, {
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+      },
+    });
     if (!response.ok) throw new Error("Failed to fetch user");
     return response.json();
   }
@@ -41,6 +51,11 @@ export class UserService {
   async getUserByEmail(email: string): Promise<User | null> {
     const response = await fetch(
       `${this.baseUrl}/by-email?email=${encodeURIComponent(email)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        },
+      },
     );
     if (response.status === 404) return null;
     if (!response.ok) throw new Error("Failed to fetch user by email");
@@ -52,6 +67,7 @@ export class UserService {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
       },
       body: JSON.stringify(request),
     });
@@ -62,6 +78,9 @@ export class UserService {
   async deleteUser(id: number): Promise<void> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+      },
     });
     if (!response.ok) throw new Error("Failed to delete user");
   }
