@@ -22,7 +22,7 @@ impl IssueCrud {
     ) -> Result<issue::Model, DbErr> {
         let issue = issue::ActiveModel {
             title: Set(title),
-            description: Set(description),
+            description: Set(description.unwrap_or_default()),
             priority: Set(priority.to_string()),
             status: Set(status),
             project_id: Set(project_id),

@@ -1,4 +1,4 @@
-use crate::entity::comment;
+use crate::entities::comment;
 use sea_orm::*;
 
 #[derive(Clone, Debug)]

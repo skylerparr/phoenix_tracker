@@ -23,8 +23,8 @@ pub struct Migration;
                       .table(Owner::Table)
                       .col(ColumnDef::new(Owner::Id).integer().primary_key().auto_increment())
                       .col(ColumnDef::new(Owner::UserId).integer().not_null())
-                      .col(ColumnDef::new(Owner::CreatedAt).timestamp().not_null())
-                      .col(ColumnDef::new(Owner::UpdatedAt).timestamp().not_null())
+                      .col(ColumnDef::new(Owner::CreatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
+                      .col(ColumnDef::new(Owner::UpdatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
                       .foreign_key(
                           ForeignKey::create()
                               .name("fk-owner-user")
@@ -42,8 +42,8 @@ pub struct Migration;
                       .col(ColumnDef::new(Project::Id).integer().primary_key().auto_increment())
                       .col(ColumnDef::new(Project::Name).string().not_null())
                       .col(ColumnDef::new(Project::OwnerId).integer().not_null())
-                      .col(ColumnDef::new(Project::CreatedAt).timestamp().not_null())
-                      .col(ColumnDef::new(Project::UpdatedAt).timestamp().not_null())
+                      .col(ColumnDef::new(Project::CreatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
+                      .col(ColumnDef::new(Project::UpdatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
                       .foreign_key(
                           ForeignKey::create()
                               .name("fk-project-owner")
@@ -62,8 +62,8 @@ pub struct Migration;
                       .col(ColumnDef::new(Tag::Name).string().not_null())
                       .col(ColumnDef::new(Tag::Color).unsigned().not_null())
                       .col(ColumnDef::new(Tag::IsEpic).boolean().not_null())
-                      .col(ColumnDef::new(Tag::CreatedAt).timestamp().not_null())
-                      .col(ColumnDef::new(Tag::UpdatedAt).timestamp().not_null())
+                      .col(ColumnDef::new(Tag::CreatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
+                      .col(ColumnDef::new(Tag::UpdatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
                       .to_owned(),
               )
               .await?;
@@ -79,8 +79,8 @@ pub struct Migration;
                       .col(ColumnDef::new(Issue::Status).string().not_null())
                       .col(ColumnDef::new(Issue::ProjectId).integer().not_null())
                       .col(ColumnDef::new(Issue::CreatedById).integer().not_null())
-                      .col(ColumnDef::new(Issue::CreatedAt).timestamp().not_null())
-                      .col(ColumnDef::new(Issue::UpdatedAt).timestamp().not_null())
+                      .col(ColumnDef::new(Issue::CreatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
+                      .col(ColumnDef::new(Issue::UpdatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
                       .foreign_key(
                           ForeignKey::create()
                               .name("fk-issue-project")
@@ -103,8 +103,8 @@ pub struct Migration;
                       .table(IssueTag::Table)
                       .col(ColumnDef::new(IssueTag::IssueId).integer().not_null())
                       .col(ColumnDef::new(IssueTag::TagId).integer().not_null())
-                      .col(ColumnDef::new(IssueTag::CreatedAt).timestamp().not_null())
-                      .col(ColumnDef::new(IssueTag::UpdatedAt).timestamp().not_null())
+                      .col(ColumnDef::new(IssueTag::CreatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
+                      .col(ColumnDef::new(IssueTag::UpdatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
                       .primary_key(Index::create().col(IssueTag::IssueId).col(IssueTag::TagId))
                       .foreign_key(
                           ForeignKey::create()
@@ -128,8 +128,8 @@ pub struct Migration;
                       .table(IssueAssignee::Table)
                       .col(ColumnDef::new(IssueAssignee::IssueId).integer().not_null())
                       .col(ColumnDef::new(IssueAssignee::UserId).integer().not_null())
-                      .col(ColumnDef::new(IssueAssignee::CreatedAt).timestamp().not_null())
-                      .col(ColumnDef::new(IssueAssignee::UpdatedAt).timestamp().not_null())
+                      .col(ColumnDef::new(IssueAssignee::CreatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
+                      .col(ColumnDef::new(IssueAssignee::UpdatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
                       .primary_key(Index::create().col(IssueAssignee::IssueId).col(IssueAssignee::UserId))
                       .foreign_key(
                           ForeignKey::create()
@@ -155,8 +155,8 @@ pub struct Migration;
                       .col(ColumnDef::new(Comment::Content).string().not_null())
                       .col(ColumnDef::new(Comment::IssueId).integer().not_null())
                       .col(ColumnDef::new(Comment::UserId).integer().not_null())
-                      .col(ColumnDef::new(Comment::CreatedAt).timestamp().not_null())
-                      .col(ColumnDef::new(Comment::UpdatedAt).timestamp().not_null())
+                      .col(ColumnDef::new(Comment::CreatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
+                      .col(ColumnDef::new(Comment::UpdatedAt).timestamp().not_null().default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)))
                       .foreign_key(
                           ForeignKey::create()
                               .name("fk-comment-issue")

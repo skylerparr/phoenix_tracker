@@ -11,6 +11,7 @@ pub struct Model {
     pub priority: String,
     pub status: String,
     pub project_id: i32,
+    pub created_by_id: i32,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }
