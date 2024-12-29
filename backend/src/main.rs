@@ -26,9 +26,12 @@ use endpoints::{
 };
 use futures::future::BoxFuture;
 use tower_service::Service;
-
+use tracing::{debug, error, info, warn};
 #[derive(Clone)]
-struct AuthMiddleware<S>(S);
+struct AuthMiddleware<S> {
+    inner: S,
+    db: DatabaseConnection,
+}
 
 impl<S> Service<Request<Body>> for AuthMiddleware<S>
 where
@@ -43,56 +46,64 @@ where
         &mut self,
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Result<(), Self::Error>> {
-        self.0.poll_ready(cx)
+        self.inner.poll_ready(cx)
     }
 
     fn call(&mut self, req: Request<Body>) -> Self::Future {
-        let mut inner = self.0.clone();
+        let mut inner = self.inner.clone();
+        let db = self.db.clone();
+
         Box::pin(async move {
             if req.uri().path().starts_with("/auth") {
+                info!("Skipping auth middleware for /auth route");
                 return inner.call(req).await;
             }
 
             let auth_header = req
                 .headers()
                 .get(AUTHORIZATION)
-                .and_then(|value| value.to_str().ok())
-                .and_then(|value| value.strip_prefix("Bearer "));
+                .and_then(|value| value.to_str().ok());
 
             match auth_header {
                 Some(token) => {
-                    let db = req.extensions().get::<DatabaseConnection>().cloned();
-                    if let Some(db) = db {
-                        let token_crud = TokenCrud::new(db);
-                        let now = chrono::Utc::now();
+                    let token_crud = TokenCrud::new(db);
+                    let now = chrono::Utc::now();
 
-                        match token_crud
-                            .find_valid_token(token.to_string(), now.into())
-                            .await
-                        {
-                            Ok(Some(_)) => inner.call(req).await,
-                            _ => Ok(Response::builder()
+                    match token_crud
+                        .find_valid_token(token.to_string(), now.into())
+                        .await
+                    {
+                        Ok(Some(_)) => {
+                            debug!("Valid token found, proceeding with request");
+                            inner.call(req).await
+                        }
+                        _ => {
+                            warn!("Invalid or expired token provided");
+                            debug!("Token validation failed - checking token details");
+                            debug!("Found token: {:?}", token);
+                            Ok(Response::builder()
                                 .status(StatusCode::UNAUTHORIZED)
                                 .body(Body::empty())
-                                .unwrap()),
+                                .unwrap())
                         }
-                    } else {
-                        Ok(Response::builder()
-                            .status(StatusCode::INTERNAL_SERVER_ERROR)
-                            .body(Body::empty())
-                            .unwrap())
                     }
                 }
-                None => Ok(Response::builder()
-                    .status(StatusCode::UNAUTHORIZED)
-                    .body(Body::empty())
-                    .unwrap()),
+                None => {
+                    warn!("No authorization token provided");
+                    Ok(Response::builder()
+                        .status(StatusCode::UNAUTHORIZED)
+                        .body(Body::empty())
+                        .unwrap())
+                }
             }
         })
     }
 }
-
 fn main() {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
+
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
         let database_url = "sqlite:data/app.db";
@@ -108,6 +119,7 @@ fn main() {
                 HeaderName::from_static("authorization"),
             ])
             .allow_credentials(true);
+
         let app = Router::new()
             .merge(auth_routes())
             .merge(user_routes())
@@ -117,15 +129,19 @@ fn main() {
             .merge(project_routes())
             .route("/ws", get(ws_handler))
             .route("/", get(|| async { "Tracker Root" }))
-            .route_layer(tower::layer::layer_fn(AuthMiddleware))
-            .layer(cors)
-            .with_state(conn);
+            .with_state(conn.clone())
+            .route_layer(tower::layer::layer_fn(move |inner| AuthMiddleware {
+                inner,
+                db: conn.clone(),
+            }))
+            .layer(cors);
+
         let port = std::env::var("PORT")
             .unwrap_or_else(|_| "3001".to_string())
             .parse::<u16>()
             .unwrap();
         let addr = SocketAddr::from(([0, 0, 0, 0], port));
-        println!("Listening on {}", addr);
+        info!("Listening on {}", addr);
         let listener = TcpListener::bind(addr).await.unwrap();
         axum::serve(listener, app).await.unwrap();
     });
@@ -160,6 +176,7 @@ async fn ws_handler(
         None => StatusCode::UNAUTHORIZED.into_response(),
     }
 }
+
 async fn handle_socket(mut socket: WebSocket) {
     while let Some(msg) = socket.recv().await {
         if let Ok(msg) = msg {

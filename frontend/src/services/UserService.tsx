@@ -20,7 +20,7 @@ export class UserService {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
       body: JSON.stringify(request),
     });
@@ -31,7 +31,7 @@ export class UserService {
   async getAllUsers(): Promise<User[]> {
     const response = await fetch(this.baseUrl, {
       headers: {
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
     });
     if (!response.ok) throw new Error("Failed to fetch users");
@@ -41,7 +41,7 @@ export class UserService {
   async getUser(id: number): Promise<User> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       headers: {
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
     });
     if (!response.ok) throw new Error("Failed to fetch user");
@@ -53,7 +53,7 @@ export class UserService {
       `${this.baseUrl}/by-email?email=${encodeURIComponent(email)}`,
       {
         headers: {
-          Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+          Authorization: `${sessionStorage.getSession().user?.token}`,
         },
       },
     );
@@ -67,7 +67,7 @@ export class UserService {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
       body: JSON.stringify(request),
     });
@@ -79,7 +79,7 @@ export class UserService {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
     });
     if (!response.ok) throw new Error("Failed to delete user");

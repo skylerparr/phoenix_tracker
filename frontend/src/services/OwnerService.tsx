@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "../config/ApiConfig";
 import { Owner } from "../models/Owner";
+import { sessionStorage } from "../store/Session";
 
 interface CreateOwnerRequest {
   user_id?: number;
@@ -17,7 +18,7 @@ export class OwnerService {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
       body: JSON.stringify(request),
     });
@@ -28,7 +29,7 @@ export class OwnerService {
   async getAllOwners(): Promise<Owner[]> {
     const response = await fetch(this.baseUrl, {
       headers: {
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
     });
     if (!response.ok) throw new Error("Failed to fetch owners");
@@ -38,7 +39,7 @@ export class OwnerService {
   async getOwner(id: number): Promise<Owner> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       headers: {
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
     });
     if (!response.ok) throw new Error("Failed to fetch owner");
@@ -50,7 +51,7 @@ export class OwnerService {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
       body: JSON.stringify(request),
     });
@@ -62,7 +63,7 @@ export class OwnerService {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
     });
     if (!response.ok) throw new Error("Failed to delete owner");

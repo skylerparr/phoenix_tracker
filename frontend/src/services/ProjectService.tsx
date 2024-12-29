@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "../config/ApiConfig";
 import { Project } from "../models/Project";
+import { sessionStorage } from "../store/Session";
 
 interface CreateProjectRequest {
   name: string;
@@ -21,7 +22,7 @@ export class ProjectService {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
       body: JSON.stringify(request),
     });
@@ -32,7 +33,7 @@ export class ProjectService {
   async getAllProjects(): Promise<Project[]> {
     const response = await fetch(this.baseUrl, {
       headers: {
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
     });
     if (!response.ok) throw new Error("Failed to fetch projects");
@@ -42,7 +43,7 @@ export class ProjectService {
   async getProject(id: number): Promise<Project> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       headers: {
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
     });
     if (!response.ok) throw new Error("Failed to fetch project");
@@ -57,7 +58,7 @@ export class ProjectService {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
       body: JSON.stringify(request),
     });
@@ -69,7 +70,7 @@ export class ProjectService {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
     });
     if (!response.ok) throw new Error("Failed to delete project");

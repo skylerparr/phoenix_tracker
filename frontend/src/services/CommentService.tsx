@@ -20,7 +20,7 @@ export class CommentService {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
       body: JSON.stringify(request),
     });
@@ -31,7 +31,7 @@ export class CommentService {
   async getAllComments(): Promise<Comment[]> {
     const response = await fetch(this.baseUrl, {
       headers: {
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
     });
     if (!response.ok) throw new Error("Failed to fetch comments");
@@ -41,7 +41,7 @@ export class CommentService {
   async getComment(id: number): Promise<Comment> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       headers: {
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
     });
     if (!response.ok) throw new Error("Failed to fetch comment");
@@ -51,7 +51,7 @@ export class CommentService {
   async getCommentsByIssue(issueId: number): Promise<Comment[]> {
     const response = await fetch(`${this.baseUrl}/issue/${issueId}`, {
       headers: {
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
     });
     if (!response.ok) throw new Error("Failed to fetch comments by issue");
@@ -61,7 +61,7 @@ export class CommentService {
   async getCommentsByUser(userId: number): Promise<Comment[]> {
     const response = await fetch(`${this.baseUrl}/user/${userId}`, {
       headers: {
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
     });
     if (!response.ok) throw new Error("Failed to fetch comments by user");
@@ -76,7 +76,7 @@ export class CommentService {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
       body: JSON.stringify(request),
     });
@@ -88,7 +88,7 @@ export class CommentService {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+        Authorization: `${sessionStorage.getSession().user?.token}`,
       },
     });
     if (!response.ok) throw new Error("Failed to delete comment");

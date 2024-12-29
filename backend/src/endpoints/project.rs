@@ -38,10 +38,7 @@ async fn create_project(
     Json(payload): Json<CreateProjectRequest>,
 ) -> impl IntoResponse {
     let project_crud = ProjectCrud::new(db);
-    match project_crud
-        .create(payload.name, payload.description, payload.owner_id)
-        .await
-    {
+    match project_crud.create(payload.name, payload.owner_id).await {
         Ok(project) => Ok(Json(project)),
         Err(e) => {
             println!("Error creating project: {:?}", e);
@@ -86,7 +83,7 @@ async fn update_project(
 ) -> impl IntoResponse {
     let project_crud = ProjectCrud::new(db);
     match project_crud
-        .update(id, payload.name, payload.description, payload.owner_id)
+        .update(id, payload.name, payload.owner_id)
         .await
     {
         Ok(project) => Ok(Json(project)),

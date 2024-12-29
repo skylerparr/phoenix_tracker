@@ -4,6 +4,7 @@ import Box from "@mui/material/Box";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
 import Projects from "../pages/Projects";
+import RouteTest from "../pages/RouteTest";
 
 export default function Sidebar() {
   return (
@@ -17,6 +18,7 @@ export default function Sidebar() {
             <Route path="/" element={<Login />} />
             <Route path="/Login" element={<Login />} />
             <Route path="/Projects" element={<Projects />} />
+            <Route path="/-----" element={<RouteTest />} />
             <Route path="/home" element={<Home />} />
           </Routes>
         </Box>

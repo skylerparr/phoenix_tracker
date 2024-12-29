@@ -10,15 +10,9 @@ impl ProjectCrud {
         Self { db }
     }
 
-    pub async fn create(
-        &self,
-        name: String,
-        description: String,
-        owner_id: i32,
-    ) -> Result<project::Model, DbErr> {
+    pub async fn create(&self, name: String, owner_id: i32) -> Result<project::Model, DbErr> {
         let project = project::ActiveModel {
             name: Set(name),
-            description: Set(description),
             owner_id: Set(owner_id),
             ..Default::default()
         };
@@ -38,7 +32,6 @@ impl ProjectCrud {
         &self,
         id: i32,
         name: Option<String>,
-        description: Option<String>,
         owner_id: Option<i32>,
     ) -> Result<project::Model, DbErr> {
         let project = project::Entity::find_by_id(id)
@@ -50,10 +43,6 @@ impl ProjectCrud {
 
         if let Some(name) = name {
             project.name = Set(name);
-        }
-
-        if let Some(description) = description {
-            project.description = Set(description);
         }
 
         if let Some(owner_id) = owner_id {

@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "../config/ApiConfig";
 import { Issue } from "../models/Issue";
+import { sessionStorage } from "../store/Session";
 
 interface CreateIssueRequest {
   title: string;
@@ -24,7 +25,7 @@ export class IssueService {
   private getHeaders(): HeadersInit {
     return {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${sessionStorage.getSession().user?.token}`,
+      Authorization: `${sessionStorage.getSession().user?.token}`,
     };
   }
 
