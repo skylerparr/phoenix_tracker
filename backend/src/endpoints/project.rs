@@ -12,14 +12,12 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct CreateProjectRequest {
     name: String,
-    description: String,
     owner_id: i32,
 }
 
 #[derive(Deserialize)]
 pub struct UpdateProjectRequest {
     name: Option<String>,
-    description: Option<String>,
     owner_id: Option<i32>,
 }
 

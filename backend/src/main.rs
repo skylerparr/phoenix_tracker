@@ -111,7 +111,7 @@ fn main() {
 
         let cors = CorsLayer::new()
             .allow_origin(HeaderValue::from_static("http://localhost:3000"))
-            .allow_methods(vec![Method::GET, Method::POST])
+            .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
             .allow_headers(vec![
                 HeaderName::from_static("content-type"),
                 HeaderName::from_static("upgrade"),

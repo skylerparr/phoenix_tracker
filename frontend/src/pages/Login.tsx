@@ -26,7 +26,7 @@ const Login = () => {
           name: fullName,
         },
       });
-      window.location.href = "/Home";
+      window.location.href = "/Projects";
     } catch (error) {
       setCreateAccount(true);
     }
