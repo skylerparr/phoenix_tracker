@@ -4,8 +4,8 @@ import { sessionStorage } from "../store/Session";
 
 interface CreateCommentRequest {
   content: string;
-  user_id: number;
-  issue_id: number;
+  userId: number;
+  issueId: number;
 }
 
 interface UpdateCommentRequest {

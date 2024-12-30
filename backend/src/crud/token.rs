@@ -4,7 +4,6 @@ use sea_orm::prelude::DateTimeWithTimeZone;
 use sea_orm::*;
 
 #[derive(Clone, Debug)]
-#[allow(dead_code)]
 pub struct TokenCrud {
     db: DatabaseConnection,
 }

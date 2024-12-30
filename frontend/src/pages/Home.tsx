@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { Box, Container, Typography, Paper, Grid, Button } from "@mui/material";
-import { ping } from "../services/WebSocketService";
 import { sessionStorage } from "../store/Session";
 import RequireAuth from "../components/RequireAuth";
 

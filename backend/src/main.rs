@@ -61,8 +61,8 @@ where
         let db = self.db.clone();
 
         Box::pin(async move {
-            if req.uri().path().starts_with("/auth") {
-                info!("Skipping auth middleware for /auth route");
+            if req.uri().path().starts_with("/auth") || req.uri().path().starts_with("/ws") {
+                info!("Skipping auth middleware for /auth and /ws route");
                 return inner.call(req).await;
             }
 
@@ -113,7 +113,7 @@ where
 
 fn main() {
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
+        .with_max_level(tracing::Level::DEBUG)
         .init();
 
     let (tx, _rx) = broadcast::channel::<String>(100);
@@ -121,7 +121,7 @@ fn main() {
 
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
-        let database_url = "sqlite:data/app.db";
+        let database_url = "sqlite:/data/app.db";
         let conn = Database::connect(database_url).await.unwrap();
 
         let cors = CorsLayer::new()

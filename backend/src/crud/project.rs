@@ -1,6 +1,7 @@
 use crate::entities::project;
 use crate::entities::project_user;
 use sea_orm::*;
+use tracing::debug;
 
 pub struct ProjectCrud {
     db: DatabaseConnection,
@@ -61,9 +62,22 @@ impl ProjectCrud {
         &self,
         project_id: i32,
     ) -> Result<Vec<project_user::Model>, DbErr> {
-        project_user::Entity::find()
-            .filter(project_user::Column::ProjectId.eq(project_id))
-            .all(&self.db)
-            .await
+        debug!("Finding users for project with ID: {}", project_id);
+        let query =
+            project_user::Entity::find().filter(project_user::Column::ProjectId.eq(project_id));
+        debug!(
+            "Generated query: {:?}",
+            query.build(self.db.get_database_backend())
+        );
+        match query.all(&self.db).await {
+            Ok(data) => {
+                debug!("Query result data: {:?}", data);
+                Ok(data)
+            }
+            Err(e) => {
+                debug!("Query error: {:?}", e);
+                Err(e)
+            }
+        }
     }
 }

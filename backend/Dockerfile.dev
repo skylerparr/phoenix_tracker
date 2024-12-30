@@ -12,4 +12,7 @@ COPY . .
 EXPOSE 3001
 
 # Run with cargo-watch to enable live reloading
-CMD ["cargo", "watch", "-x", "run", "--poll"]
+RUN mkdir -p /data
+RUN touch /data/app.db
+
+CMD ["cargo", "watch", "-i", "data/*", "-i", "../*.db", "-i", "../app.db", "-x", "run", "--poll"]

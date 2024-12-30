@@ -7,8 +7,8 @@ interface CreateIssueRequest {
   description: string;
   priority: string;
   status: string;
-  project_id: number;
-  user_id: number;
+  projectId: number;
+  userId: number;
 }
 
 interface UpdateIssueRequest {
@@ -16,7 +16,7 @@ interface UpdateIssueRequest {
   description?: string;
   priority?: string;
   status?: string;
-  project_id?: number;
+  projectId?: number;
 }
 
 export class IssueService {

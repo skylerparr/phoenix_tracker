@@ -6,7 +6,7 @@ services:
       no_cache: true
     volumes:
       - ./backend:/app
-      - ./backend/data:/app/data
+      - ./data:/data
       - cargo-target:/app/target
       - cargo-registry:/usr/local/cargo/registry
     ports:

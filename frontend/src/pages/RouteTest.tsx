@@ -13,6 +13,7 @@ import { projectService } from "../services/ProjectService";
 import { issueService } from "../services/IssueService";
 import { ownerService } from "../services/OwnerService";
 import { tagService } from "../services/TagService";
+import { WebsocketService } from "../services/WebSocketService";
 import RequireAuth from "../components/RequireAuth";
 
 const RouteTest = () => {
@@ -63,6 +64,10 @@ const RouteTest = () => {
     isEpic: false,
     tagId: "",
   });
+
+  React.useEffect(() => {
+    WebsocketService.connect();
+  }, []);
 
   return (
     <RequireAuth>
@@ -188,8 +193,8 @@ const RouteTest = () => {
               onClick={() =>
                 commentService.createComment({
                   content: commentForm.content,
-                  user_id: parseInt(commentForm.userId),
-                  issue_id: parseInt(commentForm.issueId),
+                  userId: parseInt(commentForm.userId),
+                  issueId: parseInt(commentForm.issueId),
                 })
               }
               variant="contained"
@@ -308,6 +313,26 @@ const RouteTest = () => {
             >
               Delete Project
             </Button>
+            <Button
+              onClick={() => {
+                const projectId = parseInt(projectForm.projectId);
+                WebsocketService.subscribe(projectId);
+              }}
+              variant="contained"
+              sx={{ m: 1 }}
+            >
+              Subscribe to Project ID
+            </Button>
+            <Button
+              onClick={() => {
+                const projectId = parseInt(projectForm.projectId);
+                WebsocketService.unsubscribe(projectId);
+              }}
+              variant="contained"
+              sx={{ m: 1 }}
+            >
+              Unsubscribe to Project ID
+            </Button>
           </Box>
 
           {/* Issue Routes Section */}
@@ -375,8 +400,8 @@ const RouteTest = () => {
                   description: issueForm.description,
                   priority: issueForm.priority,
                   status: issueForm.status,
-                  project_id: parseInt(issueForm.projectId),
-                  user_id: parseInt(issueForm.userId),
+                  projectId: parseInt(issueForm.projectId),
+                  userId: parseInt(issueForm.userId),
                 })
               }
               variant="contained"
@@ -398,7 +423,7 @@ const RouteTest = () => {
                   description: issueForm.description,
                   priority: issueForm.priority,
                   status: issueForm.status,
-                  project_id: parseInt(issueForm.projectId),
+                  projectId: parseInt(issueForm.projectId),
                 })
               }
               variant="contained"

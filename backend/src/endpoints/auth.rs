@@ -35,8 +35,8 @@ async fn login(
     State(app_state): State<AppState>,
     Json(payload): Json<LoginRequest>,
 ) -> impl IntoResponse {
-    let user_crud = UserCrud::new(app_state.db.clone());
-    let token_crud = TokenCrud::new(app_state.db);
+    let user_crud = UserCrud::new(app_state.clone());
+    let token_crud = TokenCrud::new(app_state.db.clone());
 
     let user = match user_crud.find_by_email(payload.email).await {
         Ok(Some(user)) => user,
@@ -63,8 +63,8 @@ async fn register(
     State(app_state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
 ) -> impl IntoResponse {
-    let user_crud = UserCrud::new(app_state.db.clone());
-    let token_crud = TokenCrud::new(app_state.db);
+    let user_crud = UserCrud::new(app_state.clone());
+    let token_crud = TokenCrud::new(app_state.db.clone());
 
     let user = match user_crud.create(payload.name, payload.email).await {
         Ok(user) => user,
@@ -93,7 +93,7 @@ async fn logout(
     State(app_state): State<AppState>,
     Json(payload): Json<LogoutRequest>,
 ) -> impl IntoResponse {
-    let token_crud = TokenCrud::new(app_state.db);
+    let token_crud = TokenCrud::new(app_state.db.clone());
     match token_crud.delete_by_user_id(payload.user_id).await {
         Ok(_) => StatusCode::OK.into_response(),
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),

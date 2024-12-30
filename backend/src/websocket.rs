@@ -1,14 +1,16 @@
 use crate::crud::project::ProjectCrud;
 use crate::crud::token::TokenCrud;
 use crate::AppState;
+use axum::extract::Query;
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
         State,
     },
-    http::{header::AUTHORIZATION, HeaderMap, StatusCode},
+    http::StatusCode,
     response::IntoResponse,
 };
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::broadcast;
@@ -20,14 +22,20 @@ struct WebSocketState {
     user_id: i32,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(serde::Deserialize, Debug)]
+struct SocketCommandWrapper {
+    command: String,
+    #[serde(rename = "projectId")]
+    project_id: i32,
+}
+
+#[derive(Debug)]
 enum SocketCommand {
     Subscribe { project_id: i32 },
     Unsubscribe { project_id: i32 },
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug)]
 struct ProjectEvent {
     project_id: i32,
     #[serde(flatten)]
@@ -37,15 +45,13 @@ struct ProjectEvent {
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
     State(state): State<AppState>,
-    headers: HeaderMap,
+    Query(params): Query<HashMap<String, String>>,
 ) -> impl IntoResponse {
-    let auth_header = headers
-        .get(AUTHORIZATION)
-        .and_then(|value| value.to_str().ok())
-        .and_then(|value| value.strip_prefix("Bearer "));
+    let token = params.get("token");
 
-    match auth_header {
+    match token {
         Some(token) => {
+            debug!("token = {}", token);
             let token_crud = TokenCrud::new(state.db.clone());
             let now = chrono::Utc::now();
             let rx = state.tx.subscribe();
@@ -83,22 +89,40 @@ pub async fn handle_socket(
                     debug!("Received message: {:?}", msg);
                     match msg {
                         Message::Text(text) => {
-                            if let Ok(command) = serde_json::from_str::<SocketCommand>(&text) {
-                                match command {
-                                    SocketCommand::Subscribe { project_id } => {
-                                        let project_crud = ProjectCrud::new(state.db.clone());
-                                        if let Ok(project_users) = project_crud.find_users_by_project_id(project_id).await {
-                                            if project_users.iter().any(|pu| pu.user_id == user_id) {
-                                                let mut ws_state = web_socket_state.lock().await;
-                                                ws_state.subscribed_projects.insert(project_id);
-                                                let _ = socket.send(Message::Text(format!("Subscribed to project {}", project_id))).await;
+                            debug!("Received message: {}", text);
+                            if let Ok(wrapper) = serde_json::from_str::<SocketCommandWrapper>(&text) {
+                                let command = match wrapper.command.as_str() {
+                                    "subscribe" => Some(SocketCommand::Subscribe {
+                                        project_id: wrapper.project_id
+                                    }),
+                                    "unsubscribe" => Some(SocketCommand::Unsubscribe {
+                                        project_id: wrapper.project_id
+                                    }),
+                                    _ => None,
+                                };
+
+                                debug!("Received command: {:?}", command);
+                                if let Some(cmd) = command {
+                                    match cmd {
+                                        SocketCommand::Subscribe { project_id } => {
+                                            let project_crud = ProjectCrud::new(state.db.clone());
+                                            if let Ok(project_users) = project_crud.find_users_by_project_id(project_id).await {
+                                                if project_users.iter().any(|pu| pu.user_id == user_id) {
+                                                    let mut ws_state = web_socket_state.lock().await;
+                                                    ws_state.subscribed_projects.insert(project_id);
+                                                    debug!("Subscribed to project {}", project_id);
+                                                    let _ = socket.send(Message::Text(format!("Subscribed to project {}", project_id))).await;
+                                                }
+                                            } else {
+                                                debug!("Failed to find project users for project {}", project_id);
                                             }
+                                        },
+                                        SocketCommand::Unsubscribe { project_id } => {
+                                            let mut ws_state = web_socket_state.lock().await;
+                                            ws_state.subscribed_projects.remove(&project_id);
+                                            debug!("Unsubscribed from project {}", project_id);
+                                            let _ = socket.send(Message::Text(format!("Unsubscribed from project {}", project_id))).await;
                                         }
-                                    },
-                                    SocketCommand::Unsubscribe { project_id } => {
-                                        let mut ws_state = web_socket_state.lock().await;
-                                        ws_state.subscribed_projects.remove(&project_id);
-                                        let _ = socket.send(Message::Text(format!("Unsubscribed from project {}", project_id))).await;
                                     }
                                 }
                             }
@@ -109,6 +133,7 @@ pub async fn handle_socket(
                 }
             }
             Ok(msg) = rx.recv() => {
+                debug!("Received broadcast message: {}", msg);
                 if let Ok(event) = serde_json::from_str::<ProjectEvent>(&msg) {
                     let ws_state = web_socket_state.lock().await;
                     if ws_state.subscribed_projects.contains(&event.project_id) {

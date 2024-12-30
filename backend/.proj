@@ -1,9 +1,9 @@
 alias container="docker ps | grep backend | cut -d ' ' -f 1"
 alias fmt="docker exec -it `container` cargo fmt"
 alias fmt_migrations="docker exec -it $(container) sh -c 'cd migration && cargo fmt'"
-alias migrate_fresh="docker exec -it `container` sea-orm-cli migrate fresh --database-url sqlite:data/app.db"
-alias migrate_up="docker exec -it `container` sea-orm migrate up --database-url sqlite:data/app.db"
-alias migrate_down="docker exec -it `container` sea-orm migrate down --database-url sqlite:data/app.db"
+alias migrate_fresh="docker exec -it `container` sea-orm-cli migrate fresh --database-url sqlite:/data/app.db"
+alias migrate_up="docker exec -it `container` sea-orm migrate up --database-url sqlite:/data/app.db"
+alias migrate_down="docker exec -it `container` sea-orm migrate down --database-url sqlite:/data/app.db"
 
 function cargo_add() {
     docker exec -it `container` cargo add $1
