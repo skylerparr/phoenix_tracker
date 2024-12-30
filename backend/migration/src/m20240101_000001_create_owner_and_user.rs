@@ -325,11 +325,82 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await?;
+        manager
+            .create_table(
+                Table::create()
+                    .table(ProjectUser::Table)
+                    .col(ColumnDef::new(ProjectUser::ProjectId).integer().not_null())
+                    .col(ColumnDef::new(ProjectUser::UserId).integer().not_null())
+                    .col(
+                        ColumnDef::new(ProjectUser::CreatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(
+                        ColumnDef::new(ProjectUser::UpdatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .primary_key(
+                        Index::create()
+                            .col(ProjectUser::ProjectId)
+                            .col(ProjectUser::UserId),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-project-user-project")
+                            .from(ProjectUser::Table, ProjectUser::ProjectId)
+                            .to(Project::Table, Project::Id),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-project-user-user")
+                            .from(ProjectUser::Table, ProjectUser::UserId)
+                            .to(User::Table, User::Id),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx-enail-unique")
+                    .col(User::Email)
+                    .unique()
+                    .table(User::Table)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx-token-unique")
+                    .col(Token::Token)
+                    .unique()
+                    .table(Token::Table)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx-issue-project-id")
+                    .col(Issue::ProjectId)
+                    .table(Issue::Table)
+                    .to_owned(),
+            )
+            .await?;
 
         Ok(())
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .drop_table(Table::drop().table(ProjectUser::Table).to_owned())
+            .await?;
+
         manager
             .drop_table(Table::drop().table(Comment::Table).to_owned())
             .await?;
@@ -444,7 +515,6 @@ enum Comment {
     UpdatedAt,
 }
 
-// Add this enum with the other table definitions
 #[derive(DeriveIden)]
 enum Token {
     Table,
@@ -452,6 +522,14 @@ enum Token {
     UserId,
     Token,
     ExpiresAt,
+    CreatedAt,
+    UpdatedAt,
+}
+#[derive(DeriveIden)]
+enum ProjectUser {
+    Table,
+    ProjectId,
+    UserId,
     CreatedAt,
     UpdatedAt,
 }
