@@ -1,4 +1,5 @@
 use crate::crud::owner::OwnerCrud;
+use crate::AppState;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -6,7 +7,6 @@ use axum::{
     routing::{delete, get, post, put},
     Json, Router,
 };
-use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -21,7 +21,7 @@ pub struct UpdateOwnerRequest {
     user_id: Option<i32>,
 }
 
-pub fn owner_routes() -> Router<DatabaseConnection> {
+pub fn owner_routes() -> Router<AppState> {
     Router::new()
         .route("/owners", post(create_owner))
         .route("/owners", get(get_all_owners))
@@ -32,10 +32,10 @@ pub fn owner_routes() -> Router<DatabaseConnection> {
 
 #[axum::debug_handler]
 async fn create_owner(
-    State(db): State<DatabaseConnection>,
+    State(app_state): State<AppState>,
     Json(payload): Json<CreateOwnerRequest>,
 ) -> impl IntoResponse {
-    let owner_crud = OwnerCrud::new(db);
+    let owner_crud = OwnerCrud::new(app_state.db);
     match owner_crud.create(payload.user_id).await {
         Ok(owner) => Ok(Json(owner)),
         Err(e) => {
@@ -46,8 +46,8 @@ async fn create_owner(
 }
 
 #[axum::debug_handler]
-async fn get_all_owners(State(db): State<DatabaseConnection>) -> impl IntoResponse {
-    let owner_crud = OwnerCrud::new(db);
+async fn get_all_owners(State(app_state): State<AppState>) -> impl IntoResponse {
+    let owner_crud = OwnerCrud::new(app_state.db);
     match owner_crud.find_all().await {
         Ok(owners) => Ok(Json(owners)),
         Err(e) => {
@@ -58,8 +58,8 @@ async fn get_all_owners(State(db): State<DatabaseConnection>) -> impl IntoRespon
 }
 
 #[axum::debug_handler]
-async fn get_owner(State(db): State<DatabaseConnection>, Path(id): Path<i32>) -> impl IntoResponse {
-    let owner_crud = OwnerCrud::new(db);
+async fn get_owner(State(app_state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
+    let owner_crud = OwnerCrud::new(app_state.db);
     match owner_crud.find_by_id(id).await {
         Ok(Some(owner)) => Ok(Json(owner)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
@@ -72,11 +72,11 @@ async fn get_owner(State(db): State<DatabaseConnection>, Path(id): Path<i32>) ->
 
 #[axum::debug_handler]
 async fn update_owner(
-    State(db): State<DatabaseConnection>,
+    State(app_state): State<AppState>,
     Path(id): Path<i32>,
     Json(payload): Json<UpdateOwnerRequest>,
 ) -> impl IntoResponse {
-    let owner_crud = OwnerCrud::new(db);
+    let owner_crud = OwnerCrud::new(app_state.db);
     match owner_crud.update(id, payload.user_id).await {
         Ok(owner) => Ok(Json(owner)),
         Err(e) => {
@@ -91,8 +91,8 @@ async fn update_owner(
 }
 
 #[axum::debug_handler]
-async fn delete_owner(State(db): State<DatabaseConnection>, Path(id): Path<i32>) -> StatusCode {
-    let owner_crud = OwnerCrud::new(db);
+async fn delete_owner(State(app_state): State<AppState>, Path(id): Path<i32>) -> StatusCode {
+    let owner_crud = OwnerCrud::new(app_state.db);
     match owner_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {

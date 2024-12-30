@@ -1,4 +1,5 @@
 use crate::crud::tag::TagCrud;
+use crate::AppState;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -6,7 +7,6 @@ use axum::{
     routing::{delete, get, post, put},
     Json, Router,
 };
-use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -25,7 +25,7 @@ pub struct UpdateTagRequest {
     is_epic: Option<bool>,
 }
 
-pub fn tag_routes() -> Router<DatabaseConnection> {
+pub fn tag_routes() -> Router<AppState> {
     Router::new()
         .route("/tags", post(create_tag))
         .route("/tags", get(get_all_tags))
@@ -36,10 +36,10 @@ pub fn tag_routes() -> Router<DatabaseConnection> {
 
 #[axum::debug_handler]
 async fn create_tag(
-    State(db): State<DatabaseConnection>,
+    State(app_state): State<AppState>,
     Json(payload): Json<CreateTagRequest>,
 ) -> impl IntoResponse {
-    let tag_crud = TagCrud::new(db);
+    let tag_crud = TagCrud::new(app_state.db);
     match tag_crud
         .create(payload.name, payload.color, payload.is_epic)
         .await
@@ -51,10 +51,9 @@ async fn create_tag(
         }
     }
 }
-
 #[axum::debug_handler]
-async fn get_all_tags(State(db): State<DatabaseConnection>) -> impl IntoResponse {
-    let tag_crud = TagCrud::new(db);
+async fn get_all_tags(State(app_state): State<AppState>) -> impl IntoResponse {
+    let tag_crud = TagCrud::new(app_state.db);
     match tag_crud.find_all().await {
         Ok(tags) => Ok(Json(tags)),
         Err(e) => {
@@ -65,8 +64,8 @@ async fn get_all_tags(State(db): State<DatabaseConnection>) -> impl IntoResponse
 }
 
 #[axum::debug_handler]
-async fn get_tag(State(db): State<DatabaseConnection>, Path(id): Path<i32>) -> impl IntoResponse {
-    let tag_crud = TagCrud::new(db);
+async fn get_tag(State(app_state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
+    let tag_crud = TagCrud::new(app_state.db);
     match tag_crud.find_by_id(id).await {
         Ok(Some(tag)) => Ok(Json(tag)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
@@ -79,11 +78,11 @@ async fn get_tag(State(db): State<DatabaseConnection>, Path(id): Path<i32>) -> i
 
 #[axum::debug_handler]
 async fn update_tag(
-    State(db): State<DatabaseConnection>,
+    State(app_state): State<AppState>,
     Path(id): Path<i32>,
     Json(payload): Json<UpdateTagRequest>,
 ) -> impl IntoResponse {
-    let tag_crud = TagCrud::new(db);
+    let tag_crud = TagCrud::new(app_state.db);
     match tag_crud
         .update(id, payload.name, payload.color, payload.is_epic)
         .await
@@ -101,8 +100,8 @@ async fn update_tag(
 }
 
 #[axum::debug_handler]
-async fn delete_tag(State(db): State<DatabaseConnection>, Path(id): Path<i32>) -> StatusCode {
-    let tag_crud = TagCrud::new(db);
+async fn delete_tag(State(app_state): State<AppState>, Path(id): Path<i32>) -> StatusCode {
+    let tag_crud = TagCrud::new(app_state.db);
     match tag_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {

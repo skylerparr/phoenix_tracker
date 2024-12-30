@@ -1,4 +1,5 @@
 use crate::crud::project::ProjectCrud;
+use crate::AppState;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -6,7 +7,6 @@ use axum::{
     routing::{delete, get, post, put},
     Json, Router,
 };
-use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -23,7 +23,7 @@ pub struct UpdateProjectRequest {
     owner_id: Option<i32>,
 }
 
-pub fn project_routes() -> Router<DatabaseConnection> {
+pub fn project_routes() -> Router<AppState> {
     Router::new()
         .route("/projects", post(create_project))
         .route("/projects", get(get_all_projects))
@@ -34,10 +34,10 @@ pub fn project_routes() -> Router<DatabaseConnection> {
 
 #[axum::debug_handler]
 async fn create_project(
-    State(db): State<DatabaseConnection>,
+    State(app_state): State<AppState>,
     Json(payload): Json<CreateProjectRequest>,
 ) -> impl IntoResponse {
-    let project_crud = ProjectCrud::new(db);
+    let project_crud = ProjectCrud::new(app_state.db);
     match project_crud.create(payload.name, payload.owner_id).await {
         Ok(project) => Ok(Json(project)),
         Err(e) => {
@@ -46,10 +46,9 @@ async fn create_project(
         }
     }
 }
-
 #[axum::debug_handler]
-async fn get_all_projects(State(db): State<DatabaseConnection>) -> impl IntoResponse {
-    let project_crud = ProjectCrud::new(db);
+async fn get_all_projects(State(app_state): State<AppState>) -> impl IntoResponse {
+    let project_crud = ProjectCrud::new(app_state.db);
     match project_crud.find_all().await {
         Ok(projects) => Ok(Json(projects)),
         Err(e) => {
@@ -60,11 +59,8 @@ async fn get_all_projects(State(db): State<DatabaseConnection>) -> impl IntoResp
 }
 
 #[axum::debug_handler]
-async fn get_project(
-    State(db): State<DatabaseConnection>,
-    Path(id): Path<i32>,
-) -> impl IntoResponse {
-    let project_crud = ProjectCrud::new(db);
+async fn get_project(State(app_state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
+    let project_crud = ProjectCrud::new(app_state.db);
     match project_crud.find_by_id(id).await {
         Ok(Some(project)) => Ok(Json(project)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
@@ -77,11 +73,11 @@ async fn get_project(
 
 #[axum::debug_handler]
 async fn update_project(
-    State(db): State<DatabaseConnection>,
+    State(app_state): State<AppState>,
     Path(id): Path<i32>,
     Json(payload): Json<UpdateProjectRequest>,
 ) -> impl IntoResponse {
-    let project_crud = ProjectCrud::new(db);
+    let project_crud = ProjectCrud::new(app_state.db);
     match project_crud
         .update(id, payload.name, payload.owner_id)
         .await
@@ -99,8 +95,8 @@ async fn update_project(
 }
 
 #[axum::debug_handler]
-async fn delete_project(State(db): State<DatabaseConnection>, Path(id): Path<i32>) -> StatusCode {
-    let project_crud = ProjectCrud::new(db);
+async fn delete_project(State(app_state): State<AppState>, Path(id): Path<i32>) -> StatusCode {
+    let project_crud = ProjectCrud::new(app_state.db);
     match project_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {

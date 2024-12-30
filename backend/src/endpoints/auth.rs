@@ -1,5 +1,6 @@
 use crate::crud::token::TokenCrud;
 use crate::crud::user::UserCrud;
+use crate::AppState;
 use axum::http::StatusCode;
 use axum::{
     extract::{Json, State},
@@ -7,7 +8,6 @@ use axum::{
     routing::post,
     Router,
 };
-use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use serde_json::json;
 
@@ -24,7 +24,7 @@ pub struct RegisterRequest {
     email: String,
 }
 
-pub fn auth_routes() -> Router<DatabaseConnection> {
+pub fn auth_routes() -> Router<AppState> {
     Router::new()
         .route("/auth/login", post(login))
         .route("/auth/register", post(register))
@@ -32,11 +32,11 @@ pub fn auth_routes() -> Router<DatabaseConnection> {
 }
 #[axum::debug_handler]
 async fn login(
-    State(db): State<DatabaseConnection>,
+    State(app_state): State<AppState>,
     Json(payload): Json<LoginRequest>,
 ) -> impl IntoResponse {
-    let user_crud = UserCrud::new(db.clone());
-    let token_crud = TokenCrud::new(db);
+    let user_crud = UserCrud::new(app_state.db.clone());
+    let token_crud = TokenCrud::new(app_state.db);
 
     let user = match user_crud.find_by_email(payload.email).await {
         Ok(Some(user)) => user,
@@ -60,11 +60,11 @@ async fn login(
 }
 #[axum::debug_handler]
 async fn register(
-    State(db): State<DatabaseConnection>,
+    State(app_state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
 ) -> impl IntoResponse {
-    let user_crud = UserCrud::new(db.clone());
-    let token_crud = TokenCrud::new(db);
+    let user_crud = UserCrud::new(app_state.db.clone());
+    let token_crud = TokenCrud::new(app_state.db);
 
     let user = match user_crud.create(payload.name, payload.email).await {
         Ok(user) => user,
@@ -90,10 +90,10 @@ async fn register(
 
 #[axum::debug_handler]
 async fn logout(
-    State(db): State<DatabaseConnection>,
+    State(app_state): State<AppState>,
     Json(payload): Json<LogoutRequest>,
 ) -> impl IntoResponse {
-    let token_crud = TokenCrud::new(db);
+    let token_crud = TokenCrud::new(app_state.db);
     match token_crud.delete_by_user_id(payload.user_id).await {
         Ok(_) => StatusCode::OK.into_response(),
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),

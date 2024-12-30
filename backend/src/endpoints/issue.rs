@@ -1,4 +1,5 @@
 use crate::crud::issue::IssueCrud;
+use crate::AppState;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -6,7 +7,6 @@ use axum::{
     routing::{delete, get, post, put},
     Json, Router,
 };
-use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -30,7 +30,7 @@ pub struct UpdateIssueRequest {
     project_id: Option<i32>,
 }
 
-pub fn issue_routes() -> Router<DatabaseConnection> {
+pub fn issue_routes() -> Router<AppState> {
     Router::new()
         .route("/issues", post(create_issue))
         .route("/issues", get(get_all_issues))
@@ -41,10 +41,10 @@ pub fn issue_routes() -> Router<DatabaseConnection> {
 
 #[axum::debug_handler]
 pub async fn create_issue(
-    State(db): State<DatabaseConnection>,
+    State(app_state): State<AppState>,
     Json(payload): Json<CreateIssueRequest>,
 ) -> impl IntoResponse {
-    let issue_crud = IssueCrud::new(db);
+    let issue_crud = IssueCrud::new(app_state.db);
     match issue_crud
         .create(
             payload.title,
@@ -64,8 +64,8 @@ pub async fn create_issue(
     }
 }
 #[axum::debug_handler]
-async fn get_all_issues(State(db): State<DatabaseConnection>) -> impl IntoResponse {
-    let issue_crud = IssueCrud::new(db);
+async fn get_all_issues(State(app_state): State<AppState>) -> impl IntoResponse {
+    let issue_crud = IssueCrud::new(app_state.db);
     match issue_crud.find_all().await {
         Ok(issues) => Ok(Json(issues)),
         Err(e) => {
@@ -76,8 +76,8 @@ async fn get_all_issues(State(db): State<DatabaseConnection>) -> impl IntoRespon
 }
 
 #[axum::debug_handler]
-async fn get_issue(State(db): State<DatabaseConnection>, Path(id): Path<i32>) -> impl IntoResponse {
-    let issue_crud = IssueCrud::new(db);
+async fn get_issue(State(app_state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
+    let issue_crud = IssueCrud::new(app_state.db);
     match issue_crud.find_by_id(id).await {
         Ok(Some(issue)) => Ok(Json(issue)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
@@ -90,11 +90,11 @@ async fn get_issue(State(db): State<DatabaseConnection>, Path(id): Path<i32>) ->
 
 #[axum::debug_handler]
 async fn update_issue(
-    State(db): State<DatabaseConnection>,
+    State(app_state): State<AppState>,
     Path(id): Path<i32>,
     Json(payload): Json<UpdateIssueRequest>,
 ) -> impl IntoResponse {
-    let issue_crud = IssueCrud::new(db);
+    let issue_crud = IssueCrud::new(app_state.db);
     match issue_crud
         .update(
             id,
@@ -119,8 +119,8 @@ async fn update_issue(
 }
 
 #[axum::debug_handler]
-async fn delete_issue(State(db): State<DatabaseConnection>, Path(id): Path<i32>) -> StatusCode {
-    let issue_crud = IssueCrud::new(db);
+async fn delete_issue(State(app_state): State<AppState>, Path(id): Path<i32>) -> StatusCode {
+    let issue_crud = IssueCrud::new(app_state.db);
     match issue_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {
