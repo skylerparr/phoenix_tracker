@@ -10,11 +10,13 @@ use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateOwnerRequest {
     user_id: Option<i32>,
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateOwnerRequest {
     user_id: Option<i32>,
 }

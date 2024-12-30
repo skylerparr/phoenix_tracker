@@ -12,12 +12,14 @@ use serde::Deserialize;
 use std::collections::HashMap;
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateUserRequest {
     name: String,
     email: String,
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateUserRequest {
     name: Option<String>,
     email: Option<String>,

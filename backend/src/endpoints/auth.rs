@@ -12,11 +12,13 @@ use serde::Deserialize;
 use serde_json::json;
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LoginRequest {
     email: String,
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RegisterRequest {
     name: String,
     email: String,

@@ -10,6 +10,7 @@ use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateIssueRequest {
     title: String,
     description: String,
@@ -20,6 +21,7 @@ pub struct CreateIssueRequest {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateIssueRequest {
     title: Option<String>,
     description: Option<String>,

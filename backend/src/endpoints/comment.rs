@@ -10,6 +10,7 @@ use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateCommentRequest {
     content: String,
     user_id: i32,
@@ -17,6 +18,7 @@ pub struct CreateCommentRequest {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateCommentRequest {
     content: Option<String>,
 }

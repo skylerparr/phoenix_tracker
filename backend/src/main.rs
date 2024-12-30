@@ -22,7 +22,7 @@ use axum::response::IntoResponse;
 use axum::response::Response;
 use endpoints::{
     auth::auth_routes, comment::comment_routes, issue::issue_routes, owner::owner_routes,
-    project::project_routes, user::user_routes,
+    project::project_routes, tag::tag_routes, user::user_routes,
 };
 use futures::future::BoxFuture;
 use tower_service::Service;
@@ -127,6 +127,7 @@ fn main() {
             .merge(comment_routes())
             .merge(owner_routes())
             .merge(project_routes())
+            .merge(tag_routes())
             .route("/ws", get(ws_handler))
             .route("/", get(|| async { "Tracker Root" }))
             .with_state(conn.clone())

@@ -1,10 +1,18 @@
 import React, { useState } from "react";
-import { Box, Button, Container, Typography, TextField } from "@mui/material";
+import {
+  Box,
+  Button,
+  Container,
+  Typography,
+  TextField,
+  Checkbox,
+} from "@mui/material";
 import { userService } from "../services/UserService";
 import { commentService } from "../services/CommentService";
 import { projectService } from "../services/ProjectService";
 import { issueService } from "../services/IssueService";
 import { ownerService } from "../services/OwnerService";
+import { tagService } from "../services/TagService";
 import RequireAuth from "../components/RequireAuth";
 
 const RouteTest = () => {
@@ -46,6 +54,14 @@ const RouteTest = () => {
   const [ownerForm, setOwnerForm] = useState({
     userId: "",
     ownerId: "",
+  });
+
+  // Tag Form States
+  const [tagForm, setTagForm] = useState({
+    name: "",
+    color: 0,
+    isEpic: false,
+    tagId: "",
   });
 
   return (
@@ -459,6 +475,91 @@ const RouteTest = () => {
               sx={{ m: 1 }}
             >
               Delete Owner
+            </Button>
+          </Box>
+
+          {/* Tag Routes Section */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h5">Tag Routes</Typography>
+            <Box
+              sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}
+            >
+              <TextField
+                label="Tag Name"
+                value={tagForm.name}
+                onChange={(e) =>
+                  setTagForm({ ...tagForm, name: e.target.value })
+                }
+              />
+              <TextField
+                label="Color"
+                type="number"
+                value={tagForm.color}
+                onChange={(e) =>
+                  setTagForm({ ...tagForm, color: parseInt(e.target.value) })
+                }
+              />
+              <Typography>Is Epic?</Typography>
+              <Checkbox
+                checked={tagForm.isEpic}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setTagForm({ ...tagForm, isEpic: e.target.value === "true" })
+                }
+              />
+              <TextField
+                label="Tag ID"
+                value={tagForm.tagId}
+                onChange={(e) =>
+                  setTagForm({ ...tagForm, tagId: e.target.value })
+                }
+              />
+            </Box>
+            <Button
+              onClick={() =>
+                tagService.createTag({
+                  name: tagForm.name,
+                  color: tagForm.color,
+                  isEpic: tagForm.isEpic,
+                })
+              }
+              variant="contained"
+              sx={{ m: 1 }}
+            >
+              Create Tag
+            </Button>
+            <Button
+              onClick={() => tagService.getAllTags()}
+              variant="contained"
+              sx={{ m: 1 }}
+            >
+              Get All Tags
+            </Button>
+            <Button
+              onClick={() => tagService.getTag(parseInt(tagForm.tagId))}
+              variant="contained"
+              sx={{ m: 1 }}
+            >
+              Get Tag
+            </Button>
+            <Button
+              onClick={() =>
+                tagService.updateTag(parseInt(tagForm.tagId), {
+                  name: tagForm.name,
+                  color: tagForm.color,
+                  isEpic: tagForm.isEpic,
+                })
+              }
+              variant="contained"
+              sx={{ m: 1 }}
+            >
+              Update Tag
+            </Button>
+            <Button
+              onClick={() => tagService.deleteTag(parseInt(tagForm.tagId))}
+              variant="contained"
+              sx={{ m: 1 }}
+            >
+              Delete Tag
             </Button>
           </Box>
         </Box>
