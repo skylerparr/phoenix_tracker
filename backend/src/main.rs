@@ -71,6 +71,10 @@ where
                 .get(AUTHORIZATION)
                 .and_then(|value| value.to_str().ok());
 
+            if let Some(token) = auth_header {
+                debug!("Authorization header value: {}", token);
+            }
+
             match auth_header {
                 Some(token) => {
                     let token_crud = TokenCrud::new(db);

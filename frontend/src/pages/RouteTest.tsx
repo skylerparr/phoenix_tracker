@@ -271,7 +271,7 @@ const RouteTest = () => {
                 projectService.createProject({
                   name: projectForm.name,
                   description: projectForm.description,
-                  owner_id: parseInt(projectForm.ownerId),
+                  ownerId: parseInt(projectForm.ownerId),
                 })
               }
               variant="contained"
@@ -291,7 +291,7 @@ const RouteTest = () => {
                 projectService.updateProject(parseInt(projectForm.projectId), {
                   name: projectForm.name,
                   description: projectForm.description,
-                  owner_id: parseInt(projectForm.ownerId),
+                  ownerId: parseInt(projectForm.ownerId),
                 })
               }
               variant="contained"
@@ -441,7 +441,7 @@ const RouteTest = () => {
             <Button
               onClick={() =>
                 ownerService.createOwner({
-                  user_id: parseInt(ownerForm.userId),
+                  userId: parseInt(ownerForm.userId),
                 })
               }
               variant="contained"
@@ -459,7 +459,7 @@ const RouteTest = () => {
             <Button
               onClick={() =>
                 ownerService.updateOwner(parseInt(ownerForm.ownerId), {
-                  user_id: parseInt(ownerForm.userId),
+                  userId: parseInt(ownerForm.userId),
                 })
               }
               variant="contained"

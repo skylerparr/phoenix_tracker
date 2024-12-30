@@ -1,4 +1,5 @@
 use crate::entities::project;
+use crate::entities::project_user;
 use sea_orm::*;
 
 pub struct ProjectCrud {
@@ -54,5 +55,15 @@ impl ProjectCrud {
 
     pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {
         project::Entity::delete_by_id(id).exec(&self.db).await
+    }
+
+    pub async fn find_users_by_project_id(
+        &self,
+        project_id: i32,
+    ) -> Result<Vec<project_user::Model>, DbErr> {
+        project_user::Entity::find()
+            .filter(project_user::Column::ProjectId.eq(project_id))
+            .all(&self.db)
+            .await
     }
 }

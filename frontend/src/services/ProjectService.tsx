@@ -5,13 +5,13 @@ import { sessionStorage } from "../store/Session";
 interface CreateProjectRequest {
   name: string;
   description: string;
-  owner_id: number;
+  ownerId: number;
 }
 
 interface UpdateProjectRequest {
   name?: string;
   description?: string;
-  owner_id?: number;
+  ownerId?: number;
 }
 
 export class ProjectService {

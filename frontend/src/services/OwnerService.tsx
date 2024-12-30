@@ -3,11 +3,11 @@ import { Owner } from "../models/Owner";
 import { sessionStorage } from "../store/Session";
 
 interface CreateOwnerRequest {
-  user_id?: number;
+  userId?: number;
 }
 
 interface UpdateOwnerRequest {
-  user_id?: number;
+  userId?: number;
 }
 
 export class OwnerService {
