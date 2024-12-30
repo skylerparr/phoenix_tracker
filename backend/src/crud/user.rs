@@ -1,7 +1,7 @@
+use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::entities::user;
 use crate::AppState;
 use sea_orm::*;
-use tracing::debug;
 
 #[derive(Clone)]
 pub struct UserCrud {
@@ -59,24 +59,8 @@ impl UserCrud {
         }
 
         let updated_user = user.update(&self.state.db).await?;
-
-        debug!("Sending user_updated event for user_id: {}", id);
-        let event = serde_json::json!({
-            "project_id": 1,
-            "type": "user_updated",
-            "data": {
-                "user_id": id,
-            }
-        });
-        debug!(
-            "Event payload: {}",
-            serde_json::to_string_pretty(&event).unwrap()
-        );
-        match self.state.tx.send(serde_json::to_string(&event).unwrap()) {
-            Ok(_) => debug!("Event broadcast successful"),
-            Err(e) => debug!("Failed to broadcast event: {:?}", e),
-        }
-        debug!("Event sent successfully");
+        let broadcaster = EventBroadcaster::new(self.state.tx.clone());
+        broadcaster.broadcast_event(1, "user_updated", serde_json::json!({ "user_id": id }));
         Ok(updated_user)
     }
 
