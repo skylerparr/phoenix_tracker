@@ -1,3 +1,8 @@
+:root {
+  background-color: #1a1a1a;
+  color: #ffffff;
+}
+
 .App {
   text-align: center;
 }
@@ -14,7 +19,7 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: #1a1a1a;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -44,17 +49,20 @@
   padding: 20px;
   max-width: 400px;
   margin: 0 auto;
+  background-color: #1a1a1a;
+  color: #ffffff;
 }
 
 .draggable-item {
   padding: 15px;
-  background-color: #f0f0f0;
-  border: 1px solid #ddd;
+  background-color: #2a2a2a;
+  border: 1px solid #404040;
   border-radius: 4px;
   cursor: move;
   user-select: none;
+  color: #ffffff;
 }
 
 .draggable-item:hover {
-  background-color: #e0e0e0;
+  background-color: #333333;
 }
