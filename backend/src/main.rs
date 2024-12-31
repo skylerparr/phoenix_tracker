@@ -38,6 +38,7 @@ struct AuthMiddleware<S> {
 pub struct AppState {
     pub db: DatabaseConnection,
     pub tx: Arc<broadcast::Sender<String>>,
+    pub user: Option<entities::user::Model>,
 }
 
 impl<S> Service<Request<Body>> for AuthMiddleware<S>
@@ -137,6 +138,7 @@ fn main() {
         let app_state = AppState {
             db: conn.clone(),
             tx: tx.clone(),
+            user: None,
         };
 
         let app = Router::new()

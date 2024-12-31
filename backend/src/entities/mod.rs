@@ -1,4 +1,5 @@
 pub mod comment;
+pub mod history;
 pub mod issue;
 pub mod owner;
 pub mod project;

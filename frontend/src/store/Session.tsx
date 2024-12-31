@@ -5,6 +5,7 @@ interface Session {
     name: string;
     email: string;
   } | null;
+  activeButtons: string[];
 }
 
 const SESSION_KEY = "userSession";
@@ -20,6 +21,7 @@ class SessionStorage {
       : {
           isAuthenticated: false,
           user: null,
+          activeButtons: [],
         };
   }
 
@@ -34,17 +36,38 @@ class SessionStorage {
     return this.session;
   }
 
-  public setSession(session: Session): void {
-    this.session = session;
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  public setUserData(userData: {
+    token: string;
+    name: string;
+    email: string;
+  }): void {
+    this.session = {
+      isAuthenticated: true,
+      user: userData,
+      activeButtons: this.session.activeButtons || [],
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(this.session));
   }
 
-  public clearSession(): void {
+  public logout(): void {
     this.session = {
       isAuthenticated: false,
       user: null,
+      activeButtons: this.session.activeButtons,
     };
     localStorage.removeItem(SESSION_KEY);
+  }
+
+  public getActiveButtons(): string[] {
+    return this.session.activeButtons || [];
+  }
+
+  public setActiveButtons(buttons: string[]): void {
+    this.session = {
+      ...this.session,
+      activeButtons: buttons,
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(this.session));
   }
 }
 

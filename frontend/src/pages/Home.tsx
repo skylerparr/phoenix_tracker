@@ -1,14 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Container,
-  Typography,
-  Paper,
-  Grid,
-  Button,
-  Tooltip,
-  IconButton,
-} from "@mui/material";
+import { Box, Tooltip, IconButton } from "@mui/material";
 import RequireAuth from "../components/RequireAuth";
 import HomeIcon from "@mui/icons-material/Home";
 import AssignmentIcon from "@mui/icons-material/Assignment";
@@ -17,6 +8,7 @@ import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import CreateTask from "../components/CreateTask";
+import { sessionStorage } from "../store/Session";
 
 const toolbarButtons = [
   {
@@ -58,12 +50,11 @@ const toolbarButtons = [
 ];
 const Home = () => {
   const [activeButtons, setActiveButtons] = useState<string[]>(() => {
-    const saved = localStorage.getItem("activeButtons");
-    return saved ? JSON.parse(saved) : [];
+    return sessionStorage.getActiveButtons();
   });
 
   useEffect(() => {
-    localStorage.setItem("activeButtons", JSON.stringify(activeButtons));
+    sessionStorage.setActiveButtons(activeButtons);
   }, [activeButtons]);
 
   const handleButtonClick = (buttonId: string) => {

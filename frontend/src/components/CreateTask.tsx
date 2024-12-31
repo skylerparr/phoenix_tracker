@@ -170,7 +170,7 @@ const CreateTask: React.FC = () => {
         />
       </Box>
       <Box sx={{ display: "flex", gap: 0, alignItems: "center" }}>
-        {[0, 1, 2, 3].map((points) => (
+        {[0, 1, 2, 3, 5, 8].map((points) => (
           <IconButton
             key={points}
             onClick={() =>

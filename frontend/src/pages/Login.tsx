@@ -12,43 +12,25 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      if (createAccount) {
-        await handleCreateAccount();
-        return;
-      }
+      const response = await (createAccount
+        ? authService.register({ email, name: fullName })
+        : authService.login({ email }));
 
-      const response = await authService.login({ email });
-      sessionStorage.setSession({
-        isAuthenticated: true,
-        user: {
-          email: email,
-          token: response.token,
-          name: fullName,
-        },
+      sessionStorage.setUserData({
+        email: email,
+        token: response.token,
+        name: fullName,
       });
+
       window.location.href = "/Projects";
     } catch (error) {
-      setCreateAccount(true);
+      if (!createAccount) {
+        setCreateAccount(true);
+      } else {
+        console.error("Error creating account:", error);
+      }
     }
   };
-
-  const handleCreateAccount = async () => {
-    try {
-      const response = await authService.register({ email, name: fullName });
-      sessionStorage.setSession({
-        isAuthenticated: true,
-        user: {
-          email: email,
-          name: fullName,
-          token: response.token,
-        },
-      });
-      window.location.href = "/Home";
-    } catch (error) {
-      console.error("Error creating account:", error);
-    }
-  };
-
   return (
     <Container maxWidth="sm">
       <Box

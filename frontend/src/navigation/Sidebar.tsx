@@ -5,6 +5,7 @@ import Home from "../pages/Home";
 import Login from "../pages/Login";
 import Projects from "../pages/Projects";
 import RouteTest from "../pages/RouteTest";
+import Logout from "../pages/Logout";
 
 export default function Sidebar() {
   return (
@@ -16,8 +17,9 @@ export default function Sidebar() {
         >
           <Routes>
             <Route path="/" element={<Login />} />
-            <Route path="/Login" element={<Login />} />
-            <Route path="/Projects" element={<Projects />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/logout" element={<Logout />} />
+            <Route path="/projects" element={<Projects />} />
             <Route path="/-----" element={<RouteTest />} />
             <Route path="/home" element={<Home />} />
           </Routes>

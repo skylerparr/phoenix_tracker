@@ -30,6 +30,31 @@ impl ProjectCrud {
         project::Entity::find().all(&self.db).await
     }
 
+    pub async fn find_all_projects_by_user_id(
+        &self,
+        user_id: i32,
+    ) -> Result<Vec<project::Model>, DbErr> {
+        debug!("Finding projects for user with ID: {}", user_id);
+        let query = project::Entity::find()
+            .join(JoinType::InnerJoin, project_user::Relation::Project.def())
+            .filter(project_user::Column::UserId.eq(user_id));
+
+        debug!(
+            "Generated query: {:?}",
+            query.build(self.db.get_database_backend())
+        );
+        match query.all(&self.db).await {
+            Ok(data) => {
+                debug!("Query result data: {:?}", data);
+                Ok(data)
+            }
+            Err(e) => {
+                debug!("Query error: {:?}", e);
+                Err(e)
+            }
+        }
+    }
+
     pub async fn update(
         &self,
         id: i32,

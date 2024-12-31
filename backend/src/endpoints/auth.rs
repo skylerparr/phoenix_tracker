@@ -32,7 +32,7 @@ pub fn auth_routes() -> Router<AppState> {
 }
 #[axum::debug_handler]
 async fn login(
-    State(app_state): State<AppState>,
+    State(mut app_state): State<AppState>,
     Json(payload): Json<LoginRequest>,
 ) -> impl IntoResponse {
     let user_crud = UserCrud::new(app_state.clone());
@@ -50,17 +50,20 @@ async fn login(
         .into();
 
     match token_crud.create(user.id, expires_at).await {
-        Ok(token) => Json(json!({
-            "token": token.token,
-            "expires_at": token.expires_at
-        }))
-        .into_response(),
+        Ok(token) => {
+            app_state.user = Some(user);
+            Json(json!({
+                "token": token.token,
+                "expires_at": token.expires_at
+            }))
+            .into_response()
+        }
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create token").into_response(),
     }
 }
 #[axum::debug_handler]
 async fn register(
-    State(app_state): State<AppState>,
+    State(mut app_state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
 ) -> impl IntoResponse {
     let user_crud = UserCrud::new(app_state.clone());
@@ -79,23 +82,29 @@ async fn register(
         .into();
 
     match token_crud.create(user.id, expires_at).await {
-        Ok(token) => Json(json!({
-            "token": token.token,
-            "expires_at": token.expires_at
-        }))
-        .into_response(),
+        Ok(token) => {
+            app_state.user = Some(user);
+            Json(json!({
+                "token": token.token,
+                "expires_at": token.expires_at
+            }))
+            .into_response()
+        }
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create token").into_response(),
     }
 }
 
 #[axum::debug_handler]
 async fn logout(
-    State(app_state): State<AppState>,
+    State(mut app_state): State<AppState>,
     Json(payload): Json<LogoutRequest>,
 ) -> impl IntoResponse {
     let token_crud = TokenCrud::new(app_state.db.clone());
     match token_crud.delete_by_user_id(payload.user_id).await {
-        Ok(_) => StatusCode::OK.into_response(),
+        Ok(_) => {
+            app_state.user = None;
+            StatusCode::OK.into_response()
+        }
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }

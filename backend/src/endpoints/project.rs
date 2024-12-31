@@ -30,6 +30,7 @@ pub fn project_routes() -> Router<AppState> {
         .route("/projects/:id", get(get_project))
         .route("/projects/:id", put(update_project))
         .route("/projects/:id", delete(delete_project))
+        .route("/projects/user/me", get(get_all_projects_by_user_id))
 }
 
 #[axum::debug_handler]
@@ -68,6 +69,23 @@ async fn get_project(State(app_state): State<AppState>, Path(id): Path<i32>) -> 
             println!("Error getting project {}: {:?}", id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
+    }
+}
+
+#[axum::debug_handler]
+async fn get_all_projects_by_user_id(State(app_state): State<AppState>) -> impl IntoResponse {
+    match app_state.user {
+        Some(user) => {
+            let project_crud = ProjectCrud::new(app_state.db);
+            match project_crud.find_all_projects_by_user_id(user.id).await {
+                Ok(projects) => Ok(Json(projects)),
+                Err(e) => {
+                    println!("Error getting projects: {:?}", e);
+                    Err(StatusCode::INTERNAL_SERVER_ERROR)
+                }
+            }
+        }
+        None => Err(StatusCode::UNAUTHORIZED),
     }
 }
 

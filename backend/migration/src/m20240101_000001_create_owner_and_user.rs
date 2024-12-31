@@ -112,6 +112,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Tag::Name).string().not_null())
                     .col(ColumnDef::new(Tag::Color).unsigned().not_null())
                     .col(ColumnDef::new(Tag::IsEpic).boolean().not_null())
+                    .col(ColumnDef::new(Tag::ProjectId).integer().not_null())
                     .col(
                         ColumnDef::new(Tag::CreatedAt)
                             .timestamp()
@@ -123,6 +124,12 @@ impl MigrationTrait for Migration {
                             .timestamp()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-tag-project")
+                            .from(Tag::Table, Tag::ProjectId)
+                            .to(Project::Table, Project::Id),
                     )
                     .to_owned(),
             )
@@ -146,6 +153,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Issue::WorkType).integer().not_null())
                     .col(ColumnDef::new(Issue::ProjectId).integer().not_null())
                     .col(ColumnDef::new(Issue::CreatedById).integer().not_null())
+                    .col(ColumnDef::new(Issue::TargetReleaseAt).timestamp())
                     .col(
                         ColumnDef::new(Issue::CreatedAt)
                             .timestamp()
@@ -291,6 +299,41 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
+                    .table(Tasks::Table)
+                    .col(
+                        ColumnDef::new(Tasks::Id)
+                            .integer()
+                            .primary_key()
+                            .auto_increment(),
+                    )
+                    .col(ColumnDef::new(Tasks::Title).string().not_null())
+                    .col(ColumnDef::new(Tasks::Completed).boolean().not_null())
+                    .col(ColumnDef::new(Tasks::Percent).float().not_null())
+                    .col(ColumnDef::new(Tasks::IssueId).integer().not_null())
+                    .col(
+                        ColumnDef::new(Tasks::CreatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(
+                        ColumnDef::new(Tasks::UpdatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-tasks-issue")
+                            .from(Tasks::Table, Tasks::IssueId)
+                            .to(Issue::Table, Issue::Id),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_table(
+                Table::create()
                     .table(Token::Table)
                     .col(
                         ColumnDef::new(Token::Id)
@@ -366,6 +409,152 @@ impl MigrationTrait for Migration {
             )
             .await?;
         manager
+            .create_table(
+                Table::create()
+                    .table(History::Table)
+                    .col(
+                        ColumnDef::new(History::Id)
+                            .integer()
+                            .primary_key()
+                            .auto_increment(),
+                    )
+                    .col(ColumnDef::new(History::UserId).integer().not_null())
+                    .col(ColumnDef::new(History::IssueId).integer())
+                    .col(ColumnDef::new(History::CommentId).integer())
+                    .col(ColumnDef::new(History::TaskId).integer())
+                    .col(ColumnDef::new(History::Action).string().not_null())
+                    .col(
+                        ColumnDef::new(History::CreatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(
+                        ColumnDef::new(History::UpdatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-history-user")
+                            .from(History::Table, History::UserId)
+                            .to(User::Table, User::Id),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-history-issue")
+                            .from(History::Table, History::IssueId)
+                            .to(Issue::Table, Issue::Id),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-history-comment")
+                            .from(History::Table, History::CommentId)
+                            .to(Comment::Table, Comment::Id),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-history-task")
+                            .from(History::Table, History::TaskId)
+                            .to(Tasks::Table, Tasks::Id),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_table(
+                Table::create()
+                    .table(Notification::Table)
+                    .col(
+                        ColumnDef::new(Notification::Id)
+                            .integer()
+                            .primary_key()
+                            .auto_increment(),
+                    )
+                    .col(ColumnDef::new(Notification::UserId).integer().not_null())
+                    .col(ColumnDef::new(Notification::IssueId).integer())
+                    .col(ColumnDef::new(Notification::CommentId).integer())
+                    .col(ColumnDef::new(Notification::Message).string().not_null())
+                    .col(
+                        ColumnDef::new(Notification::Read)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
+                    .col(
+                        ColumnDef::new(Notification::CreatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(
+                        ColumnDef::new(Notification::UpdatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-notification-user")
+                            .from(Notification::Table, Notification::UserId)
+                            .to(User::Table, User::Id),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-notification-issue")
+                            .from(Notification::Table, Notification::IssueId)
+                            .to(Issue::Table, Issue::Id),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-notification-comment")
+                            .from(Notification::Table, Notification::CommentId)
+                            .to(Comment::Table, Comment::Id),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_table(
+                Table::create()
+                    .table(Blocker::Table)
+                    .col(ColumnDef::new(Blocker::BlockerId).integer().not_null())
+                    .col(ColumnDef::new(Blocker::BlockedId).integer().not_null())
+                    .col(
+                        ColumnDef::new(Blocker::CreatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(
+                        ColumnDef::new(Blocker::UpdatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .primary_key(
+                        Index::create()
+                            .col(Blocker::BlockerId)
+                            .col(Blocker::BlockedId),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-blocker-issue")
+                            .from(Blocker::Table, Blocker::BlockerId)
+                            .to(Issue::Table, Issue::Id),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-blocked-issue")
+                            .from(Blocker::Table, Blocker::BlockedId)
+                            .to(Issue::Table, Issue::Id),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+        manager
             .create_index(
                 Index::create()
                     .name("idx-enail-unique")
@@ -407,6 +596,9 @@ impl MigrationTrait for Migration {
             .drop_table(Table::drop().table(Comment::Table).to_owned())
             .await?;
         manager
+            .drop_table(Table::drop().table(Tasks::Table).to_owned())
+            .await?;
+        manager
             .drop_table(Table::drop().table(IssueAssignee::Table).to_owned())
             .await?;
         manager
@@ -430,7 +622,15 @@ impl MigrationTrait for Migration {
         manager
             .drop_table(Table::drop().table(Token::Table).to_owned())
             .await?;
-
+        manager
+            .drop_table(Table::drop().table(History::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(Notification::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(Blocker::Table).to_owned())
+            .await?;
         Ok(())
     }
 }
@@ -462,7 +662,6 @@ enum Project {
     CreatedAt,
     UpdatedAt,
 }
-
 #[derive(DeriveIden)]
 enum Tag {
     Table,
@@ -470,10 +669,10 @@ enum Tag {
     Name,
     Color,
     IsEpic,
+    ProjectId,
     CreatedAt,
     UpdatedAt,
 }
-
 #[derive(DeriveIden)]
 enum Issue {
     Table,
@@ -486,6 +685,7 @@ enum Issue {
     Status,
     ProjectId,
     CreatedById,
+    TargetReleaseAt,
     CreatedAt,
     UpdatedAt,
 }
@@ -518,7 +718,17 @@ enum Comment {
     CreatedAt,
     UpdatedAt,
 }
-
+#[derive(DeriveIden)]
+enum Tasks {
+    Table,
+    Id,
+    Title,
+    Percent,
+    Completed,
+    IssueId,
+    CreatedAt,
+    UpdatedAt,
+}
 #[derive(DeriveIden)]
 enum Token {
     Table,
@@ -534,6 +744,38 @@ enum ProjectUser {
     Table,
     ProjectId,
     UserId,
+    CreatedAt,
+    UpdatedAt,
+}
+#[derive(DeriveIden)]
+enum History {
+    Table,
+    Id,
+    UserId,
+    IssueId,
+    CommentId,
+    TaskId,
+    Action,
+    CreatedAt,
+    UpdatedAt,
+}
+#[derive(DeriveIden)]
+enum Notification {
+    Table,
+    Id,
+    UserId,
+    IssueId,
+    CommentId,
+    Message,
+    Read,
+    CreatedAt,
+    UpdatedAt,
+}
+#[derive(DeriveIden)]
+enum Blocker {
+    Table,
+    BlockerId,
+    BlockedId,
     CreatedAt,
     UpdatedAt,
 }
