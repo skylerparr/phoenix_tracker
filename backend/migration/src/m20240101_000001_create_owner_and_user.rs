@@ -150,10 +150,17 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Issue::Priority).integer().not_null())
                     .col(ColumnDef::new(Issue::Points).integer().not_null())
                     .col(ColumnDef::new(Issue::Status).string().not_null())
+                    .col(
+                        ColumnDef::new(Issue::IsIcebox)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
                     .col(ColumnDef::new(Issue::WorkType).integer().not_null())
                     .col(ColumnDef::new(Issue::ProjectId).integer().not_null())
                     .col(ColumnDef::new(Issue::CreatedById).integer().not_null())
                     .col(ColumnDef::new(Issue::TargetReleaseAt).timestamp())
+                    .col(ColumnDef::new(Issue::LockVersion).integer().not_null().default(0))
                     .col(
                         ColumnDef::new(Issue::CreatedAt)
                             .timestamp()
@@ -584,6 +591,45 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx-issue-project-icebox")
+                    .col(Issue::ProjectId)
+                    .col(Issue::IsIcebox)
+                    .table(Issue::Table)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx-issue-project")
+                    .col(Issue::ProjectId)
+                    .table(Issue::Table)
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx-tag-project")
+                    .col(Tag::ProjectId)
+                    .table(Tag::Table)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx-project-user-project")
+                    .col(ProjectUser::ProjectId)
+                    .table(ProjectUser::Table)
+                    .to_owned(),
+            )
+            .await?;
+
         Ok(())
     }
 
@@ -683,11 +729,13 @@ enum Issue {
     Points,
     Priority,
     Status,
+    IsIcebox,
     ProjectId,
     CreatedById,
     TargetReleaseAt,
     CreatedAt,
     UpdatedAt,
+    LockVersion,
 }
 
 #[derive(DeriveIden)]

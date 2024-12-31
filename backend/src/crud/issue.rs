@@ -56,11 +56,14 @@ impl IssueCrud {
         work_type: Option<i32>,
         project_id: Option<i32>,
     ) -> Result<issue::Model, DbErr> {
+        let txn = self.db.begin().await?;
+
         let issue = issue::Entity::find_by_id(id)
-            .one(&self.db)
+            .one(&txn)
             .await?
             .ok_or(DbErr::Custom("Issue not found".to_owned()))?;
 
+        let current_version = issue.lock_version;
         let mut issue: issue::ActiveModel = issue.into();
 
         if let Some(title) = title {
@@ -91,7 +94,38 @@ impl IssueCrud {
             issue.project_id = Set(project_id);
         }
 
-        issue.update(&self.db).await
+        issue.lock_version = Set(current_version + 1);
+
+        let result = issue.update(&txn).await?;
+        if result.lock_version != current_version + 1 {
+            txn.rollback().await?;
+            return Err(DbErr::Custom("Optimistic lock error".to_owned()));
+        }
+
+        txn.commit().await?;
+        Ok(result)
+    }
+    pub async fn set_icebox(&self, issue_id: i32, icebox: bool) -> Result<issue::Model, DbErr> {
+        let txn = self.db.begin().await?;
+
+        let issue = issue::Entity::find_by_id(issue_id)
+            .one(&txn)
+            .await?
+            .ok_or(DbErr::Custom("Issue not found".to_owned()))?;
+
+        let current_version = issue.lock_version;
+        let mut issue: issue::ActiveModel = issue.into();
+        issue.is_icebox = Set(icebox);
+        issue.lock_version = Set(current_version + 1);
+
+        let result = issue.update(&txn).await?;
+        if result.lock_version != current_version + 1 {
+            txn.rollback().await?;
+            return Err(DbErr::Custom("Optimistic lock error".to_owned()));
+        }
+
+        txn.commit().await?;
+        Ok(result)
     }
     pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {
         issue::Entity::delete_by_id(id).exec(&self.db).await
