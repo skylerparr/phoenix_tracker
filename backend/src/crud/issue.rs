@@ -16,17 +16,17 @@ impl IssueCrud {
         title: String,
         description: Option<String>,
         priority: i32,
-        points: i32,
-        status: String,
+        points: Option<i32>,
+        status: i32,
         work_type: i32,
         project_id: i32,
         created_by_id: i32,
     ) -> Result<issue::Model, DbErr> {
         let issue = issue::ActiveModel {
             title: Set(title),
-            description: Set(description.unwrap_or_default()),
-            priority: Set(priority.to_string()),
-            points: Set(points),
+            description: Set(Some(description.unwrap_or_default())),
+            priority: Set(priority),
+            points: Set(Some(points.unwrap_or_default())),
             status: Set(status),
             work_type: Set(work_type),
             project_id: Set(project_id),
@@ -52,7 +52,7 @@ impl IssueCrud {
         description: Option<Option<String>>,
         priority: Option<i32>,
         points: Option<i32>,
-        status: Option<String>,
+        status: Option<i32>,
         work_type: Option<i32>,
         project_id: Option<i32>,
     ) -> Result<issue::Model, DbErr> {
@@ -71,15 +71,15 @@ impl IssueCrud {
         }
 
         if let Some(description) = description {
-            issue.description = Set(description.unwrap_or_default());
+            issue.description = Set(Some(description.unwrap_or_default()));
         }
 
         if let Some(priority) = priority {
-            issue.priority = Set(priority.to_string());
+            issue.priority = Set(priority);
         }
 
         if let Some(points) = points {
-            issue.points = Set(points);
+            issue.points = Set(Some(points));
         }
 
         if let Some(status) = status {

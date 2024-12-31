@@ -3,6 +3,7 @@ import { Project } from "../models/Project";
 interface Session {
   isAuthenticated: boolean;
   user: {
+    id: string;
     token: string;
     name: string;
     email: string;

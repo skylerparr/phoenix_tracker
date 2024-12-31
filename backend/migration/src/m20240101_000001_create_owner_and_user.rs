@@ -148,8 +148,8 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Issue::Title).string().not_null())
                     .col(ColumnDef::new(Issue::Description).string())
                     .col(ColumnDef::new(Issue::Priority).integer().not_null())
-                    .col(ColumnDef::new(Issue::Points).integer().not_null())
-                    .col(ColumnDef::new(Issue::Status).string().not_null())
+                    .col(ColumnDef::new(Issue::Points).integer())
+                    .col(ColumnDef::new(Issue::Status).integer().not_null())
                     .col(
                         ColumnDef::new(Issue::IsIcebox)
                             .boolean()

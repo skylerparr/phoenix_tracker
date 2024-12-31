@@ -5,6 +5,7 @@ export class Issue {
   priority: string;
   points: number;
   status: string;
+  isIcebox: boolean;
   workType: number;
   projectId: number;
   createdById: number;
@@ -18,6 +19,7 @@ export class Issue {
     this.priority = data.priority;
     this.points = data.points;
     this.status = data.status;
+    this.isIcebox = data.is_icebox;
     this.workType = data.work_type;
     this.projectId = data.project_id;
     this.createdById = data.created_by_id;

@@ -8,28 +8,26 @@ use axum::{
     Json, Router,
 };
 use serde::Deserialize;
-
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateIssueRequest {
     title: String,
     description: String,
-    priority: String,
-    points: i32,
-    status: String,
+    priority: i32,
+    points: Option<i32>,
+    status: i32,
     work_type: i32,
     project_id: i32,
     user_id: i32,
 }
-
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateIssueRequest {
     title: Option<String>,
     description: Option<String>,
-    priority: Option<String>,
+    priority: Option<i32>,
     points: Option<i32>,
-    status: Option<String>,
+    status: Option<i32>,
     work_type: Option<i32>,
     project_id: Option<i32>,
 }
@@ -53,7 +51,7 @@ pub async fn create_issue(
         .create(
             payload.title,
             Some(payload.description),
-            payload.priority.parse::<i32>().unwrap(),
+            payload.priority,
             payload.points,
             payload.status,
             payload.work_type,
@@ -106,7 +104,7 @@ async fn update_issue(
             id,
             payload.title,
             Some(payload.description),
-            payload.priority.map(|p| p.parse::<i32>().unwrap_or(0)),
+            payload.priority,
             payload.points,
             payload.status,
             payload.work_type,

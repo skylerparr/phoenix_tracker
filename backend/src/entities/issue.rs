@@ -7,17 +7,18 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub title: String,
-    pub description: String,
-    pub priority: String,
-    pub points: i32,
-    pub status: String,
+    pub description: Option<String>,
+    pub priority: i32,
+    pub points: Option<i32>,
+    pub status: i32,
     pub is_icebox: bool,
     pub work_type: i32,
     pub project_id: i32,
     pub created_by_id: i32,
+    pub target_release_at: Option<DateTimeWithTimeZone>,
+    pub lock_version: i32,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
-    pub lock_version: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

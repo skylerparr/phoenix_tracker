@@ -7,7 +7,7 @@ import ArchiveIcon from "@mui/icons-material/Archive";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
-import CreateTask from "../components/CreateTask";
+import CreateIssue from "../components/CreateIssue";
 import { sessionStorage } from "../store/Session";
 
 const toolbarButtons = [
@@ -15,7 +15,7 @@ const toolbarButtons = [
     tooltip: "Create Task",
     icon: <AddIcon />,
     id: "create_task",
-    component: CreateTask,
+    component: CreateIssue,
   },
   {
     tooltip: "My Work",

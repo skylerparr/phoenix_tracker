@@ -15,8 +15,10 @@ import {
   Rocket,
   ContentCopy,
 } from "@mui/icons-material";
+import { issueService } from "../services/IssueService";
+import { sessionStorage } from "../store/Session";
 
-const CreateTask: React.FC = () => {
+const CreateIssue: React.FC = () => {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -30,6 +32,8 @@ const CreateTask: React.FC = () => {
     "Alice",
   ]);
   const [selectedPoints, setSelectedPoints] = useState<number | null>(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
 
   const handleTypeSelect = (type: string) => {
     setSelectedType(type === selectedType ? null : type);
@@ -48,6 +52,37 @@ const CreateTask: React.FC = () => {
     "ux",
   ];
 
+  const handleCreateIssue = async () => {
+    const currentProject = sessionStorage.getProject();
+    const currentUser = sessionStorage.getSession().user;
+
+    if (!currentProject || !currentUser) return;
+
+    try {
+      const newIssue = await issueService.createIssue({
+        title,
+        description,
+        priority: 0,
+        status: "open",
+        projectId: currentProject.id,
+        userId: currentUser.id,
+      });
+
+      // Clear form after successful creation
+      setTitle("");
+      setDescription("");
+      setSelectedType(null);
+      setSelectedTags([]);
+      setSelectedAssignees([]);
+      setSelectedPoints(null);
+
+      // You can add success notification here
+    } catch (error) {
+      console.error("Failed to create issue:", error);
+      // You can add error notification here
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -59,7 +94,13 @@ const CreateTask: React.FC = () => {
         boxShadow: 3,
       }}
     >
-      <TextField fullWidth placeholder="Title" variant="outlined" />
+      <TextField
+        fullWidth
+        placeholder="Title"
+        variant="outlined"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+      />
       <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
         <Tooltip title="Feature">
           <IconButton
@@ -125,49 +166,6 @@ const CreateTask: React.FC = () => {
             <Rocket />
           </IconButton>
         </Tooltip>
-        <Box sx={{ display: "flex", gap: 0, flex: 1 }}>
-          <TextField
-            disabled
-            fullWidth
-            variant="outlined"
-            size="small"
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderTopRightRadius: 0,
-                borderBottomRightRadius: 0,
-              },
-            }}
-          />
-          <Tooltip title="Copy link to this issue">
-            <IconButton
-              sx={{
-                borderRadius: 0,
-                height: "40px",
-                width: "40px",
-                backgroundColor: "grey.800",
-                borderTopRightRadius: 4,
-                borderBottomRightRadius: 4,
-                "&:hover": {
-                  backgroundColor: "grey.700",
-                },
-              }}
-            >
-              <ContentCopy fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      </Box>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <Box component="label" sx={{ color: "text.primary" }}>
-          Created by
-        </Box>
-        <TextField
-          disabled
-          value="default"
-          size="small"
-          variant="outlined"
-          sx={{ width: "200px" }}
-        />
       </Box>
       <Box sx={{ display: "flex", gap: 0, alignItems: "center" }}>
         {[0, 1, 2, 3, 5, 8].map((points) => (
@@ -297,10 +295,14 @@ const CreateTask: React.FC = () => {
         variant="outlined"
         multiline
         rows={4}
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
       />
       <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
         <Button
           variant="contained"
+          onClick={handleCreateIssue}
+          disabled={!title.trim()}
           sx={{
             bgcolor: "primary.main",
             width: "140px",
@@ -309,11 +311,11 @@ const CreateTask: React.FC = () => {
             },
           }}
         >
-          Create Task
+          Create Issue
         </Button>
       </Box>
     </Box>
   );
 };
 
-export default CreateTask;
+export default CreateIssue;
