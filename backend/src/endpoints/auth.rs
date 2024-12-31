@@ -32,10 +32,10 @@ pub fn auth_routes() -> Router<AppState> {
 }
 #[axum::debug_handler]
 async fn login(
-    State(mut app_state): State<AppState>,
+    State(app_state): State<AppState>,
     Json(payload): Json<LoginRequest>,
 ) -> impl IntoResponse {
-    let user_crud = UserCrud::new(app_state.clone());
+    let user_crud = UserCrud::new(app_state.db.clone());
     let token_crud = TokenCrud::new(app_state.db.clone());
 
     let user = match user_crud.find_by_email(payload.email).await {
@@ -50,23 +50,20 @@ async fn login(
         .into();
 
     match token_crud.create(user.id, expires_at).await {
-        Ok(token) => {
-            app_state.user = Some(user);
-            Json(json!({
-                "token": token.token,
-                "expires_at": token.expires_at
-            }))
-            .into_response()
-        }
+        Ok(token) => Json(json!({
+            "token": token.token,
+            "expires_at": token.expires_at
+        }))
+        .into_response(),
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create token").into_response(),
     }
 }
 #[axum::debug_handler]
 async fn register(
-    State(mut app_state): State<AppState>,
+    State(app_state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
 ) -> impl IntoResponse {
-    let user_crud = UserCrud::new(app_state.clone());
+    let user_crud = UserCrud::new(app_state.db.clone());
     let token_crud = TokenCrud::new(app_state.db.clone());
 
     let user = match user_crud.create(payload.name, payload.email).await {
@@ -82,14 +79,11 @@ async fn register(
         .into();
 
     match token_crud.create(user.id, expires_at).await {
-        Ok(token) => {
-            app_state.user = Some(user);
-            Json(json!({
-                "token": token.token,
-                "expires_at": token.expires_at
-            }))
-            .into_response()
-        }
+        Ok(token) => Json(json!({
+            "token": token.token,
+            "expires_at": token.expires_at
+        }))
+        .into_response(),
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create token").into_response(),
     }
 }

@@ -4,14 +4,6 @@ import { sessionStorage } from "../store/Session";
 
 interface CreateProjectRequest {
   name: string;
-  description: string;
-  ownerId: number;
-}
-
-interface UpdateProjectRequest {
-  name?: string;
-  description?: string;
-  ownerId?: number;
 }
 
 export class ProjectService {
@@ -57,11 +49,6 @@ export class ProjectService {
     return this.handleResponse<Project>(response, "Failed to create project");
   }
 
-  async getAllProjects(): Promise<Project[]> {
-    const response = await this.fetchWithAuth("");
-    return this.handleResponse<Project[]>(response, "Failed to fetch projects");
-  }
-
   async getProject(id: number): Promise<Project> {
     const response = await this.fetchWithAuth(`/${id}`);
     return this.handleResponse<Project>(response, "Failed to fetch project");
@@ -73,17 +60,6 @@ export class ProjectService {
       response,
       "Failed to fetch user projects",
     );
-  }
-
-  async updateProject(
-    id: number,
-    request: UpdateProjectRequest,
-  ): Promise<Project> {
-    const response = await this.fetchWithAuth(`/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(request),
-    });
-    return this.handleResponse<Project>(response, "Failed to update project");
   }
 
   async deleteProject(id: number): Promise<void> {

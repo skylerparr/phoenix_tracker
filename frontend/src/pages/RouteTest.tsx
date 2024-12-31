@@ -275,34 +275,12 @@ const RouteTest = () => {
               onClick={() =>
                 projectService.createProject({
                   name: projectForm.name,
-                  description: projectForm.description,
-                  ownerId: parseInt(projectForm.ownerId),
                 })
               }
               variant="contained"
               sx={{ m: 1 }}
             >
               Create Project
-            </Button>
-            <Button
-              onClick={() => projectService.getAllProjects()}
-              variant="contained"
-              sx={{ m: 1 }}
-            >
-              Get All Projects
-            </Button>
-            <Button
-              onClick={() =>
-                projectService.updateProject(parseInt(projectForm.projectId), {
-                  name: projectForm.name,
-                  description: projectForm.description,
-                  ownerId: parseInt(projectForm.ownerId),
-                })
-              }
-              variant="contained"
-              sx={{ m: 1 }}
-            >
-              Update Project
             </Button>
             <Button
               onClick={() =>

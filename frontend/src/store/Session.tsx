@@ -1,3 +1,5 @@
+import { Project } from "../models/Project";
+
 interface Session {
   isAuthenticated: boolean;
   user: {
@@ -6,6 +8,7 @@ interface Session {
     email: string;
   } | null;
   activeButtons: string[];
+  project: Project | null;
 }
 
 const SESSION_KEY = "userSession";
@@ -22,6 +25,7 @@ class SessionStorage {
           isAuthenticated: false,
           user: null,
           activeButtons: [],
+          project: null,
         };
   }
 
@@ -45,6 +49,7 @@ class SessionStorage {
       isAuthenticated: true,
       user: userData,
       activeButtons: this.session.activeButtons || [],
+      project: this.session.project,
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(this.session));
   }
@@ -54,6 +59,7 @@ class SessionStorage {
       isAuthenticated: false,
       user: null,
       activeButtons: this.session.activeButtons,
+      project: null,
     };
     localStorage.removeItem(SESSION_KEY);
   }
@@ -66,6 +72,18 @@ class SessionStorage {
     this.session = {
       ...this.session,
       activeButtons: buttons,
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(this.session));
+  }
+
+  public getProject(): Project | null {
+    return this.session.project;
+  }
+
+  public setProject(project: Project | null): void {
+    this.session = {
+      ...this.session,
+      project: project,
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(this.session));
   }

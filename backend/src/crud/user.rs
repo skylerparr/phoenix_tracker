@@ -1,16 +1,15 @@
-use crate::crud::event_broadcaster::EventBroadcaster;
+// use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::entities::user;
-use crate::AppState;
 use sea_orm::*;
 
 #[derive(Clone)]
 pub struct UserCrud {
-    state: AppState,
+    db: DatabaseConnection,
 }
 
 impl UserCrud {
-    pub fn new(state: AppState) -> Self {
-        Self { state }
+    pub fn new(db: DatabaseConnection) -> Self {
+        Self { db }
     }
 
     pub async fn create(&self, name: String, email: String) -> Result<user::Model, DbErr> {
@@ -20,20 +19,20 @@ impl UserCrud {
             ..Default::default()
         };
 
-        user.insert(&self.state.db).await
+        user.insert(&self.db).await
     }
     pub async fn find_by_id(&self, id: i32) -> Result<Option<user::Model>, DbErr> {
-        user::Entity::find_by_id(id).one(&self.state.db).await
+        user::Entity::find_by_id(id).one(&self.db).await
     }
 
     pub async fn find_all(&self) -> Result<Vec<user::Model>, DbErr> {
-        user::Entity::find().all(&self.state.db).await
+        user::Entity::find().all(&self.db).await
     }
 
     pub async fn find_by_email(&self, email: String) -> Result<Option<user::Model>, DbErr> {
         user::Entity::find()
             .filter(user::Column::Email.eq(email))
-            .one(&self.state.db)
+            .one(&self.db)
             .await
     }
 
@@ -44,7 +43,7 @@ impl UserCrud {
         email: Option<String>,
     ) -> Result<user::Model, DbErr> {
         let user = user::Entity::find_by_id(id)
-            .one(&self.state.db)
+            .one(&self.db)
             .await?
             .ok_or(DbErr::Custom("User not found".to_owned()))?;
 
@@ -58,13 +57,14 @@ impl UserCrud {
             user.email = Set(email);
         }
 
-        let updated_user = user.update(&self.state.db).await?;
-        let broadcaster = EventBroadcaster::new(self.state.tx.clone());
-        broadcaster.broadcast_event(1, "user_updated", serde_json::json!({ "user_id": id }));
+        let updated_user = user.update(&self.db).await?;
+        // this is just an example, remove after I add it to any other crud
+        // let broadcaster = EventBroadcaster::new(self.state.tx.clone());
+        // broadcaster.broadcast_event(1, "user_updated", serde_json::json!({ "user_id": id }));
         Ok(updated_user)
     }
 
     pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {
-        user::Entity::delete_by_id(id).exec(&self.state.db).await
+        user::Entity::delete_by_id(id).exec(&self.db).await
     }
 }

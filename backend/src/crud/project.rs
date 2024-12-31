@@ -35,10 +35,16 @@ impl ProjectCrud {
         user_id: i32,
     ) -> Result<Vec<project::Model>, DbErr> {
         debug!("Finding projects for user with ID: {}", user_id);
-        let query = project::Entity::find()
-            .join(JoinType::InnerJoin, project_user::Relation::Project.def())
-            .filter(project_user::Column::UserId.eq(user_id));
-
+        let query = project::Entity::find().filter(
+            project::Column::Id.in_subquery(
+                project_user::Entity::find()
+                    .filter(project_user::Column::UserId.eq(user_id))
+                    .select_only()
+                    .column(project_user::Column::ProjectId)
+                    .distinct()
+                    .into_query(),
+            ),
+        );
         debug!(
             "Generated query: {:?}",
             query.build(self.db.get_database_backend())

@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
-import Projects from "../pages/Projects";
+import ProjectsPage from "../pages/ProjectsPage";
 import RouteTest from "../pages/RouteTest";
 import Logout from "../pages/Logout";
 
@@ -19,7 +19,7 @@ export default function Sidebar() {
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
             <Route path="/logout" element={<Logout />} />
-            <Route path="/projects" element={<Projects />} />
+            <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/-----" element={<RouteTest />} />
             <Route path="/home" element={<Home />} />
           </Routes>

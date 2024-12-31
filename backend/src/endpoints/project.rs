@@ -1,5 +1,11 @@
+use crate::crud::owner::OwnerCrud;
 use crate::crud::project::ProjectCrud;
+use crate::crud::project_user::ProjectUserCrud;
+use crate::entities::user;
 use crate::AppState;
+use axum::body::Body;
+use axum::http::Request;
+use axum::Extension;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -8,12 +14,12 @@ use axum::{
     Json, Router,
 };
 use serde::Deserialize;
+use tracing::debug;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateProjectRequest {
     name: String,
-    owner_id: i32,
 }
 
 #[derive(Deserialize)]
@@ -32,19 +38,38 @@ pub fn project_routes() -> Router<AppState> {
         .route("/projects/:id", delete(delete_project))
         .route("/projects/user/me", get(get_all_projects_by_user_id))
 }
-
 #[axum::debug_handler]
 async fn create_project(
-    State(app_state): State<AppState>,
+    Extension(app_state): Extension<AppState>,
     Json(payload): Json<CreateProjectRequest>,
 ) -> impl IntoResponse {
-    let project_crud = ProjectCrud::new(app_state.db);
-    match project_crud.create(payload.name, payload.owner_id).await {
-        Ok(project) => Ok(Json(project)),
-        Err(e) => {
-            println!("Error creating project: {:?}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+    let user = app_state.user.clone();
+    match user {
+        Some(user) => {
+            let owner_crud = OwnerCrud::new(app_state.db.clone());
+            let project_crud = ProjectCrud::new(app_state.db.clone());
+            let project_user_crud = ProjectUserCrud::new(app_state.clone());
+            match owner_crud.create(Some(user.id)).await {
+                Ok(owner) => match project_crud.create(payload.name, owner.id).await {
+                    Ok(project) => match project_user_crud.create(project.id, user.id).await {
+                        Ok(_) => Ok(Json(project)),
+                        Err(e) => {
+                            debug!("Error creating project user: {:?}", e);
+                            Err(StatusCode::INTERNAL_SERVER_ERROR)
+                        }
+                    },
+                    Err(e) => {
+                        debug!("Error creating project: {:?}", e);
+                        Err(StatusCode::INTERNAL_SERVER_ERROR)
+                    }
+                },
+                Err(e) => {
+                    debug!("Error creating owner: {:?}", e);
+                    Err(StatusCode::INTERNAL_SERVER_ERROR)
+                }
+            }
         }
+        None => Err(StatusCode::UNAUTHORIZED),
     }
 }
 #[axum::debug_handler]
@@ -53,7 +78,7 @@ async fn get_all_projects(State(app_state): State<AppState>) -> impl IntoRespons
     match project_crud.find_all().await {
         Ok(projects) => Ok(Json(projects)),
         Err(e) => {
-            println!("Error getting all projects: {:?}", e);
+            debug!("Error getting all projects: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -66,21 +91,24 @@ async fn get_project(State(app_state): State<AppState>, Path(id): Path<i32>) -> 
         Ok(Some(project)) => Ok(Json(project)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
         Err(e) => {
-            println!("Error getting project {}: {:?}", id, e);
+            debug!("Error getting project {}: {:?}", id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
 }
-
 #[axum::debug_handler]
-async fn get_all_projects_by_user_id(State(app_state): State<AppState>) -> impl IntoResponse {
-    match app_state.user {
+async fn get_all_projects_by_user_id(
+    State(app_state): State<AppState>,
+    request: Request<Body>,
+) -> impl IntoResponse {
+    let user = extract_user_from_request(&request);
+    match user {
         Some(user) => {
             let project_crud = ProjectCrud::new(app_state.db);
             match project_crud.find_all_projects_by_user_id(user.id).await {
                 Ok(projects) => Ok(Json(projects)),
                 Err(e) => {
-                    println!("Error getting projects: {:?}", e);
+                    debug!("Error getting projects: {:?}", e);
                     Err(StatusCode::INTERNAL_SERVER_ERROR)
                 }
             }
@@ -88,7 +116,6 @@ async fn get_all_projects_by_user_id(State(app_state): State<AppState>) -> impl 
         None => Err(StatusCode::UNAUTHORIZED),
     }
 }
-
 #[axum::debug_handler]
 async fn update_project(
     State(app_state): State<AppState>,
@@ -105,7 +132,7 @@ async fn update_project(
             if e.to_string().contains("Project not found") {
                 Err(StatusCode::NOT_FOUND)
             } else {
-                println!("Error updating project {}: {:?}", id, e);
+                debug!("Error updating project {}: {:?}", id, e);
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
@@ -118,8 +145,15 @@ async fn delete_project(State(app_state): State<AppState>, Path(id): Path<i32>) 
     match project_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {
-            println!("Error deleting project {}: {:?}", id, e);
+            debug!("Error deleting project {}: {:?}", id, e);
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }
+}
+
+fn extract_user_from_request(request: &Request<Body>) -> Option<&user::Model> {
+    request
+        .extensions()
+        .get::<AppState>()
+        .and_then(|state| state.user.as_ref())
 }
