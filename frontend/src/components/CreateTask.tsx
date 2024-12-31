@@ -28,13 +28,13 @@ const CreateTask: React.FC = () => {
     "Jane",
     "Bob",
     "Alice",
-  ]); // Example assignees
+  ]);
+  const [selectedPoints, setSelectedPoints] = useState<number | null>(null);
 
   const handleTypeSelect = (type: string) => {
     setSelectedType(type === selectedType ? null : type);
   };
 
-  // Example tags - replace with your actual data source
   const availableTags = [
     "frontend",
     "backend",
@@ -159,7 +159,7 @@ const CreateTask: React.FC = () => {
       </Box>
       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         <Box component="label" sx={{ color: "text.primary" }}>
-          Create by
+          Created by
         </Box>
         <TextField
           disabled
@@ -168,6 +168,63 @@ const CreateTask: React.FC = () => {
           variant="outlined"
           sx={{ width: "200px" }}
         />
+      </Box>
+      <Box sx={{ display: "flex", gap: 0, alignItems: "center" }}>
+        {[0, 1, 2, 3].map((points) => (
+          <IconButton
+            key={points}
+            onClick={() =>
+              setSelectedPoints(points === selectedPoints ? null : points)
+            }
+            sx={{
+              width: 36,
+              height: 36,
+              border: "1px solid #333333",
+              borderRadius: 1,
+              backgroundColor:
+                selectedPoints === points ? "#565656" : "#ababab",
+              "&:hover": {
+                backgroundColor:
+                  selectedPoints === points ? "#757575" : "#9e9e9e",
+              },
+            }}
+          >
+            {
+              <Box
+                sx={{
+                  fontSize: 14,
+                  fontWeight: "bold",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1px",
+                }}
+              >
+                {points === 0 ? (
+                  <Box
+                    sx={{
+                      width: 22,
+                      height: 4,
+                      border: "1px solid #2196f3",
+                      display: "block",
+                    }}
+                  />
+                ) : (
+                  [...Array(points)].map((_, i) => (
+                    <Box
+                      key={i}
+                      sx={{
+                        width: 22,
+                        height: 2,
+                        backgroundColor: "#2196f3",
+                        display: "block",
+                      }}
+                    />
+                  ))
+                )}
+              </Box>
+            }
+          </IconButton>
+        ))}
       </Box>
       {[
         {
