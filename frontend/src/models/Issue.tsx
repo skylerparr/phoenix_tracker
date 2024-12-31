@@ -3,7 +3,9 @@ export class Issue {
   title: string;
   description: string;
   priority: string;
+  points: number;
   status: string;
+  workType: number;
   projectId: number;
   createdById: number;
   createdAt: Date;
@@ -14,7 +16,9 @@ export class Issue {
     this.title = data.title;
     this.description = data.description;
     this.priority = data.priority;
+    this.points = data.points;
     this.status = data.status;
+    this.workType = data.work_type;
     this.projectId = data.project_id;
     this.createdById = data.created_by_id;
     this.createdAt = new Date(data.created_at);

@@ -15,7 +15,9 @@ pub struct CreateIssueRequest {
     title: String,
     description: String,
     priority: String,
+    points: i32,
     status: String,
+    work_type: i32,
     project_id: i32,
     user_id: i32,
 }
@@ -26,7 +28,9 @@ pub struct UpdateIssueRequest {
     title: Option<String>,
     description: Option<String>,
     priority: Option<String>,
+    points: Option<i32>,
     status: Option<String>,
+    work_type: Option<i32>,
     project_id: Option<i32>,
 }
 
@@ -50,7 +54,9 @@ pub async fn create_issue(
             payload.title,
             Some(payload.description),
             payload.priority.parse::<i32>().unwrap(),
+            payload.points,
             payload.status,
+            payload.work_type,
             payload.project_id,
             payload.user_id,
         )
@@ -101,7 +107,9 @@ async fn update_issue(
             payload.title,
             Some(payload.description),
             payload.priority.map(|p| p.parse::<i32>().unwrap_or(0)),
+            payload.points,
             payload.status,
+            payload.work_type,
             payload.project_id,
         )
         .await

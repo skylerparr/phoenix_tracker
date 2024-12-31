@@ -16,55 +16,67 @@ import ArchiveIcon from "@mui/icons-material/Archive";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
+import CreateTask from "../components/CreateTask";
 
 const toolbarButtons = [
   {
     tooltip: "Create Task",
     icon: <AddIcon />,
     id: "create_task",
+    component: CreateTask,
   },
   {
     tooltip: "My Work",
     icon: <HomeIcon />,
     id: "my_work",
+    component: Box,
   },
   {
     tooltip: "Backlog",
     icon: <AssignmentIcon />,
     id: "backlog",
+    component: Box,
   },
   {
     tooltip: "Ice Box",
     icon: <ArchiveIcon />,
     id: "profile",
+    component: Box,
   },
   {
     tooltip: "Finished Work",
     icon: <TaskAltIcon />,
     id: "finished_work",
+    component: Box,
   },
   {
     tooltip: "Search",
     icon: <SearchIcon />,
     id: "search",
+    component: Box,
   },
 ];
 const Home = () => {
   const [activeButtons, setActiveButtons] = useState<string[]>(() => {
-    const saved = localStorage.getItem('activeButtons');
+    const saved = localStorage.getItem("activeButtons");
     return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
-    localStorage.setItem('activeButtons', JSON.stringify(activeButtons));
+    localStorage.setItem("activeButtons", JSON.stringify(activeButtons));
   }, [activeButtons]);
 
   const handleButtonClick = (buttonId: string) => {
-    setActiveButtons((prevButtons) =>
-      prevButtons.includes(buttonId)
+    setActiveButtons((prevButtons) => {
+      const newButtons = prevButtons.includes(buttonId)
         ? prevButtons.filter((id) => id !== buttonId)
-        : [...prevButtons, buttonId],
-    );
+        : [...prevButtons, buttonId];
+      return newButtons.sort((a, b) => {
+        const aIndex = toolbarButtons.findIndex((button) => button.id === a);
+        const bIndex = toolbarButtons.findIndex((button) => button.id === b);
+        return aIndex - bIndex;
+      });
+    });
   };
 
   return (
@@ -117,7 +129,7 @@ const Home = () => {
               key={buttonId}
               sx={{
                 border: "1px solid navy",
-                backgroundColor: `rgba(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, 1)`,
+                backgroundColor: "#333333",
                 height: "100vh",
                 flexGrow: 1,
                 minWidth: "250px",
@@ -126,7 +138,13 @@ const Home = () => {
                 flexDirection: "column",
               }}
             >
-              {/* Content for ${buttonId} */}
+              {toolbarButtons.map((button) => {
+                if (button.id === buttonId) {
+                  const Component = button.component;
+                  return <Component key={button.id} />;
+                }
+                return null;
+              })}
             </Box>
           ))}
         </Box>{" "}
