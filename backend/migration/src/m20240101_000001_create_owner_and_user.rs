@@ -160,7 +160,12 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Issue::ProjectId).integer().not_null())
                     .col(ColumnDef::new(Issue::CreatedById).integer().not_null())
                     .col(ColumnDef::new(Issue::TargetReleaseAt).timestamp())
-                    .col(ColumnDef::new(Issue::LockVersion).integer().not_null().default(0))
+                    .col(
+                        ColumnDef::new(Issue::LockVersion)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
                     .col(
                         ColumnDef::new(Issue::CreatedAt)
                             .timestamp()
@@ -590,6 +595,46 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await?;
+        manager
+            .create_table(
+                Table::create()
+                    .table(UserSetting::Table)
+                    .col(
+                        ColumnDef::new(UserSetting::Id)
+                            .integer()
+                            .primary_key()
+                            .auto_increment(),
+                    )
+                    .col(ColumnDef::new(UserSetting::UserId).integer().not_null())
+                    .col(ColumnDef::new(UserSetting::ProjectId).integer())
+                    .col(ColumnDef::new(UserSetting::LockVersion).integer())
+                    .col(
+                        ColumnDef::new(UserSetting::CreatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(
+                        ColumnDef::new(UserSetting::UpdatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-user-setting-user")
+                            .from(UserSetting::Table, UserSetting::UserId)
+                            .to(User::Table, User::Id),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-user-setting-project")
+                            .from(UserSetting::Table, UserSetting::ProjectId)
+                            .to(Project::Table, Project::Id),
+                    )
+                    .to_owned(),
+            )
+            .await?;
 
         manager
             .create_index(
@@ -629,7 +674,15 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await?;
-
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx-user-setting-user")
+                    .col(UserSetting::UserId)
+                    .table(UserSetting::Table)
+                    .to_owned(),
+            )
+            .await?;
         Ok(())
     }
 
@@ -677,6 +730,7 @@ impl MigrationTrait for Migration {
         manager
             .drop_table(Table::drop().table(Blocker::Table).to_owned())
             .await?;
+
         Ok(())
     }
 }
@@ -824,6 +878,16 @@ enum Blocker {
     Table,
     BlockerId,
     BlockedId,
+    CreatedAt,
+    UpdatedAt,
+}
+#[derive(DeriveIden)]
+enum UserSetting {
+    Table,
+    Id,
+    UserId,
+    ProjectId,
+    LockVersion,
     CreatedAt,
     UpdatedAt,
 }
