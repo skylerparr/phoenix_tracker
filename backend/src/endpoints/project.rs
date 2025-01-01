@@ -1,6 +1,7 @@
 use crate::crud::owner::OwnerCrud;
 use crate::crud::project::ProjectCrud;
 use crate::crud::project_user::ProjectUserCrud;
+use crate::crud::user_setting::UserSettingCrud;
 use crate::entities::user;
 use crate::AppState;
 use axum::body::Body;
@@ -37,6 +38,7 @@ pub fn project_routes() -> Router<AppState> {
         .route("/projects/:id", put(update_project))
         .route("/projects/:id", delete(delete_project))
         .route("/projects/user/me", get(get_all_projects_by_user_id))
+        .route("/projects/:id/user", get(select_project))
 }
 #[axum::debug_handler]
 async fn create_project(
@@ -73,7 +75,7 @@ async fn create_project(
     }
 }
 #[axum::debug_handler]
-async fn get_all_projects(State(app_state): State<AppState>) -> impl IntoResponse {
+async fn get_all_projects(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
     let project_crud = ProjectCrud::new(app_state.db);
     match project_crud.find_all().await {
         Ok(projects) => Ok(Json(projects)),
@@ -85,7 +87,10 @@ async fn get_all_projects(State(app_state): State<AppState>) -> impl IntoRespons
 }
 
 #[axum::debug_handler]
-async fn get_project(State(app_state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
+async fn get_project(
+    Extension(app_state): Extension<AppState>,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
     let project_crud = ProjectCrud::new(app_state.db);
     match project_crud.find_by_id(id).await {
         Ok(Some(project)) => Ok(Json(project)),
@@ -98,10 +103,9 @@ async fn get_project(State(app_state): State<AppState>, Path(id): Path<i32>) -> 
 }
 #[axum::debug_handler]
 async fn get_all_projects_by_user_id(
-    State(app_state): State<AppState>,
-    request: Request<Body>,
+    Extension(app_state): Extension<AppState>,
 ) -> impl IntoResponse {
-    let user = extract_user_from_request(&request);
+    let user = app_state.user.clone();
     match user {
         Some(user) => {
             let project_crud = ProjectCrud::new(app_state.db);
@@ -118,7 +122,7 @@ async fn get_all_projects_by_user_id(
 }
 #[axum::debug_handler]
 async fn update_project(
-    State(app_state): State<AppState>,
+    Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
     Json(payload): Json<UpdateProjectRequest>,
 ) -> impl IntoResponse {
@@ -140,7 +144,10 @@ async fn update_project(
 }
 
 #[axum::debug_handler]
-async fn delete_project(State(app_state): State<AppState>, Path(id): Path<i32>) -> StatusCode {
+async fn delete_project(
+    Extension(app_state): Extension<AppState>,
+    Path(id): Path<i32>,
+) -> StatusCode {
     let project_crud = ProjectCrud::new(app_state.db);
     match project_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
@@ -151,9 +158,36 @@ async fn delete_project(State(app_state): State<AppState>, Path(id): Path<i32>) 
     }
 }
 
-fn extract_user_from_request(request: &Request<Body>) -> Option<&user::Model> {
-    request
-        .extensions()
-        .get::<AppState>()
-        .and_then(|state| state.user.as_ref())
+#[axum::debug_handler]
+async fn select_project(
+    Extension(app_state): Extension<AppState>,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
+    let user = app_state.user.clone();
+    match user {
+        Some(user) => {
+            let project_crud = ProjectCrud::new(app_state.db.clone());
+            match project_crud.find_by_id(id).await {
+                Ok(project) => {
+                    let user_setting_crud = UserSettingCrud::new(app_state.db.clone());
+                    match user_setting_crud.upsert(user.id, Some(id)).await {
+                        Ok(_) => Ok(Json(project)),
+                        Err(e) => {
+                            debug!("Error updating user setting: {:?}", e);
+                            Err(StatusCode::INTERNAL_SERVER_ERROR)
+                        }
+                    }
+                }
+                Err(e) => {
+                    if e.to_string().contains("Project not found") {
+                        Err(StatusCode::NOT_FOUND)
+                    } else {
+                        debug!("Error getting project {}: {:?}", id, e);
+                        Err(StatusCode::INTERNAL_SERVER_ERROR)
+                    }
+                }
+            }
+        }
+        None => Err(StatusCode::UNAUTHORIZED),
+    }
 }

@@ -1,5 +1,6 @@
 use crate::entities::user_setting;
 use sea_orm::*;
+use tracing::debug;
 
 #[derive(Clone, Debug)]
 pub struct UserSettingCrud {
@@ -19,6 +20,7 @@ impl UserSettingCrud {
         let user_setting = user_setting::ActiveModel {
             user_id: Set(user_id),
             project_id: Set(project_id),
+            lock_version: Set(0),
             ..Default::default()
         };
 
@@ -50,9 +52,9 @@ impl UserSettingCrud {
         user_id: i32,
         project_id: Option<i32>,
     ) -> Result<user_setting::Model, DbErr> {
-        let txn = self.db.begin().await?;
-
         let user_setting = self.find_by_user_id(user_id).await?;
+
+        let txn = self.db.begin().await?;
         let current_version = user_setting.lock_version;
         let mut updated_user_setting: user_setting::ActiveModel = user_setting.clone().into();
 
@@ -66,5 +68,28 @@ impl UserSettingCrud {
         }
         txn.commit().await?;
         Ok(result)
+    }
+    
+    pub async fn upsert(
+        &self,
+        user_id: i32,
+        project_id: Option<i32>,
+    ) -> Result<user_setting::Model, DbErr> {
+        match self.find_by_user_id(user_id).await {
+            Ok(existing_setting) => {
+                debug!(
+                    "Found existing setting for user {}: {:?}",
+                    user_id, existing_setting
+                );
+                self.update(user_id, project_id).await
+            }
+            Err(_) => {
+                debug!(
+                    "No existing setting found for user {}, creating new",
+                    user_id
+                );
+                self.create(user_id, project_id).await
+            }
+        }
     }
 }

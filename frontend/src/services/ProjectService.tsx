@@ -68,6 +68,13 @@ export class ProjectService {
     });
     if (!response.ok) throw new Error("Failed to delete project");
   }
+
+  async selectProject(id: number): Promise<Project> {
+    const response = await this.fetchWithAuth(`/${id}/user`, {
+      method: "GET",
+    });
+    return this.handleResponse<Project>(response, "Failed to select project");
+  }
 }
 
 export const projectService = new ProjectService();

@@ -679,6 +679,7 @@ impl MigrationTrait for Migration {
                 Index::create()
                     .name("idx-user-setting-user")
                     .col(UserSetting::UserId)
+                    .unique()
                     .table(UserSetting::Table)
                     .to_owned(),
             )
