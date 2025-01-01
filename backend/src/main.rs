@@ -19,6 +19,7 @@ use endpoints::{
 use sea_orm::{Database, DatabaseConnection};
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Instant;
 use tokio::net::TcpListener;
 use tokio::sync::broadcast;
 use tower_http::cors::CorsLayer;
@@ -36,6 +37,22 @@ pub struct AppState {
     pub user: Option<entities::user::Model>,
 }
 
+async fn logging_middleware(req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
+    let path = req.uri().path().to_owned();
+    let method = req.method().clone();
+    let start = Instant::now();
+
+    let response = next.run(req).await;
+
+    let duration = start.elapsed();
+    let status_code = response.status();
+    info!(
+        "{} {} completed with status {} in {:?}",
+        method, path, status_code, duration
+    );
+
+    Ok(response)
+}
 async fn auth_middleware(
     State(app_state): State<AppState>,
     mut req: Request<Body>,
@@ -120,6 +137,7 @@ fn main() {
             .merge(tag_routes())
             .route("/ws", get(websocket::ws_handler))
             .route("/", get(|| async { "Tracker Root" }))
+            .layer(middleware::from_fn(logging_middleware))
             .layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 auth_middleware,

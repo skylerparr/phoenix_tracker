@@ -1,5 +1,6 @@
 use crate::crud::issue::IssueCrud;
 use crate::AppState;
+use axum::Extension;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -8,6 +9,8 @@ use axum::{
     Json, Router,
 };
 use serde::Deserialize;
+use tracing::debug;
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateIssueRequest {
@@ -18,7 +21,6 @@ pub struct CreateIssueRequest {
     status: i32,
     work_type: i32,
     project_id: i32,
-    user_id: i32,
 }
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -43,9 +45,10 @@ pub fn issue_routes() -> Router<AppState> {
 
 #[axum::debug_handler]
 pub async fn create_issue(
-    State(app_state): State<AppState>,
+    Extension(app_state): Extension<AppState>,
     Json(payload): Json<CreateIssueRequest>,
 ) -> impl IntoResponse {
+    debug!("Creating issue");
     let issue_crud = IssueCrud::new(app_state.db);
     match issue_crud
         .create(
@@ -56,7 +59,7 @@ pub async fn create_issue(
             payload.status,
             payload.work_type,
             payload.project_id,
-            payload.user_id,
+            app_state.user.clone().unwrap().id,
         )
         .await
     {

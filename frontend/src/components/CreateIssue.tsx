@@ -89,7 +89,7 @@ const CreateIssue: React.FC = () => {
         display: "flex",
         flexDirection: "column",
         gap: 2,
-        bgcolor: "grey.700",
+        bgcolor: "#6a7a6a",
         p: 2,
         boxShadow: 3,
       }}
@@ -100,6 +100,10 @@ const CreateIssue: React.FC = () => {
         variant="outlined"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        sx={{
+          backgroundColor: "#383838",
+          boxShadow: "inset 0 1px 5px rgba(0,0,0,0.3)",
+        }}
       />
       <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
         <Tooltip title="Feature">
@@ -279,6 +283,8 @@ const CreateIssue: React.FC = () => {
                 size="small"
                 placeholder={value.length === 0 ? placeholder : ""}
                 sx={{
+                  backgroundColor: "#383838",
+                  boxShadow: "inset 0 1px 5px rgba(0,0,0,0.3)",
                   "& .MuiOutlinedInput-root": {
                     borderTopRightRadius: 0,
                     borderBottomRightRadius: 0,
@@ -297,6 +303,10 @@ const CreateIssue: React.FC = () => {
         rows={4}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
+        sx={{
+          backgroundColor: "#383838",
+          boxShadow: "inset 0 1px 5px rgba(0,0,0,0.3)",
+        }}
       />
       <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
         <Button
