@@ -5,8 +5,8 @@ import { sessionStorage } from "../store/Session";
 interface CreateIssueRequest {
   title: string;
   description: string;
-  priority: string;
-  status: string;
+  priority: number;
+  status: number;
   projectId: number;
   userId: number;
 }
@@ -14,8 +14,8 @@ interface CreateIssueRequest {
 interface UpdateIssueRequest {
   title?: string;
   description?: string;
-  priority?: string;
-  status?: string;
+  priority?: number;
+  status?: number;
   projectId?: number;
 }
 

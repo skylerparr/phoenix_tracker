@@ -51,6 +51,7 @@ async fn login(
 
     match token_crud.create(user.id, expires_at).await {
         Ok(token) => Json(json!({
+            "user_id": user.id,
             "token": token.token,
             "expires_at": token.expires_at
         }))
@@ -80,6 +81,7 @@ async fn register(
 
     match token_crud.create(user.id, expires_at).await {
         Ok(token) => Json(json!({
+            "user_id": user.id,
             "token": token.token,
             "expires_at": token.expires_at
         }))

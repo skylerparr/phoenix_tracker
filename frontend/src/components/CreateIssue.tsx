@@ -63,7 +63,7 @@ const CreateIssue: React.FC = () => {
         title,
         description,
         priority: 0,
-        status: "open",
+        status: 1,
         projectId: currentProject.id,
         userId: currentUser.id,
       });

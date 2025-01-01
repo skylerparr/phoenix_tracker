@@ -3,7 +3,7 @@ import { Project } from "../models/Project";
 interface Session {
   isAuthenticated: boolean;
   user: {
-    id: string;
+    id: number;
     token: string;
     name: string;
     email: string;
@@ -42,13 +42,20 @@ class SessionStorage {
   }
 
   public setUserData(userData: {
+    user_id: number;
     token: string;
     name: string;
     email: string;
   }): void {
+    console.log(userData);
     this.session = {
       isAuthenticated: true,
-      user: userData,
+      user: {
+        id: userData.user_id,
+        token: userData.token,
+        name: userData.name,
+        email: userData.email,
+      },
       activeButtons: this.session.activeButtons || [],
       project: this.session.project,
     };

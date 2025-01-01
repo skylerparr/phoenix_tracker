@@ -10,6 +10,7 @@ interface RegisterRequest {
 }
 
 interface AuthResponse {
+  user_id: number;
   token: string;
   expires_at: string;
 }

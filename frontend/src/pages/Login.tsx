@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { Box, TextField, Button, Typography, Container } from "@mui/material";
 import { authService } from "../services/AuthService";
 import { sessionStorage } from "../store/Session";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [createAccount, setCreateAccount] = useState<boolean>(false);
@@ -16,13 +18,15 @@ const Login = () => {
         ? authService.register({ email, name: fullName })
         : authService.login({ email }));
 
+      console.log(response);
       sessionStorage.setUserData({
+        user_id: response.user_id,
         email: email,
         token: response.token,
         name: fullName,
       });
 
-      window.location.href = "/Projects";
+      navigate("/projects");
     } catch (error) {
       if (!createAccount) {
         setCreateAccount(true);

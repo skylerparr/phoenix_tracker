@@ -15,7 +15,6 @@ import { projectService } from "../services/ProjectService";
 import { Project } from "../models/Project";
 import { useNavigate } from "react-router-dom";
 import { sessionStorage } from "../store/Session";
-
 const ProjectsPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [newProjectName, setNewProjectName] = useState("");
