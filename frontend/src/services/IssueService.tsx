@@ -6,7 +6,7 @@ interface CreateIssueRequest {
   title: string;
   description?: string;
   priority: number;
-  points?: number;
+  points?: number | null;
   status: number;
   isIcebox: boolean;
   workType: number;

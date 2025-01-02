@@ -17,6 +17,7 @@ import {
   AccessTime,
   DeleteOutline as Delete,
 } from "@mui/icons-material";
+import { issueService } from "../services/IssueService";
 
 interface IssueComponentProps {
   issue: Issue;
@@ -25,6 +26,11 @@ interface IssueComponentProps {
 export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
   const [expanded, setExpanded] = React.useState(false);
   const [comment, setComment] = React.useState("");
+
+  const handleDeleteIssue = async () => {
+    await issueService.deleteIssue(issue.id);
+  };
+
   return (
     <Box>
       {expanded ? (
@@ -143,6 +149,10 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
                 borderRadius: "0px",
               }}
               title="Link to this issue"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteIssue();
+              }}
             >
               <Delete sx={{ fontSize: "14px" }} />
             </IconButton>{" "}
@@ -276,7 +286,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
           <Typography sx={{ color: "#666", fontWeight: "bold", mt: 2 }}>
             BLOCKERS
           </Typography>
-          <Button sx={{width:"150px"}}>
+          <Button sx={{ width: "150px" }}>
             <Typography sx={{ color: "#666", cursor: "pointer" }}>
               + Add blocker
             </Typography>
@@ -358,8 +368,10 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
             <Typography sx={{ flexGrow: 1, color: "black" }}>
               {issue.title}
             </Typography>
-            <StatusButton status={issue.status} />
-          </Stack>{" "}
+            <Box onClick={(e) => e.stopPropagation()}>
+              <StatusButton status={issue.status} />
+            </Box>
+          </Stack>
         </Box>
       )}
     </Box>

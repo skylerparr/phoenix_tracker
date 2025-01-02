@@ -1,20 +1,5 @@
-import React, { useEffect, useState } from "react";
-import {
-  TextField,
-  IconButton,
-  Tooltip,
-  Box,
-  Autocomplete,
-  Chip,
-  Button,
-} from "@mui/material";
-import {
-  BugReport,
-  Build,
-  Engineering,
-  Rocket,
-  ContentCopy,
-} from "@mui/icons-material";
+import React, { useState } from "react";
+import { TextField, Box, Autocomplete, Chip, Button } from "@mui/material";
 import { issueService } from "../services/IssueService";
 import { sessionStorage } from "../store/Session";
 import { STATUS_READY } from "../services/StatusService";
@@ -58,13 +43,14 @@ const CreateIssue: React.FC = () => {
     if (!currentProject || !currentUser) return;
 
     try {
-      const newIssue = await issueService.createIssue({
+      await issueService.createIssue({
         title,
         description,
+        points: selectedPoints,
         priority: 0,
         status: STATUS_READY,
         isIcebox: false,
-        workType: 0,
+        workType: selectedType!,
       });
 
       // Clear form after successful creation
@@ -208,7 +194,7 @@ const CreateIssue: React.FC = () => {
         <Button
           variant="contained"
           onClick={handleCreateIssue}
-          disabled={!title.trim()}
+          disabled={!title.trim() || selectedType === null}
           sx={{
             bgcolor: "primary.main",
             width: "140px",
