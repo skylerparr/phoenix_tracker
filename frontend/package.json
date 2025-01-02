@@ -19,6 +19,7 @@
     "@mui/styled-engine-sc": "^6.0.0-alpha.18",
     "@mui/x-date-pickers": "^7.22.3",
     "axios": "^1.7.2",
+    "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.5",
     "gsap": "^3.12.5",

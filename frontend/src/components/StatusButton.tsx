@@ -15,11 +15,11 @@ const StyledButton = styled(Button)(({ theme }) => ({
 const StatusButton: React.FC<StatusButtonProps> = ({ status }) => {
   const getStatusColor = (status: number) => {
     switch (status) {
-      case 1:
+      case 0:
         return { background: "#ABABAB", color: "#000" };
+      case 1:
+        return { background: "#000080", color: "#fff" };
       case 2:
-        return { background: "#FFC107", color: "#000" };
-      case 3:
         return { background: "#F44336", color: "#fff" };
       default:
         return { background: "#9E9E9E", color: "#fff" };
@@ -28,11 +28,11 @@ const StatusButton: React.FC<StatusButtonProps> = ({ status }) => {
 
   const getStatusText = (status: number) => {
     switch (status) {
-      case 1:
+      case 0:
         return "Start";
+      case 1:
+        return "Finish";
       case 2:
-        return "Pending";
-      case 3:
         return "Failed";
       default:
         return "Unknown";
