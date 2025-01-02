@@ -45,6 +45,7 @@ pub fn issue_routes() -> Router<AppState> {
         .route("/issues", get(get_all_issues_for_backlog))
         .route("/issues/:id", get(get_issue))
         .route("/issues/:id", put(update_issue))
+        .route("/issues/:id/start", put(start_issue))
         .route("/issues/:id", delete(delete_issue))
 }
 
@@ -145,6 +146,26 @@ async fn update_issue(
         }
     }
 }
+
+#[axum::debug_handler]
+async fn start_issue(
+    Extension(app_state): Extension<AppState>,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
+    let issue_crud = IssueCrud::new(app_state);
+    match issue_crud.update(id, None, None, None, None, 2, None, None, 1).await {
+        Ok(issue) => Ok(Json(issue)),
+        Err(e) => {
+            if e.to_string().contains("Issue not found") {
+                Err(StatusCode::NOT_FOUND)
+            } else {
+                println!("Error starting issue {}: {:?}", id, e);
+                Err(StatusCode::INTERNAL_SERVER_ERROR)
+            }
+        }
+    }
+}
+
 
 #[axum::debug_handler]
 async fn delete_issue(
