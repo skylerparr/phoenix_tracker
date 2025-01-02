@@ -47,7 +47,6 @@ class SessionStorage {
     name: string;
     email: string;
   }): void {
-    console.log(userData);
     this.session = {
       isAuthenticated: true,
       user: {

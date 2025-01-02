@@ -69,7 +69,7 @@ impl UserSettingCrud {
         txn.commit().await?;
         Ok(result)
     }
-    
+
     pub async fn upsert(
         &self,
         user_id: i32,

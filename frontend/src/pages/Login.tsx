@@ -3,6 +3,7 @@ import { Box, TextField, Button, Typography, Container } from "@mui/material";
 import { authService } from "../services/AuthService";
 import { sessionStorage } from "../store/Session";
 import { useNavigate } from "react-router-dom";
+import { projectService } from "../services/ProjectService";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -18,13 +19,15 @@ const Login = () => {
         ? authService.register({ email, name: fullName })
         : authService.login({ email }));
 
-      console.log(response);
       sessionStorage.setUserData({
         user_id: response.user_id,
         email: email,
         token: response.token,
         name: fullName,
       });
+
+      const project = await projectService.getProject(response.project_id);
+      sessionStorage.setProject(project);
 
       navigate("/projects");
     } catch (error) {

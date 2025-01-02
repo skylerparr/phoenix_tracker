@@ -13,6 +13,7 @@ interface AuthResponse {
   user_id: number;
   token: string;
   expires_at: string;
+  project_id: number;
 }
 
 export class AuthService {
