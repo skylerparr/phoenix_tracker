@@ -8,6 +8,7 @@ use axum::{
     routing::{delete, get, post, put},
     Json, Router,
 };
+use sea_orm::entity::prelude::*;
 use serde::Deserialize;
 use tracing::debug;
 
@@ -15,13 +16,15 @@ use tracing::debug;
 #[serde(rename_all = "camelCase")]
 pub struct CreateIssueRequest {
     title: String,
-    description: String,
+    description: Option<String>,
     priority: i32,
     points: Option<i32>,
     status: i32,
+    is_icebox: bool,
     work_type: i32,
-    project_id: i32,
+    target_release_at: Option<DateTimeWithTimeZone>,
 }
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateIssueRequest {
@@ -30,10 +33,10 @@ pub struct UpdateIssueRequest {
     priority: Option<i32>,
     points: Option<i32>,
     status: Option<i32>,
+    is_icebox: Option<bool>,
     work_type: Option<i32>,
-    project_id: Option<i32>,
+    target_release_at: Option<DateTimeWithTimeZone>,
 }
-
 pub fn issue_routes() -> Router<AppState> {
     Router::new()
         .route("/issues", post(create_issue))
@@ -53,12 +56,14 @@ pub async fn create_issue(
     match issue_crud
         .create(
             payload.title,
-            Some(payload.description),
+            payload.description,
             payload.priority,
             payload.points,
             payload.status,
+            payload.is_icebox,
             payload.work_type,
-            payload.project_id,
+            1,
+            payload.target_release_at,
             app_state.user.clone().unwrap().id,
         )
         .await
@@ -106,12 +111,14 @@ async fn update_issue(
         .update(
             id,
             payload.title,
-            Some(payload.description),
+            payload.description,
             payload.priority,
             payload.points,
             payload.status,
+            payload.is_icebox,
             payload.work_type,
-            payload.project_id,
+            payload.target_release_at,
+            1,
         )
         .await
     {

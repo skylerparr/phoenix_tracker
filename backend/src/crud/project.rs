@@ -51,7 +51,10 @@ impl ProjectCrud {
         );
         match query.all(&self.db).await {
             Ok(data) => {
-                debug!("Query result data: {:?}", data);
+                debug!(
+                    "Query result IDs: {:?}",
+                    data.iter().map(|project| project.id).collect::<Vec<_>>()
+                );
                 Ok(data)
             }
             Err(e) => {

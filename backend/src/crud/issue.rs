@@ -1,5 +1,8 @@
 use crate::entities::issue;
+use sea_orm::entity::prelude::*;
 use sea_orm::*;
+
+use super::project;
 
 #[derive(Clone, Debug)]
 pub struct IssueCrud {
@@ -18,8 +21,10 @@ impl IssueCrud {
         priority: i32,
         points: Option<i32>,
         status: i32,
+        is_icebox: bool,
         work_type: i32,
         project_id: i32,
+        target_release_at: Option<DateTimeWithTimeZone>,
         created_by_id: i32,
     ) -> Result<issue::Model, DbErr> {
         let issue = issue::ActiveModel {
@@ -49,12 +54,14 @@ impl IssueCrud {
         &self,
         id: i32,
         title: Option<String>,
-        description: Option<Option<String>>,
+        description: Option<String>,
         priority: Option<i32>,
         points: Option<i32>,
         status: Option<i32>,
+        is_icebox: Option<bool>,
         work_type: Option<i32>,
-        project_id: Option<i32>,
+        target_release_at: Option<DateTimeWithTimeZone>,
+        project_id: i32,
     ) -> Result<issue::Model, DbErr> {
         let txn = self.db.begin().await?;
 
@@ -71,7 +78,7 @@ impl IssueCrud {
         }
 
         if let Some(description) = description {
-            issue.description = Set(Some(description.unwrap_or_default()));
+            issue.description = Set(Some(description));
         }
 
         if let Some(priority) = priority {
@@ -90,10 +97,7 @@ impl IssueCrud {
             issue.work_type = Set(work_type);
         }
 
-        if let Some(project_id) = project_id {
-            issue.project_id = Set(project_id);
-        }
-
+        issue.project_id = Set(project_id);
         issue.lock_version = Set(current_version + 1);
 
         let result = issue.update(&txn).await?;

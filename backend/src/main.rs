@@ -1,5 +1,7 @@
+use crate::crud::project::ProjectCrud;
 use crate::crud::token::TokenCrud;
 use crate::crud::user::UserCrud;
+use crate::crud::user_setting::UserSettingCrud;
 use axum::body::Body;
 use axum::extract::Request;
 use axum::http::header::AUTHORIZATION;
@@ -35,6 +37,7 @@ pub struct AppState {
     pub db: DatabaseConnection,
     pub tx: Arc<broadcast::Sender<String>>,
     pub user: Option<entities::user::Model>,
+    pub project: Option<entities::project::Model>,
 }
 
 async fn logging_middleware(req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
@@ -83,7 +86,19 @@ async fn auth_middleware(
                 if let Ok(Some(user)) = user_crud.find_by_id(token_model.user_id).await {
                     debug!("Found user id: {:?}", user.id);
                     req.extensions_mut().insert(app_state.clone());
-                    req.extensions_mut().get_mut::<AppState>().unwrap().user = Some(user);
+                    req.extensions_mut().get_mut::<AppState>().unwrap().user = Some(user.clone());
+
+                    let user_settings_crud = UserSettingCrud::new(app_state.db.clone());
+                    if let Ok(user_settings) = user_settings_crud.find_by_user_id(user.id).await {
+                        if let Some(project_id) = user_settings.project_id {
+                            let project_crud = ProjectCrud::new(app_state.db.clone());
+                            if let Ok(Some(project)) = project_crud.find_by_id(project_id).await {
+                                req.extensions_mut().get_mut::<AppState>().unwrap().project =
+                                    Some(project.clone());
+                                debug!("Project ID: {:?}", project.id);
+                            }
+                        }
+                    }
                     return Ok(next.run(req).await);
                 }
             }
@@ -101,6 +116,8 @@ async fn auth_middleware(
 fn main() {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
+        .with_file(true)
+        .with_line_number(true)
         .init();
 
     let (tx, _rx) = broadcast::channel::<String>(100);
@@ -125,6 +142,7 @@ fn main() {
             db: conn.clone(),
             tx: tx.clone(),
             user: None,
+            project: None,
         };
 
         let app = Router::new()
