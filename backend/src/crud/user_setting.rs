@@ -28,13 +28,15 @@ impl UserSettingCrud {
     }
 
     pub async fn find_by_user_id(&self, user_id: i32) -> Result<user_setting::Model, DbErr> {
-        user_setting::Entity::find()
+        match user_setting::Entity::find()
             .filter(user_setting::Column::UserId.eq(user_id))
             .one(&self.db)
             .await?
-            .ok_or(DbErr::Custom("User setting not found".to_owned()))
+        {
+            Some(setting) => Ok(setting),
+            None => self.create(user_id, None).await,
+        }
     }
-
     pub async fn delete(
         &self,
         user_id: i32,
@@ -83,10 +85,10 @@ impl UserSettingCrud {
                 );
                 self.update(user_id, project_id).await
             }
-            Err(_) => {
+            Err(err) => {
                 debug!(
-                    "No existing setting found for user {}, creating new",
-                    user_id
+                    "No existing setting found for user {}, creating new: {:?}",
+                    user_id, err
                 );
                 self.create(user_id, project_id).await
             }

@@ -71,7 +71,7 @@ export class ProjectService {
 
   async selectProject(id: number): Promise<Project> {
     const response = await this.fetchWithAuth(`/${id}/user`, {
-      method: "GET",
+      method: "POST",
     });
     return this.handleResponse<Project>(response, "Failed to select project");
   }

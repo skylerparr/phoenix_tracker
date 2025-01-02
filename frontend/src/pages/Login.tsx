@@ -26,10 +26,13 @@ const Login = () => {
         name: fullName,
       });
 
-      const project = await projectService.getProject(response.project_id);
-      sessionStorage.setProject(project);
-
-      navigate("/projects");
+      if (response.project_id) {
+        const project = await projectService.getProject(response.project_id);
+        sessionStorage.setProject(project);
+        navigate("/home");
+      } else {
+        navigate("/projects");
+      }
     } catch (error) {
       if (!createAccount) {
         setCreateAccount(true);

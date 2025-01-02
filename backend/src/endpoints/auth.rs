@@ -13,6 +13,7 @@ use axum::{
 };
 use serde::Deserialize;
 use serde_json::json;
+use tracing::debug;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -68,29 +69,40 @@ async fn register(
 }
 
 async fn create_token(app_state: AppState, user_id: i32) -> Response<Body> {
+    debug!("Creating TokenCrud instance");
     let token_crud = TokenCrud::new(app_state.db.clone());
 
+    debug!("Calculating expiration time for token");
     let expires_at = chrono::Utc::now()
         .checked_add_signed(chrono::Duration::days(7))
         .unwrap()
         .into();
 
+    debug!("Creating UserSettingCrud instance");
     let user_setting_crud = UserSettingCrud::new(app_state.db.clone());
+    debug!("Fetching project ID for user ID: {}", user_id);
     let project_id = user_setting_crud
         .find_by_user_id(user_id)
         .await
         .map(|settings| settings.project_id)
         .unwrap_or(None);
 
+    debug!("Creating token for user ID: {}", user_id);
     match token_crud.create(user_id, expires_at).await {
-        Ok(token) => Json(json!({
-            "user_id": user_id,
-            "token": token.token,
-            "expires_at": token.expires_at,
-            "project_id": project_id
-        }))
-        .into_response(),
-        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create token").into_response(),
+        Ok(token) => {
+            debug!("Token created successfully: {:?}", token);
+            Json(json!({
+                "user_id": user_id,
+                "token": token.token,
+                "expires_at": token.expires_at,
+                "project_id": project_id
+            }))
+            .into_response()
+        }
+        Err(_) => {
+            debug!("Failed to create token for user ID: {}", user_id);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create token").into_response()
+        }
     }
 }
 #[axum::debug_handler]

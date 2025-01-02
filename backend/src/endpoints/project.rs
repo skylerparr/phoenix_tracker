@@ -38,7 +38,7 @@ pub fn project_routes() -> Router<AppState> {
         .route("/projects/:id", put(update_project))
         .route("/projects/:id", delete(delete_project))
         .route("/projects/user/me", get(get_all_projects_by_user_id))
-        .route("/projects/:id/user", get(select_project))
+        .route("/projects/:id/user", post(select_project))
 }
 #[axum::debug_handler]
 async fn create_project(
@@ -163,15 +163,23 @@ async fn select_project(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
+    debug!("Cloning user from app_state");
     let user = app_state.user.clone();
     match user {
         Some(user) => {
+            debug!("User found: {:?}", user);
             let project_crud = ProjectCrud::new(app_state.db.clone());
+            debug!("Creating ProjectCrud instance");
             match project_crud.find_by_id(id).await {
                 Ok(project) => {
+                    debug!("Project found: {:?}", project);
                     let user_setting_crud = UserSettingCrud::new(app_state.db.clone());
+                    debug!("Creating UserSettingCrud instance");
                     match user_setting_crud.upsert(user.id, Some(id)).await {
-                        Ok(_) => Ok(Json(project)),
+                        Ok(_) => {
+                            debug!("User setting upserted successfully");
+                            Ok(Json(project))
+                        }
                         Err(e) => {
                             debug!("Error updating user setting: {:?}", e);
                             Err(StatusCode::INTERNAL_SERVER_ERROR)
@@ -179,6 +187,7 @@ async fn select_project(
                     }
                 }
                 Err(e) => {
+                    debug!("Error finding project by id {}: {:?}", id, e);
                     if e.to_string().contains("Project not found") {
                         Err(StatusCode::NOT_FOUND)
                     } else {
@@ -188,6 +197,9 @@ async fn select_project(
                 }
             }
         }
-        None => Err(StatusCode::UNAUTHORIZED),
+        None => {
+            debug!("No user found, returning UNAUTHORIZED");
+            Err(StatusCode::UNAUTHORIZED)
+        }
     }
 }
