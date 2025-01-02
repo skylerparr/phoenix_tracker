@@ -2713,6 +2713,7 @@ dependencies = [
  "futures",
  "http 0.2.12",
  "hyper",
+ "lazy_static",
  "rand",
  "sea-orm",
  "serde",

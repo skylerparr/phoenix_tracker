@@ -8,6 +8,7 @@ import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import CreateIssue from "../components/CreateIssue";
+import Backlog from "../components/Backlog";
 import { sessionStorage } from "../store/Session";
 
 const toolbarButtons = [
@@ -27,7 +28,7 @@ const toolbarButtons = [
     tooltip: "Backlog",
     icon: <AssignmentIcon />,
     id: "backlog",
-    component: Box,
+    component: Backlog,
   },
   {
     tooltip: "Ice Box",

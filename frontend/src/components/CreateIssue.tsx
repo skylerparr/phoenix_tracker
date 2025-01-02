@@ -17,9 +17,12 @@ import {
 } from "@mui/icons-material";
 import { issueService } from "../services/IssueService";
 import { sessionStorage } from "../store/Session";
+import { STATUS_READY } from "../services/StatusService";
+import PointsButton from "./PointsButtons";
+import WorkTypeButtons from "./WorkTypeButtons";
 
 const CreateIssue: React.FC = () => {
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<number | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
 
@@ -34,10 +37,6 @@ const CreateIssue: React.FC = () => {
   const [selectedPoints, setSelectedPoints] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-
-  const handleTypeSelect = (type: string) => {
-    setSelectedType(type === selectedType ? null : type);
-  };
 
   const availableTags = [
     "frontend",
@@ -63,9 +62,9 @@ const CreateIssue: React.FC = () => {
         title,
         description,
         priority: 0,
-        status: 1,
-        projectId: currentProject.id,
-        userId: currentUser.id,
+        status: STATUS_READY,
+        isIcebox: false,
+        workType: 0,
       });
 
       // Clear form after successful creation
@@ -106,126 +105,23 @@ const CreateIssue: React.FC = () => {
         }}
       />
       <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-        <Tooltip title="Feature">
-          <IconButton
-            onClick={() => handleTypeSelect("feature")}
-            sx={{
-              backgroundColor:
-                selectedType === "feature" ? "action.selected" : "transparent",
-              "&:hover": {
-                backgroundColor:
-                  selectedType === "feature"
-                    ? "action.selected"
-                    : "action.hover",
-              },
-            }}
-          >
-            <Engineering />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Bug">
-          <IconButton
-            onClick={() => handleTypeSelect("bug")}
-            sx={{
-              backgroundColor:
-                selectedType === "bug" ? "action.selected" : "transparent",
-              "&:hover": {
-                backgroundColor:
-                  selectedType === "bug" ? "action.selected" : "action.hover",
-              },
-            }}
-          >
-            <BugReport />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Chore">
-          <IconButton
-            onClick={() => handleTypeSelect("chore")}
-            sx={{
-              backgroundColor:
-                selectedType === "chore" ? "action.selected" : "transparent",
-              "&:hover": {
-                backgroundColor:
-                  selectedType === "chore" ? "action.selected" : "action.hover",
-              },
-            }}
-          >
-            <Build />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Release">
-          <IconButton
-            onClick={() => handleTypeSelect("release")}
-            sx={{
-              backgroundColor:
-                selectedType === "release" ? "action.selected" : "transparent",
-              "&:hover": {
-                backgroundColor:
-                  selectedType === "release"
-                    ? "action.selected"
-                    : "action.hover",
-              },
-            }}
-          >
-            <Rocket />
-          </IconButton>
-        </Tooltip>
+        <WorkTypeButtons
+          selectedWorkType={selectedType}
+          onWorkTypeSelect={(workType: number) =>
+            setSelectedType(workType === selectedType ? null : workType)
+          }
+        />
       </Box>
       <Box sx={{ display: "flex", gap: 0, alignItems: "center" }}>
         {[0, 1, 2, 3, 5, 8].map((points) => (
-          <IconButton
+          <PointsButton
             key={points}
-            onClick={() =>
+            points={points}
+            isSelected={selectedPoints === points}
+            onPointsSelect={(points: number) =>
               setSelectedPoints(points === selectedPoints ? null : points)
             }
-            sx={{
-              width: 36,
-              height: 36,
-              border: "1px solid #333333",
-              borderRadius: 1,
-              backgroundColor:
-                selectedPoints === points ? "#565656" : "#ababab",
-              "&:hover": {
-                backgroundColor:
-                  selectedPoints === points ? "#757575" : "#9e9e9e",
-              },
-            }}
-          >
-            {
-              <Box
-                sx={{
-                  fontSize: 14,
-                  fontWeight: "bold",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "1px",
-                }}
-              >
-                {points === 0 ? (
-                  <Box
-                    sx={{
-                      width: 22,
-                      height: 4,
-                      border: "1px solid #2196f3",
-                      display: "block",
-                    }}
-                  />
-                ) : (
-                  [...Array(points)].map((_, i) => (
-                    <Box
-                      key={i}
-                      sx={{
-                        width: 22,
-                        height: 2,
-                        backgroundColor: "#2196f3",
-                        display: "block",
-                      }}
-                    />
-                  ))
-                )}
-              </Box>
-            }
-          </IconButton>
+          />
         ))}
       </Box>
       {[

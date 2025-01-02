@@ -4,7 +4,7 @@ export class Issue {
   description: string;
   priority: string;
   points: number;
-  status: string;
+  status: number;
   isIcebox: boolean;
   workType: number;
   projectId: number;

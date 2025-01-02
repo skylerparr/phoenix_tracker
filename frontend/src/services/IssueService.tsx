@@ -4,21 +4,25 @@ import { sessionStorage } from "../store/Session";
 
 interface CreateIssueRequest {
   title: string;
-  description: string;
+  description?: string;
   priority: number;
+  points?: number;
   status: number;
-  projectId: number;
-  userId: number;
+  isIcebox: boolean;
+  workType: number;
+  targetReleaseAt?: string;
 }
 
 interface UpdateIssueRequest {
   title?: string;
   description?: string;
   priority?: number;
+  points?: number;
   status?: number;
-  projectId?: number;
+  isIcebox?: boolean;
+  workType?: number;
+  targetReleaseAt?: string;
 }
-
 export class IssueService {
   private baseUrl = `${API_BASE_URL}/issues`;
 
@@ -36,7 +40,8 @@ export class IssueService {
       body: JSON.stringify(request),
     });
     if (!response.ok) throw new Error("Failed to create issue");
-    return response.json();
+    const data = await response.json();
+    return data.map((item: any) => new Issue(item));
   }
 
   async getAllIssues(): Promise<Issue[]> {
@@ -44,7 +49,8 @@ export class IssueService {
       headers: this.getHeaders(),
     });
     if (!response.ok) throw new Error("Failed to fetch issues");
-    return response.json();
+    const data = await response.json();
+    return data.map((item: any) => new Issue(item));
   }
 
   async getIssue(id: number): Promise<Issue> {
@@ -52,7 +58,8 @@ export class IssueService {
       headers: this.getHeaders(),
     });
     if (!response.ok) throw new Error("Failed to fetch issue");
-    return response.json();
+    const data = await response.json();
+    return data.map((item: any) => new Issue(item));
   }
 
   async updateIssue(id: number, request: UpdateIssueRequest): Promise<Issue> {
@@ -62,7 +69,8 @@ export class IssueService {
       body: JSON.stringify(request),
     });
     if (!response.ok) throw new Error("Failed to update issue");
-    return response.json();
+    const data = await response.json();
+    return data.map((item: any) => new Issue(item));
   }
 
   async deleteIssue(id: number): Promise<void> {

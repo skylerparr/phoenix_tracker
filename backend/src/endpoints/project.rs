@@ -2,13 +2,10 @@ use crate::crud::owner::OwnerCrud;
 use crate::crud::project::ProjectCrud;
 use crate::crud::project_user::ProjectUserCrud;
 use crate::crud::user_setting::UserSettingCrud;
-use crate::entities::user;
 use crate::AppState;
-use axum::body::Body;
-use axum::http::Request;
 use axum::Extension;
 use axum::{
-    extract::{Path, State},
+    extract::Path,
     http::StatusCode,
     response::IntoResponse,
     routing::{delete, get, post, put},

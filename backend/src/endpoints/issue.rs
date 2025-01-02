@@ -1,5 +1,6 @@
 use crate::crud::issue::IssueCrud;
 use crate::AppState;
+use axum::extract::Query;
 use axum::Extension;
 use axum::{
     extract::{Path, State},
@@ -10,6 +11,7 @@ use axum::{
 };
 use sea_orm::entity::prelude::*;
 use serde::Deserialize;
+use std::collections::HashMap;
 use tracing::debug;
 
 #[derive(Deserialize)]
@@ -40,7 +42,7 @@ pub struct UpdateIssueRequest {
 pub fn issue_routes() -> Router<AppState> {
     Router::new()
         .route("/issues", post(create_issue))
-        .route("/issues", get(get_all_issues))
+        .route("/issues", get(get_all_issues_for_backlog))
         .route("/issues/:id", get(get_issue))
         .route("/issues/:id", put(update_issue))
         .route("/issues/:id", delete(delete_issue))
@@ -76,9 +78,16 @@ pub async fn create_issue(
     }
 }
 #[axum::debug_handler]
-async fn get_all_issues(State(app_state): State<AppState>) -> impl IntoResponse {
+async fn get_all_issues_for_backlog(
+    Extension(app_state): Extension<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> impl IntoResponse {
     let issue_crud = IssueCrud::new(app_state.db);
-    match issue_crud.find_all().await {
+    let is_finished = params
+        .get("is_finished")
+        .and_then(|v| v.parse::<bool>().ok())
+        .unwrap_or(false);
+    match issue_crud.find_all_for_backlog(1, is_finished, false).await {
         Ok(issues) => Ok(Json(issues)),
         Err(e) => {
             println!("Error getting all issues: {:?}", e);
@@ -86,9 +95,11 @@ async fn get_all_issues(State(app_state): State<AppState>) -> impl IntoResponse 
         }
     }
 }
-
 #[axum::debug_handler]
-async fn get_issue(State(app_state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
+async fn get_issue(
+    Extension(app_state): Extension<AppState>,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
     let issue_crud = IssueCrud::new(app_state.db);
     match issue_crud.find_by_id(id).await {
         Ok(Some(issue)) => Ok(Json(issue)),
@@ -102,7 +113,7 @@ async fn get_issue(State(app_state): State<AppState>, Path(id): Path<i32>) -> im
 
 #[axum::debug_handler]
 async fn update_issue(
-    State(app_state): State<AppState>,
+    Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
     Json(payload): Json<UpdateIssueRequest>,
 ) -> impl IntoResponse {
@@ -135,7 +146,10 @@ async fn update_issue(
 }
 
 #[axum::debug_handler]
-async fn delete_issue(State(app_state): State<AppState>, Path(id): Path<i32>) -> StatusCode {
+async fn delete_issue(
+    Extension(app_state): Extension<AppState>,
+    Path(id): Path<i32>,
+) -> StatusCode {
     let issue_crud = IssueCrud::new(app_state.db);
     match issue_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
