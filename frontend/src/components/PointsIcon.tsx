@@ -2,12 +2,14 @@ import React from "react";
 import { Box } from "@mui/material";
 
 interface PointsIconProps {
-  points: number;
+  points: number | null;
 }
 
 export const PointsIcon: React.FC<PointsIconProps> = ({ points }) => {
+  if (points === null) return null;
+
   return (
-    <Box style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
       {points === 0 ? (
         <Box
           sx={{

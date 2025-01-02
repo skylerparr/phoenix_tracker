@@ -1,5 +1,5 @@
 use crate::crud::event_broadcaster::EventBroadcaster;
-use crate::crud::event_broadcaster::{ISSUE_CREATED, ISSUE_DELETED};
+use crate::crud::event_broadcaster::{ISSUE_CREATED, ISSUE_DELETED, ISSUE_UPDATED};
 use crate::crud::status::get_unfinished_statuses;
 use crate::entities::issue;
 use crate::AppState;
@@ -21,7 +21,7 @@ impl IssueCrud {
         title: String,
         description: Option<String>,
         priority: i32,
-        points: Option<i32>,
+        points: Option<Option<i32>>,
         status: i32,
         is_icebox: bool,
         work_type: i32,
@@ -33,7 +33,7 @@ impl IssueCrud {
             title: Set(title),
             description: Set(Some(description.unwrap_or_default())),
             priority: Set(priority),
-            points: Set(Some(points.unwrap_or_default())),
+            points: Set(points.unwrap_or_default()),
             status: Set(status),
             work_type: Set(work_type),
             project_id: Set(project_id),
@@ -135,6 +135,11 @@ impl IssueCrud {
         }
 
         txn.commit().await?;
+
+        let project_id = &self.app_state.project.clone().unwrap().id;
+        let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+        broadcaster.broadcast_event(*project_id, ISSUE_UPDATED, serde_json::json!(result));
+
         Ok(result)
     }
     pub async fn set_icebox(&self, issue_id: i32, icebox: bool) -> Result<issue::Model, DbErr> {

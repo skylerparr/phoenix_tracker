@@ -8,6 +8,7 @@ pub struct EventBroadcaster {
 }
 
 pub const ISSUE_CREATED: &str = "issue_created";
+pub const ISSUE_UPDATED: &str = "issue_updated";
 pub const ISSUE_DELETED: &str = "issue_deleted";
 
 impl EventBroadcaster {

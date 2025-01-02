@@ -31,6 +31,10 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
     await issueService.deleteIssue(issue.id);
   };
 
+  const handleOnEstimated = (points: number) => {
+    issueService.updateIssue(issue.id, { points });
+  };
+
   return (
     <Box>
       {expanded ? (
@@ -369,7 +373,11 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
               {issue.title}
             </Typography>
             <Box onClick={(e) => e.stopPropagation()}>
-              <StatusButton status={issue.status} />
+              <StatusButton
+                status={issue.points === null ? null : issue.status}
+                onEstimated={handleOnEstimated}
+                onStatusChange={(status: number) => {}}
+              />
             </Box>
           </Stack>
         </Box>

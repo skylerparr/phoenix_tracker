@@ -16,6 +16,7 @@ const Backlog: React.FC = () => {
       setIssues(issues);
 
       WebsocketService.subscribeToIssueCreateEvent(handleIssueCreated);
+      WebsocketService.subscribeToIssueUpdatedEvent(handleIssueUpdated);
       WebsocketService.subscribeToIssueDeletedEvent(handleIssueDeleted);
     };
 
@@ -24,6 +25,13 @@ const Backlog: React.FC = () => {
 
   const handleIssueCreated = (issue: Issue) => {
     setIssues((prevIssues) => [...prevIssues, issue]);
+  };
+
+  const handleIssueUpdated = (issue: Issue) => {
+    setIssues((prevIssues) => {
+      const filteredIssues = prevIssues.filter((i) => i.id !== issue.id);
+      return [...filteredIssues, issue];
+    });
   };
 
   const handleIssueDeleted = ({ id }: { id: number }) => {

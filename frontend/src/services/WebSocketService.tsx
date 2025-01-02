@@ -3,6 +3,7 @@ import { Issue } from "../models/Issue";
 import { sessionStorage } from "../store/Session";
 
 export const ISSUE_CREATED = "issue_created";
+export const ISSUE_UPDATED = "issue_updated";
 export const ISSUE_DELETED = "issue_deleted";
 
 export class WebsocketService {
@@ -25,13 +26,13 @@ export class WebsocketService {
 
     this.socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.event_type === ISSUE_CREATED) {
-        const issue = new Issue(data.data);
-        const callbacks = this.eventCallbacks.get(ISSUE_CREATED) || [];
+      const eventTypes = [ISSUE_CREATED, ISSUE_UPDATED, ISSUE_DELETED];
+      const eventType = eventTypes.find((type) => type === data.event_type);
+      if (eventType) {
+        const callbacks = this.eventCallbacks.get(eventType) || [];
+        const issue =
+          eventType !== ISSUE_DELETED ? new Issue(data.data) : data.data;
         callbacks.forEach((callback) => callback(issue));
-      } else if (data.event_type === ISSUE_DELETED) {
-        const callbacks = this.eventCallbacks.get(ISSUE_DELETED) || [];
-        callbacks.forEach((callback) => callback(data.data));
       }
     };
 
@@ -88,6 +89,16 @@ export class WebsocketService {
 
   public static unsubscribeToIssueCreateEvent(callback: (data: Issue) => void) {
     this.handleEventSubscription(callback, "unsubscribe", ISSUE_CREATED);
+  }
+
+  public static subscribeToIssueUpdatedEvent(callback: (data: Issue) => void) {
+    this.handleEventSubscription(callback, "subscribe", ISSUE_UPDATED);
+  }
+
+  public static unsubscribeToIssueUpdatedEvent(
+    callback: (data: Issue) => void,
+  ) {
+    this.handleEventSubscription(callback, "unsubscribe", ISSUE_UPDATED);
   }
 
   public static subscribeToIssueDeletedEvent(

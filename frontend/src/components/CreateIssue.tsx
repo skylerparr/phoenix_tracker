@@ -5,7 +5,6 @@ import { sessionStorage } from "../store/Session";
 import { STATUS_READY } from "../services/StatusService";
 import PointsButton from "./PointsButtons";
 import WorkTypeButtons from "./WorkTypeButtons";
-import { WebsocketService } from "../services/WebSocketService";
 
 const CreateIssue: React.FC = () => {
   const [selectedType, setSelectedType] = useState<number | null>(null);

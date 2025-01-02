@@ -1,9 +1,12 @@
 import React from "react";
-import { Button } from "@mui/material";
+import { Button, Box } from "@mui/material";
 import { styled } from "@mui/material/styles";
+import PointsButton from "./PointsButtons";
 
 interface StatusButtonProps {
-  status: number;
+  status: number | null;
+  onEstimated: (points: number) => void;
+  onStatusChange: (status: number) => void;
 }
 
 const StyledButton = styled(Button)(({ theme }) => ({
@@ -12,7 +15,25 @@ const StyledButton = styled(Button)(({ theme }) => ({
   fontWeight: 500,
 }));
 
-const StatusButton: React.FC<StatusButtonProps> = ({ status }) => {
+const StatusButton: React.FC<StatusButtonProps> = ({
+  status,
+  onEstimated,
+  onStatusChange,
+}) => {
+  if (status === null) {
+    return (
+      <Box>
+        {[0, 1, 2, 3, 5, 8].map((points) => (
+          <PointsButton
+            key={points}
+            points={points}
+            isSelected={false}
+            onPointsSelect={onEstimated}
+          />
+        ))}
+      </Box>
+    );
+  }
   const getStatusColor = (status: number) => {
     switch (status) {
       case 0:
@@ -42,7 +63,12 @@ const StatusButton: React.FC<StatusButtonProps> = ({ status }) => {
   const statusStyle = getStatusColor(status);
 
   return (
-    <StyledButton variant="contained" style={statusStyle} disableElevation>
+    <StyledButton
+      variant="contained"
+      style={statusStyle}
+      disableElevation
+      onClick={() => onStatusChange(status)}
+    >
       {getStatusText(status)}
     </StyledButton>
   );

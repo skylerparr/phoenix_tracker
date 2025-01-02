@@ -20,7 +20,7 @@ pub struct CreateIssueRequest {
     title: String,
     description: Option<String>,
     priority: i32,
-    points: Option<i32>,
+    points: Option<Option<i32>>,
     status: i32,
     is_icebox: bool,
     work_type: i32,
