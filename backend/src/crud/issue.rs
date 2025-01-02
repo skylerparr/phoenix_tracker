@@ -1,16 +1,19 @@
+use crate::crud::event_broadcaster::EventBroadcaster;
+use crate::crud::event_broadcaster::{ISSUE_CREATED, ISSUE_DELETED};
 use crate::crud::status::get_unfinished_statuses;
 use crate::entities::issue;
+use crate::AppState;
 use sea_orm::entity::prelude::*;
 use sea_orm::*;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct IssueCrud {
-    db: DatabaseConnection,
+    app_state: AppState,
 }
 
 impl IssueCrud {
-    pub fn new(db: DatabaseConnection) -> Self {
-        Self { db }
+    pub fn new(app_state: AppState) -> Self {
+        Self { app_state }
     }
 
     pub async fn create(
@@ -40,11 +43,14 @@ impl IssueCrud {
             ..Default::default()
         };
 
-        issue.insert(&self.db).await
+        let issue = issue.insert(&self.app_state.db).await?;
+        let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+        broadcaster.broadcast_event(project_id, ISSUE_CREATED, serde_json::json!(issue));
+        Ok(issue)
     }
 
     pub async fn find_by_id(&self, id: i32) -> Result<Option<issue::Model>, DbErr> {
-        issue::Entity::find_by_id(id).one(&self.db).await
+        issue::Entity::find_by_id(id).one(&self.app_state.db).await
     }
 
     pub async fn find_all_for_backlog(
@@ -61,7 +67,7 @@ impl IssueCrud {
             query = query.filter(issue::Column::Status.is_in(get_unfinished_statuses()));
         }
 
-        query.all(&self.db).await
+        query.all(&self.app_state.db).await
     }
 
     pub async fn update(
@@ -77,7 +83,7 @@ impl IssueCrud {
         target_release_at: Option<DateTimeWithTimeZone>,
         project_id: i32,
     ) -> Result<issue::Model, DbErr> {
-        let txn = self.db.begin().await?;
+        let txn = self.app_state.db.begin().await?;
 
         let issue = issue::Entity::find_by_id(id)
             .one(&txn)
@@ -132,7 +138,7 @@ impl IssueCrud {
         Ok(result)
     }
     pub async fn set_icebox(&self, issue_id: i32, icebox: bool) -> Result<issue::Model, DbErr> {
-        let txn = self.db.begin().await?;
+        let txn = self.app_state.db.begin().await?;
 
         let issue = issue::Entity::find_by_id(issue_id)
             .one(&txn)
@@ -154,6 +160,12 @@ impl IssueCrud {
         Ok(result)
     }
     pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {
-        issue::Entity::delete_by_id(id).exec(&self.db).await
+        let result = issue::Entity::delete_by_id(id)
+            .exec(&self.app_state.db)
+            .await?;
+        let project_id = &self.app_state.project.clone().unwrap().id;
+        let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+        broadcaster.broadcast_event(*project_id, ISSUE_DELETED, serde_json::json!({ "id": id }));
+        Ok(result)
     }
 }

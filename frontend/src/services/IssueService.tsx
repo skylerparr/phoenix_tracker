@@ -41,7 +41,7 @@ export class IssueService {
     });
     if (!response.ok) throw new Error("Failed to create issue");
     const data = await response.json();
-    return data.map((item: any) => new Issue(item));
+    return new Issue(data);
   }
 
   async getAllIssues(): Promise<Issue[]> {
@@ -59,7 +59,7 @@ export class IssueService {
     });
     if (!response.ok) throw new Error("Failed to fetch issue");
     const data = await response.json();
-    return data.map((item: any) => new Issue(item));
+    return new Issue(data);
   }
 
   async updateIssue(id: number, request: UpdateIssueRequest): Promise<Issue> {
@@ -70,7 +70,7 @@ export class IssueService {
     });
     if (!response.ok) throw new Error("Failed to update issue");
     const data = await response.json();
-    return data.map((item: any) => new Issue(item));
+    return new Issue(data);
   }
 
   async deleteIssue(id: number): Promise<void> {

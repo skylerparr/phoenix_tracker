@@ -3,7 +3,7 @@ use crate::AppState;
 use axum::extract::Query;
 use axum::Extension;
 use axum::{
-    extract::{Path, State},
+    extract::Path,
     http::StatusCode,
     response::IntoResponse,
     routing::{delete, get, post, put},
@@ -54,7 +54,8 @@ pub async fn create_issue(
     Json(payload): Json<CreateIssueRequest>,
 ) -> impl IntoResponse {
     debug!("Creating issue");
-    let issue_crud = IssueCrud::new(app_state.db);
+    let user_id = app_state.user.clone().unwrap().id;
+    let issue_crud = IssueCrud::new(app_state);
     match issue_crud
         .create(
             payload.title,
@@ -66,7 +67,7 @@ pub async fn create_issue(
             payload.work_type,
             1,
             payload.target_release_at,
-            app_state.user.clone().unwrap().id,
+            user_id,
         )
         .await
     {
@@ -82,7 +83,7 @@ async fn get_all_issues_for_backlog(
     Extension(app_state): Extension<AppState>,
     Query(params): Query<HashMap<String, String>>,
 ) -> impl IntoResponse {
-    let issue_crud = IssueCrud::new(app_state.db);
+    let issue_crud = IssueCrud::new(app_state);
     let is_finished = params
         .get("is_finished")
         .and_then(|v| v.parse::<bool>().ok())
@@ -100,7 +101,7 @@ async fn get_issue(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
-    let issue_crud = IssueCrud::new(app_state.db);
+    let issue_crud = IssueCrud::new(app_state);
     match issue_crud.find_by_id(id).await {
         Ok(Some(issue)) => Ok(Json(issue)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
@@ -117,7 +118,7 @@ async fn update_issue(
     Path(id): Path<i32>,
     Json(payload): Json<UpdateIssueRequest>,
 ) -> impl IntoResponse {
-    let issue_crud = IssueCrud::new(app_state.db);
+    let issue_crud = IssueCrud::new(app_state);
     match issue_crud
         .update(
             id,
@@ -150,7 +151,7 @@ async fn delete_issue(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> StatusCode {
-    let issue_crud = IssueCrud::new(app_state.db);
+    let issue_crud = IssueCrud::new(app_state);
     match issue_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {

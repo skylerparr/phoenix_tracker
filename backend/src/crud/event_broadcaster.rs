@@ -7,6 +7,9 @@ pub struct EventBroadcaster {
     tx: Arc<Sender<String>>,
 }
 
+pub const ISSUE_CREATED: &str = "issue_created";
+pub const ISSUE_DELETED: &str = "issue_deleted";
+
 impl EventBroadcaster {
     pub fn new(tx: Arc<Sender<String>>) -> Self {
         Self { tx }
@@ -15,7 +18,7 @@ impl EventBroadcaster {
     pub fn broadcast_event(&self, project_id: i32, event_type: &str, data: Value) {
         let event = serde_json::json!({
             "project_id": project_id,
-            "type": event_type,
+            "event_type": event_type,
             "data": data
         });
 

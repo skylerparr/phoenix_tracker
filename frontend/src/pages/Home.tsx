@@ -10,6 +10,7 @@ import AddIcon from "@mui/icons-material/Add";
 import CreateIssue from "../components/CreateIssue";
 import Backlog from "../components/Backlog";
 import { sessionStorage } from "../store/Session";
+import { WebsocketService } from "../services/WebSocketService";
 
 const toolbarButtons = [
   {
@@ -50,6 +51,9 @@ const toolbarButtons = [
   },
 ];
 const Home = () => {
+  WebsocketService.connect();
+  WebsocketService.subscribe();
+
   const [activeButtons, setActiveButtons] = useState<string[]>(() => {
     return sessionStorage.getActiveButtons();
   });

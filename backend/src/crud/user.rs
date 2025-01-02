@@ -1,4 +1,3 @@
-// use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::entities::user;
 use sea_orm::*;
 
@@ -58,9 +57,6 @@ impl UserCrud {
         }
 
         let updated_user = user.update(&self.db).await?;
-        // this is just an example, remove after I add it to any other crud
-        // let broadcaster = EventBroadcaster::new(self.state.tx.clone());
-        // broadcaster.broadcast_event(1, "user_updated", serde_json::json!({ "user_id": id }));
         Ok(updated_user)
     }
 

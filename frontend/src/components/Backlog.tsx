@@ -5,6 +5,7 @@ import { issueService } from "../services/IssueService";
 import { Issue } from "../models/Issue";
 import IssueGroup from "./IssueGroup";
 import { IssueComponent } from "./IssueComponent";
+import { WebsocketService } from "../services/WebSocketService";
 
 const Backlog: React.FC = () => {
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -13,10 +14,21 @@ const Backlog: React.FC = () => {
     const fetchIssues = async () => {
       const issues = await issueService.getAllIssues();
       setIssues(issues);
+
+      WebsocketService.subscribeToIssueCreateEvent(handleIssueCreated);
+      WebsocketService.subscribeToIssueDeletedEvent(handleIssueDeleted);
     };
 
     fetchIssues();
   }, []);
+
+  const handleIssueCreated = (issue: Issue) => {
+    setIssues((prevIssues) => [...prevIssues, issue]);
+  };
+
+  const handleIssueDeleted = ({ id }: { id: number }) => {
+    setIssues((prevIssues) => prevIssues.filter((issue) => issue.id !== id));
+  };
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
