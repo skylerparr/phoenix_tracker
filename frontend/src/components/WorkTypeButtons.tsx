@@ -8,7 +8,11 @@ interface WorkTypeButtonsProps {
   onWorkTypeSelect: (workType: number) => void;
 }
 
-export const workTypes = [
+export const workTypes: {
+  id: number;
+  icon: () => JSX.Element;
+  label: string;
+}[] = [
   {
     id: 0,
     icon: () => <Star sx={{ color: "orange", fill: "orange" }} />,

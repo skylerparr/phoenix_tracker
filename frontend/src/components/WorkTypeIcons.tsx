@@ -1,12 +1,16 @@
 import React from "react";
-import { Tooltip } from "@mui/material";
+import { Tooltip, Box, Typography } from "@mui/material";
 import { workTypes } from "./WorkTypeButtons";
 
 interface WorkTypeIconProps {
   id: number;
+  showLabel?: boolean;
 }
 
-const WorkTypeIcon: React.FC<WorkTypeIconProps> = ({ id }) => {
+const WorkTypeIcon: React.FC<WorkTypeIconProps> = ({
+  id,
+  showLabel = false,
+}) => {
   const workType = workTypes.find((type) => type.id === id);
   if (!workType) return null;
 
@@ -14,7 +18,14 @@ const WorkTypeIcon: React.FC<WorkTypeIconProps> = ({ id }) => {
 
   return (
     <Tooltip title={label}>
-      <Icon />
+      <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Icon />
+        {showLabel && (
+          <Typography sx={{ marginLeft: 1, color: "black" }}>
+            {label}
+          </Typography>
+        )}
+      </Box>
     </Tooltip>
   );
 };

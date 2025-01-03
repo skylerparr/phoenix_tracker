@@ -10,12 +10,11 @@ import {
   STATUS_ACCEPTED,
   STATUS_REJECTED,
 } from "../services/StatusService";
-import { Issue } from "../models/Issue";
+import { Issue, POINTS } from "../models/Issue";
 
 interface StatusButtonProps {
   issueId: number;
   status: number | null;
-  onEstimated: (points: number) => void;
 }
 
 const StyledButton = styled(Button)(({ theme }) => ({
@@ -24,20 +23,19 @@ const StyledButton = styled(Button)(({ theme }) => ({
   fontWeight: 500,
 }));
 
-const StatusButton: React.FC<StatusButtonProps> = ({
-  issueId,
-  status,
-  onEstimated,
-}) => {
+const StatusButton: React.FC<StatusButtonProps> = ({ issueId, status }) => {
+  const handleOnEstimated = (points: number) => {
+    issueService.updateIssue(issueId, { points });
+  };
   if (status === null) {
     return (
       <Box>
-        {[0, 1, 2, 3, 5, 8].map((points) => (
+        {POINTS.map((points) => (
           <PointsButton
             key={points}
             points={points}
             isSelected={false}
-            onPointsSelect={onEstimated}
+            onPointsSelect={handleOnEstimated}
           />
         ))}
       </Box>

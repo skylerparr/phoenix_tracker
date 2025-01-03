@@ -4,7 +4,6 @@ import { Box, Typography, Stack } from "@mui/material";
 import { PointsIcon } from "./PointsIcon";
 import WorkTypeIcon from "./WorkTypeIcons";
 import StatusButton from "./StatusButton";
-import { issueService } from "../services/IssueService";
 import { STATUS_IN_PROGRESS, STATUS_ACCEPTED } from "../services/StatusService";
 import { IssueDetail } from "./IssueDetail";
 
@@ -14,10 +13,6 @@ interface IssueComponentProps {
 
 export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
   const [expanded, setExpanded] = React.useState(true);
-
-  const handleOnEstimated = (points: number) => {
-    issueService.updateIssue(issue.id, { points });
-  };
 
   const getBackgroundColor = (status: number) => {
     switch (status) {
@@ -59,7 +54,6 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
             <Box onClick={(e) => e.stopPropagation()}>
               <StatusButton
                 status={issue.points === null ? null : issue.status}
-                onEstimated={handleOnEstimated}
                 issueId={issue.id}
               />
             </Box>

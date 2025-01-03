@@ -6,16 +6,31 @@ import {
   IconButton,
   TextField,
   Button,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
 } from "@mui/material";
 import { issueService } from "../services/IssueService";
-
+import useDebounce from "../utils/Debounce";
 import {
   KeyboardArrowDown as KeyboardArrowDownIcon,
   Link as LinkIcon,
   AccessTime,
   DeleteOutline as Delete,
 } from "@mui/icons-material";
-import { Issue } from "../models/Issue";
+import { formatDistanceToNow } from "date-fns";
+import { Issue, POINTS } from "../models/Issue";
+import { workTypes } from "./WorkTypeButtons";
+import WorkTypeIcon from "./WorkTypeIcons";
+import { getStatusArray, Status } from "../services/StatusService";
+import { createTheme, ThemeProvider } from "@mui/material";
+import StatusButton from "./StatusButton";
+
+const lightTheme = createTheme({
+  palette: {
+    mode: "light",
+  },
+});
 
 interface IssueComponentProps {
   issue: Issue;
@@ -23,14 +38,48 @@ interface IssueComponentProps {
 }
 
 export const IssueDetail: React.FC<IssueComponentProps> = ({
-  issue,
+  issue: originalIssue,
   closeHandler,
 }) => {
+  const { debouncedUpdate } = useDebounce();
+  const [issue, setIssue] = React.useState<Issue>(originalIssue);
   const [comment, setComment] = React.useState("");
+
   const handleDeleteIssue = async () => {
     await issueService.deleteIssue(issue.id);
   };
 
+  const handleDescriptionUpdate = async (value: string) => {
+    setIssue({ ...issue, description: value });
+
+    debouncedUpdate(async () => {
+      const serverUpdatedIssue = await issueService.updateIssue(issue.id, {
+        description: value,
+      });
+      setIssue(serverUpdatedIssue);
+    });
+  };
+
+  const handleWorkTypeChange = async (workType: number) => {
+    const serverUpdatedIssue = await issueService.updateIssue(issue.id, {
+      workType,
+    });
+    setIssue(serverUpdatedIssue);
+  };
+
+  const handleStatusChange = async (status: number) => {
+    const serverUpdatedIssue = await issueService.updateIssue(issue.id, {
+      status,
+    });
+    setIssue(serverUpdatedIssue);
+  };
+
+  const handlePointsChange = async (points: number) => {
+    const serverUpdatedIssue = await issueService.updateIssue(issue.id, {
+      points,
+    });
+    setIssue(serverUpdatedIssue);
+  };
   return (
     <Stack
       spacing={2}
@@ -169,9 +218,26 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
               STORY TYPE
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography>⭐</Typography>
-              <Typography sx={{ color: "#a5a5a5" }}>Feature</Typography>
-            </Box>
+              <ThemeProvider theme={lightTheme}>
+                <Select
+                  size="small"
+                  value={issue.workType}
+                  onChange={(e: SelectChangeEvent<number>) =>
+                    handleWorkTypeChange(Number(e.target.value))
+                  }
+                  sx={{
+                    minWidth: 120,
+                    backgroundColor: "#f6f6f6",
+                  }}
+                >
+                  {workTypes.map((type) => (
+                    <MenuItem key={type.id} value={type.id}>
+                      <WorkTypeIcon id={type.id} showLabel={true} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              </ThemeProvider>
+            </Box>{" "}
           </Stack>
         </Box>
 
@@ -188,9 +254,30 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
               STATE
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography sx={{ color: "#a5a5a5" }}>Start</Typography>
-              <Typography sx={{ color: "#a5a5a5" }}>Unstarted</Typography>
-            </Box>
+              <ThemeProvider theme={lightTheme}>
+                <Select
+                  size="small"
+                  value={issue.status}
+                  onChange={(e: SelectChangeEvent<number>) =>
+                    handleStatusChange(Number(e.target.value))
+                  }
+                  sx={{
+                    minWidth: 120,
+                    backgroundColor: "#f6f6f6",
+                  }}
+                >
+                  {getStatusArray().map((status: Status) => (
+                    <MenuItem key={status.id} value={status.id}>
+                      {status.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <StatusButton
+                  status={issue.points === null ? null : issue.status}
+                  issueId={issue.id}
+                />
+              </ThemeProvider>
+            </Box>{" "}
           </Stack>
         </Box>
 
@@ -207,9 +294,27 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
               POINTS
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography sx={{ color: "#a5a5a5" }}>
-                {issue.points} Points
-              </Typography>
+              <ThemeProvider theme={lightTheme}>
+                {issue.points !== null && (
+                  <Select
+                    size="small"
+                    value={issue.points}
+                    onChange={(e: SelectChangeEvent<number>) =>
+                      handlePointsChange(Number(e.target.value))
+                    }
+                    sx={{
+                      minWidth: 120,
+                      backgroundColor: "#f6f6f6",
+                    }}
+                  >
+                    {POINTS.map((point) => (
+                      <MenuItem key={point} value={point}>
+                        {point} Points
+                      </MenuItem>
+                    ))}
+                  </Select>
+                )}
+              </ThemeProvider>
             </Box>
           </Stack>
         </Box>
@@ -251,9 +356,22 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         </Box>
 
         <Box sx={{ border: "1px solid #ddd", borderRadius: "4px", p: 1 }}>
-          <Typography variant="caption" sx={{ color: "#666" }}>
-            Updated: 28 minutes ago
-          </Typography>
+          <Stack spacing={1}>
+            <Typography variant="caption" sx={{ color: "#666" }}>
+              Created: {new Date(issue.createdAt).toLocaleString()} (
+              {formatDistanceToNow(new Date(issue.createdAt), {
+                addSuffix: true,
+              })}
+              )
+            </Typography>
+            <Typography variant="caption" sx={{ color: "#666" }}>
+              Updated: {new Date(issue.updatedAt).toLocaleString()} (
+              {formatDistanceToNow(new Date(issue.updatedAt), {
+                addSuffix: true,
+              })}
+              )
+            </Typography>
+          </Stack>
         </Box>
       </Stack>
       <Typography sx={{ color: "#666", fontWeight: "bold", mt: 2 }}>
@@ -272,10 +390,12 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         rows={4}
         fullWidth
         placeholder="Add a description"
+        value={issue.description}
         sx={{
           bgcolor: "white",
           "& .MuiInputBase-input": { color: "black" },
         }}
+        onChange={(e) => handleDescriptionUpdate(e.target.value)}
       />
       <Typography sx={{ color: "#666", fontWeight: "bold" }}>LABELS</Typography>
       <TextField

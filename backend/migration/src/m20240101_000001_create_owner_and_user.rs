@@ -1,4 +1,7 @@
+use crate::sea_orm::DatabaseBackend;
+use sea_orm;
 use sea_orm_migration::prelude::*;
+use sea_query;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -684,6 +687,146 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await?;
+        match manager.get_database_backend() {
+            DatabaseBackend::Postgres => {
+                manager
+                    .exec_stmt(
+                        sea_query::Table::create()
+                            .table(Alias::new("dummy"))
+                            .if_not_exists()
+                            .col(
+                                ColumnDef::new(Alias::new("id"))
+                                    .integer()
+                                    .not_null()
+                                    .primary_key(),
+                            )
+                            .to_owned(),
+                    )
+                    .await?;
+
+                manager
+                    .get_connection()
+                    .execute(sea_orm::Statement::from_string(
+                        manager.get_database_backend(),
+                        r#"CREATE OR REPLACE FUNCTION update_updated_at_column()
+                                    RETURNS TRIGGER AS $
+                                    BEGIN
+                                        NEW.updated_at = CURRENT_TIMESTAMP;
+                                        RETURN NEW;
+                                    END;
+                                    $ language 'plpgsql';"#
+                            .to_owned(),
+                    ))
+                    .await?;
+            }
+            DatabaseBackend::MySql => {
+                manager
+                    .get_connection()
+                    .execute(sea_orm::Statement::from_string(
+                        manager.get_database_backend(),
+                        "SET SQL_MODE='ALLOW_INVALID_DATES';".to_owned(),
+                    ))
+                    .await?;
+            }
+            DatabaseBackend::Sqlite => {}
+        }
+
+        let tables = vec![
+            "user",
+            "owner",
+            "project",
+            "tag",
+            "issue",
+            "issue_tag",
+            "issue_assignee",
+            "comment",
+            "tasks",
+            "token",
+            "project_user",
+            "history",
+            "notification",
+            "blocker",
+            "user_setting",
+        ];
+        for table in tables {
+            match manager.get_database_backend() {
+                DatabaseBackend::Postgres => {
+                    // First drop existing trigger
+                    manager
+                        .get_connection()
+                        .execute(sea_orm::Statement::from_string(
+                            manager.get_database_backend(),
+                            format!("DROP TRIGGER IF EXISTS set_updated_at ON {};", table),
+                        ))
+                        .await?;
+                    // Then create new trigger
+                    manager
+                        .get_connection()
+                        .execute(sea_orm::Statement::from_string(
+                            manager.get_database_backend(),
+                            format!(
+                                r#"CREATE TRIGGER set_updated_at
+                                            BEFORE UPDATE ON {}
+                                            FOR EACH ROW
+                                            EXECUTE FUNCTION update_updated_at_column();"#,
+                                table
+                            ),
+                        ))
+                        .await?;
+                }
+                DatabaseBackend::MySql => {
+                    manager
+                        .get_connection()
+                        .execute(sea_orm::Statement::from_string(
+                            manager.get_database_backend(),
+                            format!("DROP TRIGGER IF EXISTS set_updated_at;"),
+                        ))
+                        .await?;
+                    manager
+                        .get_connection()
+                        .execute(sea_orm::Statement::from_string(
+                            manager.get_database_backend(),
+                            format!(
+                                r#"CREATE TRIGGER set_updated_at
+                                            BEFORE UPDATE ON {}
+                                            FOR EACH ROW
+                                            SET NEW.updated_at = CURRENT_TIMESTAMP"#,
+                                table
+                            ),
+                        ))
+                        .await?;
+                }
+                DatabaseBackend::Sqlite => {
+                    manager
+                        .get_connection()
+                        .execute(sea_orm::Statement::from_string(
+                            manager.get_database_backend(),
+                            format!("DROP TRIGGER IF EXISTS set_updated_at_{};", table),
+                        ))
+                        .await?;
+                    manager
+                        .get_connection()
+                        .execute(
+                            sea_orm::Statement::from_string(
+                                manager.get_database_backend(),
+                                format!(
+                                    r#"CREATE TRIGGER set_updated_at_{}
+                                        AFTER UPDATE ON {}
+                                        FOR EACH ROW
+                                        WHEN NEW.updated_at = OLD.updated_at
+                                        BEGIN
+                                            UPDATE {} SET updated_at = strftime('%Y-%m-%d %H:%M:%f', 'now')
+                                            WHERE id = NEW.id;
+                                        END;"#,
+                                    table, table, table
+                                ),
+                            )
+                        )
+                        .await?;
+                }
+            }
+        }
+
         Ok(())
     }
 

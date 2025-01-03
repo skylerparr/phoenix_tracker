@@ -27,3 +27,5 @@ export class Issue {
     this.updatedAt = new Date(data.updated_at);
   }
 }
+
+export const POINTS = [0, 1, 2, 3, 5, 8];

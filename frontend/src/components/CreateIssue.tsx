@@ -6,6 +6,7 @@ import { STATUS_READY } from "../services/StatusService";
 import PointsButton from "./PointsButtons";
 import WorkTypeButtons from "./WorkTypeButtons";
 import { tagService } from "../services/TagService";
+import { POINTS } from "../models/Issue";
 
 const CreateIssue: React.FC = () => {
   const [selectedType, setSelectedType] = useState<number | null>(null);
@@ -104,7 +105,7 @@ const CreateIssue: React.FC = () => {
         />
       </Box>
       <Box sx={{ display: "flex", gap: 0, alignItems: "center" }}>
-        {[0, 1, 2, 3, 5, 8].map((points) => (
+        {POINTS.map((points) => (
           <PointsButton
             key={points}
             points={points}
