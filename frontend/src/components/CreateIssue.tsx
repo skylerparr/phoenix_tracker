@@ -6,6 +6,7 @@ import { STATUS_READY } from "../services/StatusService";
 import PointsButton from "./PointsButtons";
 import WorkTypeButtons from "./WorkTypeButtons";
 import { tagService } from "../services/TagService";
+import { issueTagService } from "../services/IssueTagService";
 import { POINTS } from "../models/Issue";
 
 const CreateIssue: React.FC = () => {
@@ -45,7 +46,7 @@ const CreateIssue: React.FC = () => {
     if (!currentProject || !currentUser) return;
 
     try {
-      await issueService.createIssue({
+      const issue = await issueService.createIssue({
         title,
         description,
         points: selectedPoints,
@@ -54,6 +55,21 @@ const CreateIssue: React.FC = () => {
         isIcebox: false,
         workType: selectedType!,
       });
+
+      const tags = await tagService.getAllTags();
+      const selectedTagIds = selectedTags
+        .map((selectedTagName: string) => {
+          const tag = tags.find((tag) => tag.name === selectedTagName);
+          return tag ? tag.id : null;
+        })
+        .filter((id): id is number => id !== null);
+
+      for (const tagId of selectedTagIds) {
+        await issueTagService.createIssueTag({
+          issueId: issue.id,
+          tagId: tagId,
+        });
+      }
 
       setTitle("");
       setDescription("");

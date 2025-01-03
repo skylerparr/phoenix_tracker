@@ -1,3 +1,4 @@
+use crate::entities::issue_tag;
 use sea_orm::*;
 
 #[derive(Clone, Debug)]
@@ -16,11 +17,15 @@ impl IssueTagCrud {
             tag_id: Set(tag_id),
             ..Default::default()
         };
-        
+
         issue_tag.insert(&self.db).await
     }
 
-    pub async fn find_by_ids(&self, issue_id: i32, tag_id: i32) -> Result<Option<issue_tag::Model>, DbErr> {
+    pub async fn find_by_ids(
+        &self,
+        issue_id: i32,
+        tag_id: i32,
+    ) -> Result<Option<issue_tag::Model>, DbErr> {
         issue_tag::Entity::find()
             .filter(issue_tag::Column::IssueId.eq(issue_id))
             .filter(issue_tag::Column::TagId.eq(tag_id))

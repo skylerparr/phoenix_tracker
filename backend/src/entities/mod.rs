@@ -1,6 +1,7 @@
 pub mod comment;
 pub mod history;
 pub mod issue;
+pub mod issue_tag;
 pub mod owner;
 pub mod project;
 pub mod project_user;

@@ -2,7 +2,7 @@ use crate::crud::tag::TagCrud;
 use crate::AppState;
 use axum::Extension;
 use axum::{
-    extract::{Path, State},
+    extract::Path,
     http::StatusCode,
     response::IntoResponse,
     routing::{delete, get, post, put},
