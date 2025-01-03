@@ -11,17 +11,18 @@ export class WebsocketService {
   private static isConnecting: boolean = false;
   private static eventCallbacks: Map<string, ((data: any) => void)[]> =
     new Map();
-
-  public static async connect() {
-    if (this.socket || this.isConnecting) return;
-
+  private static heartbeatId: ReturnType<typeof setInterval> | null = null;
+  private static createNewConnection() {
     const wsUrl = `${API_BASE_URL.replace("http", "ws")}/ws?token=${sessionStorage.getSession().user?.token}`;
-    this.isConnecting = true;
     this.socket = new WebSocket(wsUrl);
 
     this.socket.onopen = () => {
       console.log("Connected to server");
       this.isConnecting = false;
+      this.heartbeatId && clearInterval(this.heartbeatId);
+      this.heartbeatId = setInterval(() => {
+        this.ping();
+      }, 5000);
     };
 
     this.socket.onmessage = (event) => {
@@ -38,11 +39,17 @@ export class WebsocketService {
 
     this.socket.onclose = () => {
       this.isConnecting = false;
+      this.heartbeatId && clearInterval(this.heartbeatId);
       setTimeout(() => {
-        const newSocket = new WebSocket(wsUrl);
-        Object.assign(this.socket, newSocket);
+        this.createNewConnection();
       }, 1000);
     };
+  }
+
+  public static async connect() {
+    if (this.socket || this.isConnecting) return;
+    this.isConnecting = true;
+    this.createNewConnection();
   }
   private static async ensureConnection() {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {

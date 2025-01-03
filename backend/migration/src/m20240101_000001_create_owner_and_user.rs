@@ -110,7 +110,6 @@ impl MigrationTrait for Migration {
                             .auto_increment(),
                     )
                     .col(ColumnDef::new(Tag::Name).string().not_null())
-                    .col(ColumnDef::new(Tag::Color).unsigned().not_null())
                     .col(ColumnDef::new(Tag::IsEpic).boolean().not_null())
                     .col(ColumnDef::new(Tag::ProjectId).integer().not_null())
                     .col(
@@ -642,6 +641,7 @@ impl MigrationTrait for Migration {
                     .name("idx-issue-project-icebox")
                     .col(Issue::ProjectId)
                     .col(Issue::IsIcebox)
+                    .col(Issue::Status)
                     .table(Issue::Table)
                     .to_owned(),
             )
@@ -768,7 +768,6 @@ enum Tag {
     Table,
     Id,
     Name,
-    Color,
     IsEpic,
     ProjectId,
     CreatedAt,

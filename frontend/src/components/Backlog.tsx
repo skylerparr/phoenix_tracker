@@ -12,8 +12,7 @@ const Backlog: React.FC = () => {
 
   useEffect(() => {
     const fetchIssues = async () => {
-      const issues = await issueService.getAllIssues();
-      setIssues(issues);
+      await doFetchIssues();
 
       WebsocketService.subscribeToIssueCreateEvent(handleIssueCreated);
       WebsocketService.subscribeToIssueUpdatedEvent(handleIssueUpdated);
@@ -23,19 +22,21 @@ const Backlog: React.FC = () => {
     fetchIssues();
   }, []);
 
-  const handleIssueCreated = (issue: Issue) => {
-    setIssues((prevIssues) => [...prevIssues, issue]);
+  const doFetchIssues = async () => {
+    const issues = await issueService.getAllIssues();
+    setIssues(issues);
   };
 
-  const handleIssueUpdated = (issue: Issue) => {
-    setIssues((prevIssues) => {
-      const filteredIssues = prevIssues.filter((i) => i.id !== issue.id);
-      return [...filteredIssues, issue];
-    });
+  const handleIssueCreated = async (issue: Issue) => {
+    await doFetchIssues();
   };
 
-  const handleIssueDeleted = ({ id }: { id: number }) => {
-    setIssues((prevIssues) => prevIssues.filter((issue) => issue.id !== id));
+  const handleIssueUpdated = async (issue: Issue) => {
+    await doFetchIssues();
+  };
+
+  const handleIssueDeleted = async ({ id }: { id: number }) => {
+    await doFetchIssues();
   };
 
   const handleDragEnd = (result: any) => {

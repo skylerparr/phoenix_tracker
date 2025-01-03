@@ -1,5 +1,6 @@
 use crate::crud::tag::TagCrud;
 use crate::AppState;
+use axum::Extension;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -13,7 +14,6 @@ use serde::Deserialize;
 #[serde(rename_all = "camelCase")]
 pub struct CreateTagRequest {
     name: String,
-    color: u32,
     is_epic: bool,
 }
 
@@ -21,7 +21,6 @@ pub struct CreateTagRequest {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateTagRequest {
     name: Option<String>,
-    color: Option<u32>,
     is_epic: Option<bool>,
 }
 
@@ -36,12 +35,13 @@ pub fn tag_routes() -> Router<AppState> {
 
 #[axum::debug_handler]
 async fn create_tag(
-    State(app_state): State<AppState>,
+    Extension(app_state): Extension<AppState>,
     Json(payload): Json<CreateTagRequest>,
 ) -> impl IntoResponse {
-    let tag_crud = TagCrud::new(app_state.db);
+    let project_id = app_state.project.clone().unwrap().id;
+    let tag_crud = TagCrud::new(app_state);
     match tag_crud
-        .create(payload.name, payload.color, payload.is_epic)
+        .create(project_id, payload.name, payload.is_epic)
         .await
     {
         Ok(tag) => Ok(Json(tag)),
@@ -52,9 +52,10 @@ async fn create_tag(
     }
 }
 #[axum::debug_handler]
-async fn get_all_tags(State(app_state): State<AppState>) -> impl IntoResponse {
-    let tag_crud = TagCrud::new(app_state.db);
-    match tag_crud.find_all().await {
+async fn get_all_tags(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
+    let project_id = app_state.project.clone().unwrap().id;
+    let tag_crud = TagCrud::new(app_state);
+    match tag_crud.find_all(project_id).await {
         Ok(tags) => Ok(Json(tags)),
         Err(e) => {
             println!("Error getting all tags: {:?}", e);
@@ -64,8 +65,11 @@ async fn get_all_tags(State(app_state): State<AppState>) -> impl IntoResponse {
 }
 
 #[axum::debug_handler]
-async fn get_tag(State(app_state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
-    let tag_crud = TagCrud::new(app_state.db);
+async fn get_tag(
+    Extension(app_state): Extension<AppState>,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
+    let tag_crud = TagCrud::new(app_state);
     match tag_crud.find_by_id(id).await {
         Ok(Some(tag)) => Ok(Json(tag)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
@@ -78,15 +82,12 @@ async fn get_tag(State(app_state): State<AppState>, Path(id): Path<i32>) -> impl
 
 #[axum::debug_handler]
 async fn update_tag(
-    State(app_state): State<AppState>,
+    Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
     Json(payload): Json<UpdateTagRequest>,
 ) -> impl IntoResponse {
-    let tag_crud = TagCrud::new(app_state.db);
-    match tag_crud
-        .update(id, payload.name, payload.color, payload.is_epic)
-        .await
-    {
+    let tag_crud = TagCrud::new(app_state);
+    match tag_crud.update(id, payload.name, payload.is_epic).await {
         Ok(tag) => Ok(Json(tag)),
         Err(e) => {
             if e.to_string().contains("Tag not found") {
@@ -100,8 +101,8 @@ async fn update_tag(
 }
 
 #[axum::debug_handler]
-async fn delete_tag(State(app_state): State<AppState>, Path(id): Path<i32>) -> StatusCode {
-    let tag_crud = TagCrud::new(app_state.db);
+async fn delete_tag(Extension(app_state): Extension<AppState>, Path(id): Path<i32>) -> StatusCode {
+    let tag_crud = TagCrud::new(app_state);
     match tag_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {

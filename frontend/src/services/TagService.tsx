@@ -4,13 +4,11 @@ import { sessionStorage } from "../store/Session";
 
 interface CreateTagRequest {
   name: string;
-  color: number;
   isEpic: boolean;
 }
 
 interface UpdateTagRequest {
   name?: string;
-  color?: number;
   isEpic?: boolean;
 }
 
@@ -37,7 +35,8 @@ export class TagService {
       },
     });
     if (!response.ok) throw new Error("Failed to fetch tags");
-    return response.json();
+    const data = await response.json();
+    return data.map((item: any) => new Tag(item));
   }
 
   async getTag(id: number): Promise<Tag> {

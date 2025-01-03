@@ -5,6 +5,7 @@ import { sessionStorage } from "../store/Session";
 import { STATUS_READY } from "../services/StatusService";
 import PointsButton from "./PointsButtons";
 import WorkTypeButtons from "./WorkTypeButtons";
+import { tagService } from "../services/TagService";
 
 const CreateIssue: React.FC = () => {
   const [selectedType, setSelectedType] = useState<number | null>(null);
@@ -22,19 +23,19 @@ const CreateIssue: React.FC = () => {
   const [selectedPoints, setSelectedPoints] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
 
-  const availableTags = [
-    "frontend",
-    "backend",
-    "urgent",
-    "documentation",
-    "testing",
-    "design",
-    "database",
-    "api",
-    "ui",
-    "ux",
-  ];
+  React.useEffect(() => {
+    const fetchData = async () => {
+      await fetchTags();
+    };
+    fetchData();
+  }, []);
+
+  const fetchTags = async () => {
+    const tags = await tagService.getAllTags();
+    setAvailableTags(tags.map((tag) => tag.name));
+  };
 
   const handleCreateIssue = async () => {
     const currentProject = sessionStorage.getProject();
@@ -53,19 +54,23 @@ const CreateIssue: React.FC = () => {
         workType: selectedType!,
       });
 
-      // Clear form after successful creation
       setTitle("");
       setDescription("");
       setSelectedType(null);
       setSelectedTags([]);
       setSelectedAssignees([]);
       setSelectedPoints(null);
-
-      // You can add success notification here
     } catch (error) {
       console.error("Failed to create issue:", error);
-      // You can add error notification here
     }
+  };
+
+  const handleCreateNewTag = async (newTagName: string) => {
+    await tagService.createTag({
+      name: newTagName,
+      isEpic: false,
+    });
+    await fetchTags();
   };
 
   return (
@@ -150,10 +155,22 @@ const CreateIssue: React.FC = () => {
               event: React.SyntheticEvent,
               newInputValue: string,
             ) => onInputChange(newInputValue)}
+            onKeyDown={(event) => {
+              if (
+                event.key === "Enter" &&
+                inputValue &&
+                !options.includes(inputValue)
+              ) {
+                handleCreateNewTag(inputValue);
+              }
+            }}
             renderTags={(value: string[], getTagProps: any) =>
-              value.map((option: string, index: number) => (
-                <Chip label={option} {...getTagProps({ index })} size="small" />
-              ))
+              value.map((option: string, index: number) => {
+                const { key, ...props } = getTagProps({ index });
+                return (
+                  <Chip key={key} label={option} {...props} size="small" />
+                );
+              })
             }
             renderInput={(
               params: React.JSX.IntrinsicAttributes &
