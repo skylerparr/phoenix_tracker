@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 import {
   Box,
   Typography,
@@ -25,6 +25,8 @@ import WorkTypeIcon from "./WorkTypeIcons";
 import { getStatusArray, Status } from "../services/StatusService";
 import { createTheme, ThemeProvider } from "@mui/material";
 import StatusButton from "./StatusButton";
+import IssueAutoCompleteComponent from "./IssueAutoCompleteComponent";
+import { tagService } from "../services/TagService";
 
 const lightTheme = createTheme({
   palette: {
@@ -42,8 +44,25 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   closeHandler,
 }) => {
   const { debouncedUpdate } = useDebounce();
-  const [issue, setIssue] = React.useState<Issue>(originalIssue);
-  const [comment, setComment] = React.useState("");
+  const [issue, setIssue] = useState<Issue>(originalIssue);
+  const [comment, setComment] = useState("");
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [inputValue, setInputValue] = useState("");
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      await fetchTags();
+    };
+    fetchData();
+  }, []);
+
+
+  const fetchTags = async () => {
+    const tags = await tagService.getAllTags();
+    setAvailableTags(tags.map((tag) => tag.name));
+  };
+
 
   const handleDeleteIssue = async () => {
     await issueService.deleteIssue(issue.id);
@@ -80,6 +99,16 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     });
     setIssue(serverUpdatedIssue);
   };
+
+  
+  const handleCreateNewTag = async (newTagName: string) => {
+    await tagService.createTag({
+      name: newTagName,
+      isEpic: false,
+    });
+    await fetchTags();
+  };
+
   return (
     <Stack
       spacing={2}
@@ -398,15 +427,15 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         onChange={(e) => handleDescriptionUpdate(e.target.value)}
       />
       <Typography sx={{ color: "#666", fontWeight: "bold" }}>LABELS</Typography>
-      <TextField
-        fullWidth
-        placeholder="Add a label"
-        size="small"
-        sx={{
-          bgcolor: "white",
-          "& .MuiInputBase-input": { color: "black" },
-        }}
-      />
+      <IssueAutoCompleteComponent
+            options={availableTags}
+            value={selectedTags}
+            onChange={setSelectedTags}
+            inputValue={inputValue}
+            onInputChange={setInputValue}
+            placeholder="Add labels..."
+            handleCreateNew={handleCreateNewTag}
+          />
       <Typography sx={{ color: "#666", fontWeight: "bold" }}>
         TASKS (0/0)
       </Typography>

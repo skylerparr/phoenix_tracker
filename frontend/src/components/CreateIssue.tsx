@@ -8,6 +8,7 @@ import WorkTypeButtons from "./WorkTypeButtons";
 import { tagService } from "../services/TagService";
 import { issueTagService } from "../services/IssueTagService";
 import { POINTS } from "../models/Issue";
+import IssueAutoCompleteComponent from "./IssueAutoCompleteComponent";
 
 const CreateIssue: React.FC = () => {
   const [selectedType, setSelectedType] = useState<number | null>(null);
@@ -108,8 +109,12 @@ const CreateIssue: React.FC = () => {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         sx={{
-          backgroundColor: "#383838",
+          backgroundColor: "#f6f6f6",
+          color: "#000000",
           boxShadow: "inset 0 1px 5px rgba(0,0,0,0.3)",
+          "& .MuiInputBase-input": {
+            color: "#6a7a6a"
+          }
         }}
       />
       <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
@@ -147,7 +152,8 @@ const CreateIssue: React.FC = () => {
           onChange: setSelectedTags,
           inputValue: inputValue,
           onInputChange: setInputValue,
-          placeholder: "Add tags...",
+          onCreateNew: handleCreateNewTag,
+          placeholder: "Add labels...",
         },
       ].map(
         ({
@@ -156,58 +162,17 @@ const CreateIssue: React.FC = () => {
           onChange,
           inputValue,
           onInputChange,
+          onCreateNew,
           placeholder,
         }) => (
-          <Autocomplete
-            key={placeholder}
-            multiple
-            freeSolo
+          <IssueAutoCompleteComponent
             options={options}
             value={value}
-            onChange={(event: React.SyntheticEvent, newValue: string[]) =>
-              onChange(newValue)
-            }
+            onChange={onChange}
             inputValue={inputValue}
-            onInputChange={(
-              event: React.SyntheticEvent,
-              newInputValue: string,
-            ) => onInputChange(newInputValue)}
-            onKeyDown={(event) => {
-              if (
-                event.key === "Enter" &&
-                inputValue &&
-                !options.includes(inputValue)
-              ) {
-                handleCreateNewTag(inputValue);
-              }
-            }}
-            renderTags={(value: string[], getTagProps: any) =>
-              value.map((option: string, index: number) => {
-                const { key, ...props } = getTagProps({ index });
-                return (
-                  <Chip key={key} label={option} {...props} size="small" />
-                );
-              })
-            }
-            renderInput={(
-              params: React.JSX.IntrinsicAttributes &
-                import("@mui/material").TextFieldProps,
-            ) => (
-              <TextField
-                {...params}
-                variant="outlined"
-                size="small"
-                placeholder={value.length === 0 ? placeholder : ""}
-                sx={{
-                  backgroundColor: "#383838",
-                  boxShadow: "inset 0 1px 5px rgba(0,0,0,0.3)",
-                  "& .MuiOutlinedInput-root": {
-                    borderTopRightRadius: 0,
-                    borderBottomRightRadius: 0,
-                  },
-                }}
-              />
-            )}
+            onInputChange={onInputChange}
+            placeholder={placeholder}
+            handleCreateNew={onCreateNew}
           />
         ),
       )}{" "}
@@ -220,8 +185,12 @@ const CreateIssue: React.FC = () => {
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         sx={{
-          backgroundColor: "#383838",
+          backgroundColor: "#f6f6f6",
+          color: "#000000",
           boxShadow: "inset 0 1px 5px rgba(0,0,0,0.3)",
+          "& .MuiInputBase-input": {
+            color: "#6a7a6a"
+          }
         }}
       />
       <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
