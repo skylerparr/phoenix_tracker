@@ -10,7 +10,24 @@ import { WebsocketService } from "../services/WebSocketService";
 const Backlog: React.FC = () => {
   const [issues, setIssues] = useState<Issue[]>([]);
 
+  const doFetchIssues = async () => {
+    const issues = await issueService.getAllIssues();
+    setIssues(issues);
+  };
+
   useEffect(() => {
+    const handleIssueCreated = async (issue: Issue) => {
+      await doFetchIssues();
+    };
+
+    const handleIssueUpdated = async (issue: Issue) => {
+      await doFetchIssues();
+    };
+
+    const handleIssueDeleted = async ({ id }: { id: number }) => {
+      await doFetchIssues();
+    };
+
     const fetchIssues = async () => {
       await doFetchIssues();
 
@@ -21,24 +38,6 @@ const Backlog: React.FC = () => {
 
     fetchIssues();
   }, []);
-
-  const doFetchIssues = async () => {
-    const issues = await issueService.getAllIssues();
-    setIssues(issues);
-  };
-
-  const handleIssueCreated = async (issue: Issue) => {
-    await doFetchIssues();
-  };
-
-  const handleIssueUpdated = async (issue: Issue) => {
-    await doFetchIssues();
-  };
-
-  const handleIssueDeleted = async ({ id }: { id: number }) => {
-    await doFetchIssues();
-  };
-
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
 
