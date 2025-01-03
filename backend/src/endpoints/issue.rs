@@ -1,4 +1,7 @@
 use crate::crud::issue::IssueCrud;
+use crate::crud::status::{
+    STATUS_ACCEPTED, STATUS_COMPLETED, STATUS_IN_PROGRESS, STATUS_READY, STATUS_REJECTED,
+};
 use crate::AppState;
 use axum::extract::Query;
 use axum::Extension;
@@ -46,6 +49,9 @@ pub fn issue_routes() -> Router<AppState> {
         .route("/issues/:id", get(get_issue))
         .route("/issues/:id", put(update_issue))
         .route("/issues/:id/start", put(start_issue))
+        .route("/issues/:id/finish", put(finish_issue))
+        .route("/issues/:id/accept", put(accept_issue))
+        .route("/issues/:id/reject", put(reject_issue))
         .route("/issues/:id", delete(delete_issue))
 }
 
@@ -56,6 +62,8 @@ pub async fn create_issue(
 ) -> impl IntoResponse {
     debug!("Creating issue");
     let user_id = app_state.user.clone().unwrap().id;
+    let project_id = app_state.project.clone().unwrap().id;
+
     let issue_crud = IssueCrud::new(app_state);
     match issue_crud
         .create(
@@ -63,10 +71,10 @@ pub async fn create_issue(
             payload.description,
             payload.priority,
             payload.points,
-            payload.status,
+            STATUS_READY,
             payload.is_icebox,
             payload.work_type,
-            1,
+            project_id,
             payload.target_release_at,
             user_id,
         )
@@ -119,6 +127,8 @@ async fn update_issue(
     Path(id): Path<i32>,
     Json(payload): Json<UpdateIssueRequest>,
 ) -> impl IntoResponse {
+    let project_id = app_state.project.clone().unwrap().id;
+
     let issue_crud = IssueCrud::new(app_state);
     match issue_crud
         .update(
@@ -131,7 +141,7 @@ async fn update_issue(
             payload.is_icebox,
             payload.work_type,
             payload.target_release_at,
-            1,
+            project_id,
         )
         .await
     {
@@ -146,26 +156,67 @@ async fn update_issue(
         }
     }
 }
-
 #[axum::debug_handler]
 async fn start_issue(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
+    update_issue_status(app_state, id, STATUS_IN_PROGRESS).await
+}
+
+#[axum::debug_handler]
+async fn finish_issue(
+    Extension(app_state): Extension<AppState>,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
+    update_issue_status(app_state, id, STATUS_COMPLETED).await
+}
+
+#[axum::debug_handler]
+async fn accept_issue(
+    Extension(app_state): Extension<AppState>,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
+    update_issue_status(app_state, id, STATUS_ACCEPTED).await
+}
+
+#[axum::debug_handler]
+async fn reject_issue(
+    Extension(app_state): Extension<AppState>,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
+    update_issue_status(app_state, id, STATUS_REJECTED).await
+}
+
+async fn update_issue_status(app_state: AppState, id: i32, status: i32) -> impl IntoResponse {
+    let project_id = app_state.project.clone().unwrap().id;
     let issue_crud = IssueCrud::new(app_state);
-    match issue_crud.update(id, None, None, None, None, 2, None, None, 1).await {
+    match issue_crud
+        .update(
+            id,
+            None,
+            None,
+            None,
+            None,
+            Some(status),
+            None,
+            None,
+            None,
+            project_id,
+        )
+        .await
+    {
         Ok(issue) => Ok(Json(issue)),
         Err(e) => {
             if e.to_string().contains("Issue not found") {
                 Err(StatusCode::NOT_FOUND)
             } else {
-                println!("Error starting issue {}: {:?}", id, e);
+                println!("Error updating issue {}: {:?}", id, e);
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
     }
 }
-
 
 #[axum::debug_handler]
 async fn delete_issue(

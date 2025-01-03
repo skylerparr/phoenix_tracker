@@ -18,6 +18,7 @@ import {
   DeleteOutline as Delete,
 } from "@mui/icons-material";
 import { issueService } from "../services/IssueService";
+import { STATUS_IN_PROGRESS, STATUS_ACCEPTED } from "../services/StatusService";
 
 interface IssueComponentProps {
   issue: Issue;
@@ -33,6 +34,17 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
 
   const handleOnEstimated = (points: number) => {
     issueService.updateIssue(issue.id, { points });
+  };
+
+  const getBackgroundColor = (status: number) => {
+    switch (status) {
+      case STATUS_IN_PROGRESS:
+        return "#FFFFE0";
+      case STATUS_ACCEPTED:
+        return "#c6d9b7";
+      default:
+        return "#f5f5f5";
+    }
   };
 
   return (
@@ -358,7 +370,8 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
             border: "1px solid #ddd",
             borderRadius: 1,
             width: "100%",
-            bgcolor: issue.status === 1 ? "#FFFFE0" : "#f5f5f5",
+
+            bgcolor: getBackgroundColor(issue.status),
             padding: "5px",
             cursor: "move",
           }}
@@ -376,7 +389,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
               <StatusButton
                 status={issue.points === null ? null : issue.status}
                 onEstimated={handleOnEstimated}
-                onStatusChange={(status: number) => {}}
+                issueId={issue.id}
               />
             </Box>
           </Stack>

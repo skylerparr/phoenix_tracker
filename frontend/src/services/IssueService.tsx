@@ -72,6 +72,30 @@ export class IssueService {
     const data = await response.json();
     return new Issue(data);
   }
+  async startIssue(id: number): Promise<Issue> {
+    return this.updateIssueStatus(id, "start");
+  }
+
+  async finishIssue(id: number): Promise<Issue> {
+    return this.updateIssueStatus(id, "finish");
+  }
+  async acceptIssue(id: number): Promise<Issue> {
+    return this.updateIssueStatus(id, "accept");
+  }
+
+  async rejectIssue(id: number): Promise<Issue> {
+    return this.updateIssueStatus(id, "reject");
+  }
+
+  private async updateIssueStatus(id: number, action: string): Promise<Issue> {
+    const response = await fetch(`${this.baseUrl}/${id}/${action}`, {
+      method: "PUT",
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error(`Failed to ${action} issue`);
+    const data = await response.json();
+    return new Issue(data);
+  }
 
   async deleteIssue(id: number): Promise<void> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
