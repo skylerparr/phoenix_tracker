@@ -54,7 +54,6 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
             border: "1px solid #ddd",
             borderRadius: 1,
             width: "100%",
-
             bgcolor: getBackgroundColor(issue.status),
             padding: "5px",
             cursor: "move",
@@ -66,14 +65,15 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
             <Box display="flex" justifyContent="center" alignItems="center">
               <PointsIcon points={issue.points} />
             </Box>
-            <Typography
-              sx={{
-                flexGrow: 1,
-                color: "black",
-                fontStyle: issue.points === null ? "italic" : "normal",
-              }}
-            >
-              {issue.title}
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography
+                sx={{
+                  color: "black",
+                  fontStyle: issue.points === null ? "italic" : "normal",
+                }}
+              >
+                {issue.title}
+              </Typography>
               <Stack direction="row" spacing={1}>
                 {tags.map((tag: Tag) => (
                   <Button
@@ -93,14 +93,14 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
                   </Button>
                 ))}
               </Stack>
-            </Typography>{" "}
+            </Box>
             <Box onClick={(e: React.MouseEvent) => e.stopPropagation()}>
               <StatusButton
                 status={issue.points === null ? null : issue.status}
                 issueId={issue.id}
               />
             </Box>
-          </Stack>{" "}
+          </Stack>
         </Box>
       )}
     </Box>

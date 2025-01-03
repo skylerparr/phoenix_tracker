@@ -55,7 +55,15 @@ const IssueAutoCompleteComponent: React.FC<IssueAutoCompleteComponentProps> = ({
       renderTags={(value: string[], getTagProps: any) =>
         value.map((option: string, index: number) => {
           const { key, ...props } = getTagProps({ index });
-          return <Chip key={key} label={option} {...props} size="small" sx={{ color: '#FFFFFF', backgroundColor: '#2e7d32' }} />;
+          return (
+            <Chip
+              key={key}
+              label={option}
+              {...props}
+              size="small"
+              sx={{ color: "#FFFFFF", backgroundColor: "#2e7d32" }}
+            />
+          );
         })
       }
       renderInput={(
@@ -71,8 +79,8 @@ const IssueAutoCompleteComponent: React.FC<IssueAutoCompleteComponentProps> = ({
             backgroundColor: "#ffffff",
             boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
             "& .MuiInputBase-input": {
-              color: "#000000"
-            }
+              color: "#000000",
+            },
           }}
         />
       )}

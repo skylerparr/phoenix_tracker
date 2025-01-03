@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -57,12 +57,10 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     fetchData();
   }, []);
 
-
   const fetchTags = async () => {
     const tags = await tagService.getAllTags();
     setAvailableTags(tags.map((tag) => tag.name));
   };
-
 
   const handleDeleteIssue = async () => {
     await issueService.deleteIssue(issue.id);
@@ -100,7 +98,6 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     setIssue(serverUpdatedIssue);
   };
 
-  
   const handleCreateNewTag = async (newTagName: string) => {
     await tagService.createTag({
       name: newTagName,
@@ -428,14 +425,14 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
       />
       <Typography sx={{ color: "#666", fontWeight: "bold" }}>LABELS</Typography>
       <IssueAutoCompleteComponent
-            options={availableTags}
-            value={selectedTags}
-            onChange={setSelectedTags}
-            inputValue={inputValue}
-            onInputChange={setInputValue}
-            placeholder="Add labels..."
-            handleCreateNew={handleCreateNewTag}
-          />
+        options={availableTags}
+        value={selectedTags}
+        onChange={setSelectedTags}
+        inputValue={inputValue}
+        onInputChange={setInputValue}
+        placeholder="Add labels..."
+        handleCreateNew={handleCreateNewTag}
+      />
       <Typography sx={{ color: "#666", fontWeight: "bold" }}>
         TASKS (0/0)
       </Typography>

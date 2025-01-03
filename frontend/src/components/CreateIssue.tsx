@@ -113,8 +113,8 @@ const CreateIssue: React.FC = () => {
           color: "#000000",
           boxShadow: "inset 0 1px 5px rgba(0,0,0,0.3)",
           "& .MuiInputBase-input": {
-            color: "#6a7a6a"
-          }
+            color: "#6a7a6a",
+          },
         }}
       />
       <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
@@ -189,8 +189,8 @@ const CreateIssue: React.FC = () => {
           color: "#000000",
           boxShadow: "inset 0 1px 5px rgba(0,0,0,0.3)",
           "& .MuiInputBase-input": {
-            color: "#6a7a6a"
-          }
+            color: "#6a7a6a",
+          },
         }}
       />
       <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
