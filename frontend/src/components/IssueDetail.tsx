@@ -27,6 +27,8 @@ import { createTheme, ThemeProvider } from "@mui/material";
 import StatusButton from "./StatusButton";
 import IssueAutoCompleteComponent from "./IssueAutoCompleteComponent";
 import { tagService } from "../services/TagService";
+import { issueTagService } from "../services/IssueTagService";
+import { Tag } from "../models/Tag";
 
 const lightTheme = createTheme({
   palette: {
@@ -49,6 +51,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [allTags, setAllTags] = useState<Tag[]>([]);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -59,7 +62,13 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
 
   const fetchTags = async () => {
     const tags = await tagService.getAllTags();
+    setAllTags(tags);
     setAvailableTags(tags.map((tag) => tag.name));
+    const associatedTags = await issueTagService.getTagsForIssue(
+      originalIssue.id,
+    );
+    const associatedTagNames = associatedTags.map((tag) => tag.name);
+    setSelectedTags(associatedTagNames);
   };
 
   const handleDeleteIssue = async () => {
@@ -98,10 +107,43 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     setIssue(serverUpdatedIssue);
   };
 
+  const handleSetSelectedTags = async (names: string[]) => {
+    // Find tags to create (in names but not in selectedTags)
+    const tagsToCreate = names.filter((name) => !selectedTags.includes(name));
+
+    // Find tags to delete (in selectedTags but not in names)
+    const tagsToDelete = selectedTags.filter((name) => !names.includes(name));
+
+    // Create new issue tags
+    for (const tagName of tagsToCreate) {
+      const tag = allTags.find((t) => t.name === tagName);
+      if (tag) {
+        await issueTagService.createIssueTag({
+          issueId: issue.id,
+          tagId: tag.id,
+        });
+      }
+    }
+
+    // Delete removed issue tags
+    for (const tagName of tagsToDelete) {
+      const tag = allTags.find((t) => t.name === tagName);
+      if (tag) {
+        await issueTagService.deleteIssueTag(issue.id, tag.id);
+      }
+    }
+
+    setSelectedTags(names);
+  };
+
   const handleCreateNewTag = async (newTagName: string) => {
-    await tagService.createTag({
+    const tag = await tagService.createTag({
       name: newTagName,
       isEpic: false,
+    });
+    await issueTagService.createIssueTag({
+      issueId: issue.id,
+      tagId: tag.id,
     });
     await fetchTags();
   };
@@ -427,7 +469,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
       <IssueAutoCompleteComponent
         options={availableTags}
         value={selectedTags}
-        onChange={setSelectedTags}
+        onChange={handleSetSelectedTags}
         inputValue={inputValue}
         onInputChange={setInputValue}
         placeholder="Add labels..."

@@ -110,10 +110,10 @@ const CreateIssue: React.FC = () => {
         onChange={(e) => setTitle(e.target.value)}
         sx={{
           backgroundColor: "#f6f6f6",
-          color: "#000000",
+          color: "#4a4a4a",
           boxShadow: "inset 0 1px 5px rgba(0,0,0,0.3)",
           "& .MuiInputBase-input": {
-            color: "#6a7a6a",
+            color: "#4a4a4a",
           },
         }}
       />
@@ -186,10 +186,10 @@ const CreateIssue: React.FC = () => {
         onChange={(e) => setDescription(e.target.value)}
         sx={{
           backgroundColor: "#f6f6f6",
-          color: "#000000",
+          color: "#4a4a4a",
           boxShadow: "inset 0 1px 5px rgba(0,0,0,0.3)",
           "& .MuiInputBase-input": {
-            color: "#6a7a6a",
+            color: "#4a4a4a",
           },
         }}
       />

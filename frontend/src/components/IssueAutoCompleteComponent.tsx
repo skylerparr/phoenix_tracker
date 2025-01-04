@@ -9,6 +9,7 @@ interface IssueAutoCompleteComponentProps {
   onInputChange: (newValue: string) => void;
   placeholder: string;
   handleCreateNew?: (value: string) => void;
+  onSelected?: (value: string) => void;
 }
 
 const IssueAutoCompleteComponent: React.FC<IssueAutoCompleteComponentProps> = ({

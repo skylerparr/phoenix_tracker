@@ -8,7 +8,6 @@ import { STATUS_IN_PROGRESS, STATUS_ACCEPTED } from "../services/StatusService";
 import { IssueDetail } from "./IssueDetail";
 import { issueTagService } from "../services/IssueTagService";
 import { Tag } from "../models/Tag";
-import { tagService } from "../services/TagService";
 
 interface IssueComponentProps {
   issue: Issue;
@@ -20,13 +19,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
 
   React.useEffect(() => {
     const fetchData = async () => {
-      const sourceTags = await tagService.getAllTags();
-      const issueTags = await issueTagService.getIssueTagsByIssueId(issue.id);
-      const associatedTags = issueTags
-        .map((issueTag) =>
-          sourceTags.find((sourceTag) => sourceTag.id === issueTag.tagId),
-        )
-        .filter((tag): tag is Tag => tag !== undefined);
+      const associatedTags = await issueTagService.getTagsForIssue(issue.id);
       setTags(associatedTags);
     };
     fetchData();

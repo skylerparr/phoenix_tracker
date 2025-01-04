@@ -1,6 +1,8 @@
 import { API_BASE_URL } from "../config/ApiConfig";
 import { sessionStorage } from "../store/Session";
 import { IssueTag } from "../models/IssueTag";
+import { tagService } from "../services/TagService";
+import { Tag } from "../models/Tag";
 
 interface CreateIssueTagRequest {
   issueId: number;
@@ -52,6 +54,17 @@ export class IssueTagService {
       headers: this.getHeaders(),
     });
     if (!response.ok) throw new Error("Failed to delete issue tag");
+  }
+
+  async getTagsForIssue(issueId: number): Promise<Tag[]> {
+    const sourceTags = await tagService.getAllTags();
+    const issueTags = await issueTagService.getIssueTagsByIssueId(issueId);
+    const associatedTags = issueTags
+      .map((issueTag) =>
+        sourceTags.find((sourceTag) => sourceTag.id === issueTag.tagId),
+      )
+      .filter((tag): tag is Tag => tag !== undefined);
+    return associatedTags;
   }
 }
 

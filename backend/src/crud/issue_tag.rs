@@ -12,6 +12,10 @@ impl IssueTagCrud {
     }
 
     pub async fn create(&self, issue_id: i32, tag_id: i32) -> Result<issue_tag::Model, DbErr> {
+        let model = self.find_by_ids(issue_id, tag_id).await?;
+        if let Some(model) = model {
+            return Ok(model);
+        }
         let issue_tag = issue_tag::ActiveModel {
             issue_id: Set(issue_id),
             tag_id: Set(tag_id),
