@@ -139,6 +139,7 @@ const CreateIssue: React.FC = () => {
       </Box>
       {[
         {
+          id: "1",
           options: availableAssignees,
           value: selectedAssignees,
           onChange: setSelectedAssignees,
@@ -147,6 +148,7 @@ const CreateIssue: React.FC = () => {
           placeholder: "Add assignees...",
         },
         {
+          id: "2",
           options: availableTags,
           value: selectedTags,
           onChange: setSelectedTags,
@@ -157,6 +159,7 @@ const CreateIssue: React.FC = () => {
         },
       ].map(
         ({
+          id,
           options,
           value,
           onChange,
@@ -166,6 +169,7 @@ const CreateIssue: React.FC = () => {
           placeholder,
         }) => (
           <IssueAutoCompleteComponent
+            key={id}
             options={options}
             value={value}
             onChange={onChange}
