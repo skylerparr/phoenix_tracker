@@ -1,6 +1,6 @@
 use crate::crud::issue::IssueCrud;
 use crate::crud::status::{
-    STATUS_ACCEPTED, STATUS_COMPLETED, STATUS_IN_PROGRESS, STATUS_READY, STATUS_REJECTED,
+    STATUS_ACCEPTED, STATUS_COMPLETED, STATUS_IN_PROGRESS, STATUS_UNSTARTED, STATUS_REJECTED,
 };
 use crate::AppState;
 use axum::extract::Query;
@@ -71,7 +71,7 @@ pub async fn create_issue(
             payload.description,
             payload.priority,
             payload.points,
-            STATUS_READY,
+            STATUS_UNSTARTED,
             payload.is_icebox,
             payload.work_type,
             project_id,

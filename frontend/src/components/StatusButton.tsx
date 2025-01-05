@@ -4,7 +4,7 @@ import { styled } from "@mui/material/styles";
 import PointsButton from "./PointsButtons";
 import { issueService } from "../services/IssueService";
 import {
-  STATUS_READY,
+  STATUS_UNSTARTED,
   STATUS_IN_PROGRESS,
   STATUS_COMPLETED,
   STATUS_ACCEPTED,
@@ -52,7 +52,7 @@ const StatusButton: React.FC<StatusButtonProps> = ({ issueId, status }) => {
     }[]
   > = new Map([
     [
-      STATUS_READY,
+      STATUS_UNSTARTED,
       [
         {
           status: "Start",

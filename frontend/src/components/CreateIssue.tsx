@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { TextField, Box, Autocomplete, Chip, Button } from "@mui/material";
 import { issueService } from "../services/IssueService";
 import { sessionStorage } from "../store/Session";
-import { STATUS_READY } from "../services/StatusService";
+import { STATUS_UNSTARTED } from "../services/StatusService";
 import PointsButton from "./PointsButtons";
 import WorkTypeButtons from "./WorkTypeButtons";
 import { tagService } from "../services/TagService";
@@ -52,7 +52,7 @@ const CreateIssue: React.FC = () => {
         description,
         points: selectedPoints,
         priority: 0,
-        status: STATUS_READY,
+        status: STATUS_UNSTARTED,
         isIcebox: false,
         workType: selectedType!,
       });

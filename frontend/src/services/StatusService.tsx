@@ -2,14 +2,14 @@ export interface Status {
   id: number;
   name: string;
 }
-export const STATUS_READY = 0;
+export const STATUS_UNSTARTED = 0;
 export const STATUS_IN_PROGRESS = 1;
 export const STATUS_COMPLETED = 2;
 export const STATUS_REJECTED = 3;
 export const STATUS_ACCEPTED = 4;
 
 const STATUS_MAP = new Map<number, string>([
-  [STATUS_READY, "Ready"],
+  [STATUS_UNSTARTED, "Unstarted"],
   [STATUS_IN_PROGRESS, "In Progress"],
   [STATUS_COMPLETED, "Completed"],
   [STATUS_REJECTED, "Rejected"],
