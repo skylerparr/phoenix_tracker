@@ -29,7 +29,7 @@ const StatusButton: React.FC<StatusButtonProps> = ({ issueId, status }) => {
   };
   if (status === null) {
     return (
-      <Box>
+      <Box sx={{ whiteSpace: "nowrap" }}>
         {POINTS.map((points) => (
           <PointsButton
             key={points}

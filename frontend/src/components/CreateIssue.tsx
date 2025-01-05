@@ -10,6 +10,7 @@ import { issueTagService } from "../services/IssueTagService";
 import { POINTS } from "../models/Issue";
 import IssueAutoCompleteComponent from "./IssueAutoCompleteComponent";
 import { userService } from "../services/UserService";
+import { issueAssigneeService } from "../services/IssueAssigneeService";
 
 const CreateIssue: React.FC = () => {
   const [selectedType, setSelectedType] = useState<number | null>(null);
@@ -71,6 +72,22 @@ const CreateIssue: React.FC = () => {
         await issueTagService.createIssueTag({
           issueId: issue.id,
           tagId: tagId,
+        });
+      }
+
+      const users = await userService.getAllUsers();
+      const selectedUserIds = selectedAssignees
+        .map((selectedUserName: string) => {
+          const user = users.find((user) => user.name === selectedUserName);
+          return user ? user.id : null;
+        })
+        .filter((id): id is number => id !== null);
+
+      console.log(selectedUserIds);
+      for (const userId of selectedUserIds) {
+        await issueAssigneeService.createIssueAssignee({
+          issueId: issue.id,
+          userId: userId,
         });
       }
 
