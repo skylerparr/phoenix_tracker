@@ -1,6 +1,6 @@
 use crate::crud::issue::IssueCrud;
 use crate::crud::status::{
-    STATUS_ACCEPTED, STATUS_COMPLETED, STATUS_IN_PROGRESS, STATUS_UNSTARTED, STATUS_REJECTED,
+    STATUS_ACCEPTED, STATUS_COMPLETED, STATUS_IN_PROGRESS, STATUS_REJECTED, STATUS_UNSTARTED,
 };
 use crate::AppState;
 use axum::extract::Query;
