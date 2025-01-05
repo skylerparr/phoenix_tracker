@@ -9,6 +9,7 @@ import { tagService } from "../services/TagService";
 import { issueTagService } from "../services/IssueTagService";
 import { POINTS } from "../models/Issue";
 import IssueAutoCompleteComponent from "./IssueAutoCompleteComponent";
+import { userService } from "../services/UserService";
 
 const CreateIssue: React.FC = () => {
   const [selectedType, setSelectedType] = useState<number | null>(null);
@@ -17,12 +18,7 @@ const CreateIssue: React.FC = () => {
 
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [assigneeInputValue, setAssigneeInputValue] = useState("");
-  const [availableAssignees] = useState<string[]>([
-    "John",
-    "Jane",
-    "Bob",
-    "Alice",
-  ]);
+  const [availableAssignees, setAvailableAssignees] = useState<string[]>([]);
   const [selectedPoints, setSelectedPoints] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -30,10 +26,16 @@ const CreateIssue: React.FC = () => {
 
   React.useEffect(() => {
     const fetchData = async () => {
+      await fetchUsers();
       await fetchTags();
     };
     fetchData();
   }, []);
+
+  const fetchUsers = async () => {
+    const users = await userService.getAllUsers();
+    setAvailableAssignees(users.map((user) => user.name));
+  };
 
   const fetchTags = async () => {
     const tags = await tagService.getAllTags();

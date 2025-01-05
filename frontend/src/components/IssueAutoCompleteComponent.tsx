@@ -23,6 +23,7 @@ const IssueAutoCompleteComponent: React.FC<IssueAutoCompleteComponentProps> = ({
 }) => {
   return (
     <Autocomplete
+      sx={{ width: "100%" }}
       multiple
       freeSolo
       options={options.filter((option) => !value.includes(option))}

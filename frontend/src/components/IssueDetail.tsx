@@ -27,8 +27,12 @@ import { createTheme, ThemeProvider } from "@mui/material";
 import StatusButton from "./StatusButton";
 import IssueAutoCompleteComponent from "./IssueAutoCompleteComponent";
 import { tagService } from "../services/TagService";
+import { userService } from "../services/UserService";
+import { issueAssigneeService } from "../services/IssueAssigneeService";
 import { issueTagService } from "../services/IssueTagService";
 import { Tag } from "../models/Tag";
+import { User } from "../models/User";
+import { IssueAssignee } from "../models/IssueAssignee";
 
 const lightTheme = createTheme({
   palette: {
@@ -52,13 +56,41 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [requestedBy, setRequestedBy] = useState<User | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   React.useEffect(() => {
     const fetchData = async () => {
+      await fetchUsers();
       await fetchTags();
     };
     fetchData();
   }, []);
+
+  const fetchUsers = async () => {
+    const users = await userService.getAllUsers();
+    setUsers(users);
+
+    const issueAssignees =
+      await issueAssigneeService.getIssueAssigneesByIssueId(originalIssue.id);
+    const assigneeNames: string[] = issueAssignees.reduce<string[]>(
+      (names, assignee: IssueAssignee) => {
+        const user = users.find((user) => user.id === assignee.userId);
+        if (user) {
+          names.push(user.name);
+        }
+        return names;
+      },
+      [],
+    );
+    setSelectedUsers(assigneeNames);
+
+    const requestedBy = users.find(
+      (user) => user.id === originalIssue.createdById,
+    );
+    setRequestedBy(requestedBy || null);
+  };
 
   const fetchTags = async () => {
     const tags = await tagService.getAllTags();
@@ -400,7 +432,9 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
               REQUESTER
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography sx={{ color: "#a5a5a5" }}>Skyler Parr</Typography>
+              <Typography sx={{ color: "#a5a5a5" }}>
+                {requestedBy !== null ? requestedBy.name : ""}
+              </Typography>
             </Box>
           </Stack>
         </Box>
@@ -417,9 +451,23 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             >
               OWNERS
             </Typography>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography sx={{ color: "#a5a5a5" }}>Skyler Parr</Typography>
-            </Box>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                width: "100%",
+              }}
+            >
+              <IssueAutoCompleteComponent
+                options={users.map((user: { name: string }) => user.name)}
+                value={selectedUsers}
+                onChange={handleSetSelectedTags}
+                inputValue={inputValue}
+                onInputChange={setInputValue}
+                placeholder="Add owners..."
+              />
+            </Box>{" "}
           </Stack>
         </Box>
 

@@ -24,8 +24,11 @@ impl UserCrud {
         user::Entity::find_by_id(id).one(&self.db).await
     }
 
-    pub async fn find_all(&self) -> Result<Vec<user::Model>, DbErr> {
-        user::Entity::find().all(&self.db).await
+    pub async fn find_all(&self, user_ids: Vec<i32>) -> Result<Vec<user::Model>, DbErr> {
+        user::Entity::find()
+            .filter(user::Column::Id.is_in(user_ids))
+            .all(&self.db)
+            .await
     }
 
     pub async fn find_by_email(&self, email: String) -> Result<Option<user::Model>, DbErr> {

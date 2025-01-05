@@ -1,5 +1,6 @@
 use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::{ISSUE_CREATED, ISSUE_DELETED, ISSUE_UPDATED};
+use crate::crud::issue_assignee::IssueAssigneeCrud;
 use crate::crud::issue_tag::IssueTagCrud;
 use crate::crud::status::get_unfinished_statuses;
 use crate::entities::issue;
@@ -166,6 +167,9 @@ impl IssueCrud {
         Ok(result)
     }
     pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {
+        let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.db.clone());
+        issue_assignee_crud.delete_all_by_issue_id(id).await?;
+
         let issue_tag_crud = IssueTagCrud::new(self.app_state.db.clone());
         issue_tag_crud.delete_all_by_issue_id(id).await?;
 

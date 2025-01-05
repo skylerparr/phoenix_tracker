@@ -25,7 +25,8 @@ export class UserService {
       body: JSON.stringify(request),
     });
     if (!response.ok) throw new Error("Failed to create user");
-    return response.json();
+    const data = await response.json();
+    return new User(data);
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -35,7 +36,8 @@ export class UserService {
       },
     });
     if (!response.ok) throw new Error("Failed to fetch users");
-    return response.json();
+    const data = await response.json();
+    return data.map((item: any) => new User(item));
   }
 
   async getUser(id: number): Promise<User> {
@@ -45,7 +47,8 @@ export class UserService {
       },
     });
     if (!response.ok) throw new Error("Failed to fetch user");
-    return response.json();
+    const data = await response.json();
+    return new User(data);
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
@@ -59,7 +62,8 @@ export class UserService {
     );
     if (response.status === 404) return null;
     if (!response.ok) throw new Error("Failed to fetch user by email");
-    return response.json();
+    const data = await response.json();
+    return data ? new User(data) : null;
   }
 
   async updateUser(id: number, request: UpdateUserRequest): Promise<User> {
@@ -72,7 +76,8 @@ export class UserService {
       body: JSON.stringify(request),
     });
     if (!response.ok) throw new Error("Failed to update user");
-    return response.json();
+    const data = await response.json();
+    return new User(data);
   }
 
   async deleteUser(id: number): Promise<void> {

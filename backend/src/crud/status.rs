@@ -24,16 +24,6 @@ lazy_static! {
     };
 }
 
-pub fn get_status_array() -> Vec<Status> {
-    STATUS_MAP
-        .iter()
-        .map(|(&id, &name)| Status {
-            id,
-            name: name.to_string(),
-        })
-        .collect()
-}
-
 pub fn get_unfinished_statuses() -> Vec<i32> {
     STATUS_MAP
         .iter()
