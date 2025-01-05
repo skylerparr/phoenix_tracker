@@ -58,4 +58,11 @@ impl IssueTagCrud {
             .exec(&self.db)
             .await
     }
+
+    pub async fn delete_all_by_issue_id(&self, issue_id: i32) -> Result<DeleteResult, DbErr> {
+        issue_tag::Entity::delete_many()
+            .filter(issue_tag::Column::IssueId.eq(issue_id))
+            .exec(&self.db)
+            .await
+    }
 }
