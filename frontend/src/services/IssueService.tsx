@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "../config/ApiConfig";
 import { Issue } from "../models/Issue";
 import { sessionStorage } from "../store/Session";
+import { WebsocketService } from "../services/WebSocketService";
 
 interface CreateIssueRequest {
   title: string;
@@ -25,6 +26,7 @@ interface UpdateIssueRequest {
 }
 export class IssueService {
   private baseUrl = `${API_BASE_URL}/issues`;
+  private callbacks: ((issues: Issue[]) => void)[] = [];
 
   private getHeaders(): HeadersInit {
     return {
@@ -44,13 +46,45 @@ export class IssueService {
     return new Issue(data);
   }
 
-  async getAllIssues(): Promise<Issue[]> {
+  subscribeToGetAllIssues(callback: (issues: Issue[]) => void): void {
+    this.callbacks.push(callback);
+    this.notifyCallbacks();
+    if (this.callbacks.length === 1) {
+      WebsocketService.subscribeToIssueCreateEvent(
+        this.notifyCallbacks.bind(this),
+      );
+      WebsocketService.subscribeToIssueUpdatedEvent(
+        this.notifyCallbacks.bind(this),
+      );
+      WebsocketService.subscribeToIssueDeletedEvent(
+        this.notifyCallbacks.bind(this),
+      );
+    }
+  }
+
+  unsubscribeFromGetAllIssues(callback: (issues: Issue[]) => void): void {
+    this.callbacks = this.callbacks.filter((cb) => cb !== callback);
+    if (this.callbacks.length === 0) {
+      WebsocketService.unsubscribeToIssueCreateEvent(
+        this.notifyCallbacks.bind(this),
+      );
+      WebsocketService.unsubscribeToIssueUpdatedEvent(
+        this.notifyCallbacks.bind(this),
+      );
+      WebsocketService.unsubscribeToIssueDeletedEvent(
+        this.notifyCallbacks.bind(this),
+      );
+    }
+  }
+
+  private async notifyCallbacks(): Promise<void> {
     const response = await fetch(this.baseUrl, {
       headers: this.getHeaders(),
     });
     if (!response.ok) throw new Error("Failed to fetch issues");
     const data = await response.json();
-    return data.map((item: any) => new Issue(item));
+    const issues = data.map((item: any) => new Issue(item));
+    this.callbacks.forEach((callback) => callback(issues));
   }
 
   async getIssue(id: number): Promise<Issue> {

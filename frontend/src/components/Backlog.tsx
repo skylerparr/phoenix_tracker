@@ -5,39 +5,18 @@ import { issueService } from "../services/IssueService";
 import { Issue } from "../models/Issue";
 import IssueGroup from "./IssueGroup";
 import { IssueComponent } from "./IssueComponent";
-import { WebsocketService } from "../services/WebSocketService";
 
 const Backlog: React.FC = () => {
   const [issues, setIssues] = useState<Issue[]>([]);
 
-  const doFetchIssues = async () => {
-    const issues = await issueService.getAllIssues();
+  useEffect(() => {
+    issueService.subscribeToGetAllIssues(handleIssuesChanged);
+  }, []);
+
+  const handleIssuesChanged = (issues: Issue[]) => {
     setIssues(issues);
   };
 
-  useEffect(() => {
-    const handleIssueCreated = async (issue: Issue) => {
-      await doFetchIssues();
-    };
-
-    const handleIssueUpdated = async (issue: Issue) => {
-      await doFetchIssues();
-    };
-
-    const handleIssueDeleted = async ({ id }: { id: number }) => {
-      await doFetchIssues();
-    };
-
-    const fetchIssues = async () => {
-      await doFetchIssues();
-
-      WebsocketService.subscribeToIssueCreateEvent(handleIssueCreated);
-      WebsocketService.subscribeToIssueUpdatedEvent(handleIssueUpdated);
-      WebsocketService.subscribeToIssueDeletedEvent(handleIssueDeleted);
-    };
-
-    fetchIssues();
-  }, []);
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
 
