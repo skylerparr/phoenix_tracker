@@ -38,31 +38,32 @@ export class TagService {
   }
 
   async getAllTags(): Promise<Tag[]> {
+    if (this.tagsCache) return this.tagsCache;
     if (this.loading) {
-        return new Promise<Tag[]>((resolve) => {
-            this.getAllPromisesCache.push(resolve);
-        });
+      return new Promise<Tag[]>((resolve) => {
+        this.getAllPromisesCache.push(resolve);
+      });
     }
-    
+
     this.loading = true;
     const response = await fetch(this.baseUrl, {
-        headers: this.getHeaders(),
+      headers: this.getHeaders(),
     });
-    
+
     if (!response.ok) throw new Error("Failed to fetch tags");
     const data = await response.json();
     this.tagsCache = data.map((item: any) => new Tag(item));
-    
+
     while (this.getAllPromisesCache.length > 0) {
-        const resolve = this.getAllPromisesCache.pop();
-        if (resolve) {
-            resolve(this.tagsCache!);
-        }
+      const resolve = this.getAllPromisesCache.pop();
+      if (resolve) {
+        resolve(this.tagsCache!);
+      }
     }
-    
+
     this.loading = false;
     return this.tagsCache!;
-}
+  }
 
   subscribeToGetAllTags(callback: (tags: Tag[]) => void): void {
     this.callbacks.push(callback);

@@ -23,7 +23,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
       setTags(associatedTags);
     };
     fetchData();
-  }, []);
+  }, [issue]);
 
   const getBackgroundColor = (status: number) => {
     switch (status) {
