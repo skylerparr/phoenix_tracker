@@ -19,7 +19,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
 
   React.useEffect(() => {
     const fetchData = async () => {
-      const associatedTags = await issueTagService.getTagsForIssue(issue.id);
+      const associatedTags = await issueTagService.getTagsForIssue(issue);
       setTags(associatedTags);
     };
     fetchData();

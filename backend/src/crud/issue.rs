@@ -69,9 +69,20 @@ impl IssueCrud {
             query = query.filter(issue::Column::Status.is_in(get_unfinished_statuses()));
         }
 
-        query.all(&self.app_state.db).await
-    }
+        let mut issues = query.all(&self.app_state.db).await?;
 
+        for issue in &mut issues {
+            let tag_ids = IssueTagCrud::new(self.app_state.db.clone())
+                .find_by_issue_id(issue.id)
+                .await?
+                .into_iter()
+                .map(|tag| tag.tag_id)
+                .collect();
+            issue.issue_tag_ids = tag_ids;
+        }
+
+        Ok(issues)
+    }
     pub async fn update(
         &self,
         id: i32,

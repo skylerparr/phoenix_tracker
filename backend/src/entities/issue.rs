@@ -19,6 +19,8 @@ pub struct Model {
     pub lock_version: i32,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
+    #[sea_orm(ignore)]
+    pub issue_tag_ids: Vec<i32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -3,6 +3,7 @@ import { sessionStorage } from "../store/Session";
 import { IssueTag } from "../models/IssueTag";
 import { tagService } from "../services/TagService";
 import { Tag } from "../models/Tag";
+import { Issue } from "../models/Issue";
 
 interface CreateIssueTagRequest {
   issueId: number;
@@ -55,13 +56,13 @@ export class IssueTagService {
     });
     if (!response.ok) throw new Error("Failed to delete issue tag");
   }
-  async getTagsForIssue(issueId: number): Promise<Tag[]> {
+  async getTagsForIssue(issue: Issue): Promise<Tag[]> {
     return new Promise((resolve) => {
       const handleTags = async (sourceTags: Tag[]) => {
-        const issueTags = await this.getIssueTagsByIssueId(issueId);
+        const issueTags = issue.issueTagIds;
         const associatedTags = issueTags
-          .map((issueTag) =>
-            sourceTags.find((sourceTag) => sourceTag.id === issueTag.tagId),
+          .map((issueTagId) =>
+            sourceTags.find((sourceTag) => sourceTag.id === issueTagId),
           )
           .filter((tag): tag is Tag => tag !== undefined);
         resolve(associatedTags);
