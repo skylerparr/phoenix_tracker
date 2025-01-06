@@ -44,8 +44,18 @@ const Backlog: React.FC = () => {
         issue.status !== STATUS_COMPLETED,
     );
 
-    setAcceptedIssues(accepted);
-    setInprogressIssues(sortedInProgress);
+    const sortedAccepted = accepted.sort(
+      (a, b) =>
+        new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+    );
+
+    const sortedInProgressWithDate = sortedInProgress.sort(
+      (a, b) =>
+        new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+    );
+
+    setAcceptedIssues(sortedAccepted);
+    setInprogressIssues(sortedInProgressWithDate);
     setIssues(prioritizable);
   };
 

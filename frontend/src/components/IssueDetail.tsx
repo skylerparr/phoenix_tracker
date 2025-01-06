@@ -49,7 +49,6 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   issue: originalIssue,
   closeHandler,
 }) => {
-  const { debouncedUpdate } = useDebounce();
   const [issue, setIssue] = useState<Issue>(originalIssue);
   const [comment, setComment] = useState("");
   const [availableTags, setAvailableTags] = useState<string[]>([]);
@@ -108,15 +107,12 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     await issueService.deleteIssue(issue.id);
   };
 
+  const handleTitleUpdate = async (value: string) => {
+    setIssue({ ...issue, title: value });
+  };
+
   const handleDescriptionUpdate = async (value: string) => {
     setIssue({ ...issue, description: value });
-
-    debouncedUpdate(async () => {
-      const serverUpdatedIssue = await issueService.updateIssue(issue.id, {
-        description: value,
-      });
-      setIssue(serverUpdatedIssue);
-    });
   };
 
   const handleWorkTypeChange = async (workType: number) => {
@@ -180,6 +176,14 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     });
   };
 
+  const handleClose = async () => {
+    await issueService.updateIssue(issue.id, {
+      title: issue.title,
+      description: issue.description,
+    });
+    closeHandler();
+  };
+
   return (
     <Stack
       spacing={2}
@@ -195,13 +199,14 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         <IconButton
           size="small"
           sx={{ color: "#000000" }}
-          onClick={() => closeHandler()}
+          onClick={() => handleClose()}
         >
           <KeyboardArrowDownIcon />
         </IconButton>
         <TextField
           fullWidth
           defaultValue={issue.title}
+          onChange={(e) => handleTitleUpdate(e.target.value)}
           variant="outlined"
           size="small"
           sx={{
