@@ -63,10 +63,14 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   React.useEffect(() => {
     const fetchData = async () => {
       await fetchUsers();
+      setIssue(originalIssue);
     };
     tagService.subscribeToGetAllTags(handleTagsUpdate);
     fetchData();
-  }, []);
+    return () => {
+      tagService.unsubscribeFromGetAllTags(handleTagsUpdate);
+    };
+  }, [originalIssue]);
 
   const fetchUsers = async () => {
     const users = await userService.getAllUsers();

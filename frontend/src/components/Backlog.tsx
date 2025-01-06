@@ -11,6 +11,9 @@ const Backlog: React.FC = () => {
 
   useEffect(() => {
     issueService.subscribeToGetAllIssues(handleIssuesChanged);
+    return () => {
+      issueService.unsubscribeFromGetAllIssues(handleIssuesChanged);
+    };
   }, []);
 
   const handleIssuesChanged = (issues: Issue[]) => {
