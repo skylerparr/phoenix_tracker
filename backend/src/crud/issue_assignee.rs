@@ -1,14 +1,17 @@
+use crate::crud::event_broadcaster::EventBroadcaster;
+use crate::crud::event_broadcaster::ISSUE_UPDATED;
 use crate::entities::issue_assignee;
+use crate::AppState;
 use sea_orm::*;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct IssueAssigneeCrud {
-    db: DatabaseConnection,
+    app_state: AppState,
 }
 
 impl IssueAssigneeCrud {
-    pub fn new(db: DatabaseConnection) -> Self {
-        Self { db }
+    pub fn new(app_state: AppState) -> Self {
+        Self { app_state }
     }
 
     pub async fn create(
@@ -22,7 +25,7 @@ impl IssueAssigneeCrud {
             ..Default::default()
         };
 
-        issue_assignee.insert(&self.db).await
+        issue_assignee.insert(&self.app_state.db).await
     }
 
     pub async fn find_by_ids(
@@ -33,7 +36,7 @@ impl IssueAssigneeCrud {
         issue_assignee::Entity::find()
             .filter(issue_assignee::Column::IssueId.eq(issue_id))
             .filter(issue_assignee::Column::UserId.eq(user_id))
-            .one(&self.db)
+            .one(&self.app_state.db)
             .await
     }
 
@@ -43,29 +46,38 @@ impl IssueAssigneeCrud {
     ) -> Result<Vec<issue_assignee::Model>, DbErr> {
         issue_assignee::Entity::find()
             .filter(issue_assignee::Column::IssueId.eq(issue_id))
-            .all(&self.db)
+            .all(&self.app_state.db)
             .await
     }
 
     pub async fn find_by_user_id(&self, user_id: i32) -> Result<Vec<issue_assignee::Model>, DbErr> {
         issue_assignee::Entity::find()
             .filter(issue_assignee::Column::UserId.eq(user_id))
-            .all(&self.db)
+            .all(&self.app_state.db)
             .await
     }
 
     pub async fn delete(&self, issue_id: i32, user_id: i32) -> Result<DeleteResult, DbErr> {
-        issue_assignee::Entity::delete_many()
+        let result = issue_assignee::Entity::delete_many()
             .filter(issue_assignee::Column::IssueId.eq(issue_id))
             .filter(issue_assignee::Column::UserId.eq(user_id))
-            .exec(&self.db)
-            .await
+            .exec(&self.app_state.db)
+            .await?;
+
+        let project_id = &self.app_state.project.clone().unwrap().id;
+        let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+        broadcaster.broadcast_event(
+            *project_id,
+            ISSUE_UPDATED,
+            serde_json::json!({"user_id": user_id}),
+        );
+        Ok(result)
     }
 
     pub async fn delete_all_by_issue_id(&self, issue_id: i32) -> Result<DeleteResult, DbErr> {
         issue_assignee::Entity::delete_many()
             .filter(issue_assignee::Column::IssueId.eq(issue_id))
-            .exec(&self.db)
+            .exec(&self.app_state.db)
             .await
     }
 }

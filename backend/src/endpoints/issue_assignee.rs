@@ -35,7 +35,7 @@ async fn create_issue_assignee(
     Json(payload): Json<CreateIssueAssigneeRequest>,
 ) -> impl IntoResponse {
     debug!("Creating issue assignee");
-    let issue_assignee_crud = IssueAssigneeCrud::new(app_state.db);
+    let issue_assignee_crud = IssueAssigneeCrud::new(app_state);
     match issue_assignee_crud
         .create(payload.issue_id, payload.user_id)
         .await
@@ -53,7 +53,7 @@ async fn get_issue_assignees(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
-    let issue_assignee_crud = IssueAssigneeCrud::new(app_state.db);
+    let issue_assignee_crud = IssueAssigneeCrud::new(app_state);
     match issue_assignee_crud.find_by_issue_id(id).await {
         Ok(issue_assignees) => Ok(Json(issue_assignees)),
         Err(e) => {
@@ -68,7 +68,7 @@ async fn get_user_assignees(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
-    let issue_assignee_crud = IssueAssigneeCrud::new(app_state.db);
+    let issue_assignee_crud = IssueAssigneeCrud::new(app_state);
     match issue_assignee_crud.find_by_user_id(id).await {
         Ok(issue_assignees) => Ok(Json(issue_assignees)),
         Err(e) => {
@@ -83,7 +83,7 @@ async fn delete_issue_assignee(
     Extension(app_state): Extension<AppState>,
     Path((issue_id, user_id)): Path<(i32, i32)>,
 ) -> StatusCode {
-    let issue_assignee_crud = IssueAssigneeCrud::new(app_state.db);
+    let issue_assignee_crud = IssueAssigneeCrud::new(app_state);
     match issue_assignee_crud.delete(issue_id, user_id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {

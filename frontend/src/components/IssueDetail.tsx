@@ -11,7 +11,6 @@ import {
   SelectChangeEvent,
 } from "@mui/material";
 import { issueService } from "../services/IssueService";
-import useDebounce from "../utils/Debounce";
 import {
   KeyboardArrowDown as KeyboardArrowDownIcon,
   Link as LinkIcon,
@@ -50,10 +49,12 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   closeHandler,
 }) => {
   const [issue, setIssue] = useState<Issue>(originalIssue);
+  const [assignedUsers, setAssignedUsers] = useState<User[]>([]);
   const [comment, setComment] = useState("");
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [inputValue, setInputValue] = useState("");
+  const [tagInputValue, setTagInputValue] = useState("");
+  const [userInputValue, setUserTagInputValue] = useState("");
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [requestedBy, setRequestedBy] = useState<User | null>(null);
@@ -77,17 +78,19 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
 
     const issueAssignees =
       await issueAssigneeService.getIssueAssigneesByIssueId(originalIssue.id);
-    const assigneeNames: string[] = issueAssignees.reduce<string[]>(
-      (names, assignee: IssueAssignee) => {
+    const assignedUsersList = issueAssignees.reduce<User[]>(
+      (assigned, assignee: IssueAssignee) => {
         const user = users.find((user) => user.id === assignee.userId);
         if (user) {
-          names.push(user.name);
+          assigned.push(user);
         }
-        return names;
+        return assigned;
       },
       [],
     );
-    setSelectedUsers(assigneeNames);
+    setAssignedUsers(assignedUsersList);
+    const assignedUserNames = assignedUsersList.map((user) => user.name);
+    setSelectedUsers(assignedUserNames);
 
     const requestedBy = users.find(
       (user) => user.id === originalIssue.createdById,
@@ -174,6 +177,46 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
       issueId: issue.id,
       tagId: tag.id,
     });
+  };
+
+  const handleSetUsers = async (names: string[]) => {
+    const selectedUsers = users.filter((user: { name: string; id: number }) =>
+      names.includes(user.name),
+    );
+    // Find users to add (in selectedUsers but not in assignedUsers)
+    const usersToAdd = selectedUsers.filter(
+      (user: { id: number }) =>
+        !assignedUsers.some(
+          (assigned: { id: number }) => assigned.id === user.id,
+        ),
+    );
+
+    // Find users to remove (in assignedUsers but not in selectedUsers)
+    const usersToRemove = assignedUsers.filter(
+      (assigned: { id: number }) =>
+        !selectedUsers.some(
+          (selected: { id: number }) => selected.id === assigned.id,
+        ),
+    );
+
+    // Add new users
+    for (const user of usersToAdd) {
+      await issueAssigneeService.createIssueAssignee({
+        issueId: issue.id,
+        userId: user.id,
+      });
+    }
+
+    // Remove users
+    for (const user of usersToRemove) {
+      await issueAssigneeService.deleteIssueAssignee(issue.id, user.id);
+    }
+
+    setAssignedUsers(selectedUsers);
+    const assignedUserNames = selectedUsers.map(
+      (user: { name: string }) => user.name,
+    );
+    setSelectedUsers(assignedUserNames);
   };
 
   const handleClose = async () => {
@@ -467,9 +510,9 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
               <IssueAutoCompleteComponent
                 options={users.map((user: { name: string }) => user.name)}
                 value={selectedUsers}
-                onChange={handleSetSelectedTags}
-                inputValue={inputValue}
-                onInputChange={setInputValue}
+                onChange={handleSetUsers}
+                inputValue={userInputValue}
+                onInputChange={setUserTagInputValue}
                 placeholder="Add owners..."
               />
             </Box>{" "}
@@ -523,8 +566,8 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         options={availableTags}
         value={selectedTags}
         onChange={handleSetSelectedTags}
-        inputValue={inputValue}
-        onInputChange={setInputValue}
+        inputValue={tagInputValue}
+        onInputChange={setTagInputValue}
         placeholder="Add labels..."
         handleCreateNew={handleCreateNewTag}
       />
