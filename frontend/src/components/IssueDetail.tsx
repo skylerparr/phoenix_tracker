@@ -63,8 +63,8 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   React.useEffect(() => {
     const fetchData = async () => {
       await fetchUsers();
-      await fetchTags();
     };
+    tagService.subscribeToGetAllTags(handleTagsUpdate);
     fetchData();
   }, []);
 
@@ -92,8 +92,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     setRequestedBy(requestedBy || null);
   };
 
-  const fetchTags = async () => {
-    const tags = await tagService.getAllTags();
+  const handleTagsUpdate = async (tags: Tag[]) => {
     setAllTags(tags);
     setAvailableTags(tags.map((tag) => tag.name));
     const associatedTags = await issueTagService.getTagsForIssue(
@@ -177,7 +176,6 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
       issueId: issue.id,
       tagId: tag.id,
     });
-    await fetchTags();
   };
 
   return (

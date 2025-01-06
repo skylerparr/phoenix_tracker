@@ -11,10 +11,12 @@ import { POINTS } from "../models/Issue";
 import IssueAutoCompleteComponent from "./IssueAutoCompleteComponent";
 import { userService } from "../services/UserService";
 import { issueAssigneeService } from "../services/IssueAssigneeService";
+import { Tag } from "../models/Tag";
 
 const CreateIssue: React.FC = () => {
   const [selectedType, setSelectedType] = useState<number | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
   const [inputValue, setInputValue] = useState("");
 
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
@@ -28,7 +30,7 @@ const CreateIssue: React.FC = () => {
   React.useEffect(() => {
     const fetchData = async () => {
       await fetchUsers();
-      await fetchTags();
+      tagService.subscribeToGetAllTags(fetchTags);
     };
     fetchData();
   }, []);
@@ -38,8 +40,8 @@ const CreateIssue: React.FC = () => {
     setAvailableAssignees(users.map((user) => user.name));
   };
 
-  const fetchTags = async () => {
-    const tags = await tagService.getAllTags();
+  const fetchTags = (tags: Tag[]) => {
+    setAllTags(tags);
     setAvailableTags(tags.map((tag) => tag.name));
   };
 
@@ -60,10 +62,9 @@ const CreateIssue: React.FC = () => {
         workType: selectedType!,
       });
 
-      const tags = await tagService.getAllTags();
       const selectedTagIds = selectedTags
         .map((selectedTagName: string) => {
-          const tag = tags.find((tag) => tag.name === selectedTagName);
+          const tag = allTags.find((tag: Tag) => tag.name === selectedTagName);
           return tag ? tag.id : null;
         })
         .filter((id): id is number => id !== null);
@@ -83,7 +84,6 @@ const CreateIssue: React.FC = () => {
         })
         .filter((id): id is number => id !== null);
 
-      console.log(selectedUserIds);
       for (const userId of selectedUserIds) {
         await issueAssigneeService.createIssueAssignee({
           issueId: issue.id,
@@ -107,7 +107,6 @@ const CreateIssue: React.FC = () => {
       name: newTagName,
       isEpic: false,
     });
-    await fetchTags();
   };
 
   return (

@@ -1,10 +1,18 @@
 import { API_BASE_URL } from "../config/ApiConfig";
 import { Issue } from "../models/Issue";
+import { IssueTag } from "../models/IssueTag";
+import { Tag } from "../models/Tag";
 import { sessionStorage } from "../store/Session";
 
 export const ISSUE_CREATED = "issue_created";
 export const ISSUE_UPDATED = "issue_updated";
 export const ISSUE_DELETED = "issue_deleted";
+export const TAG_CREATED = "tag_created";
+export const TAG_UPDATED = "tag_updated";
+export const TAG_DELETED = "tag_deleted";
+export const ISSUE_TAG_CREATED = "issue_tag_created";
+export const ISSUE_TAG_UPDATED = "issue_tag_updated";
+export const ISSUE_TAG_DELETED = "issue_tag_deleted";
 
 export class WebsocketService {
   private static socket: WebSocket;
@@ -74,7 +82,7 @@ export class WebsocketService {
   }
 
   private static handleEventSubscription(
-    callback: (data: Issue) => void,
+    callback: (data: any) => void,
     action: "subscribe" | "unsubscribe",
     eventType: string,
   ) {
@@ -118,5 +126,76 @@ export class WebsocketService {
     callback: (data: { id: number }) => void,
   ) {
     this.handleEventSubscription(callback, "unsubscribe", ISSUE_DELETED);
+  }
+
+  public static subscribeToTagCreatedEvent(
+    callback: (data: { tag: Tag }) => void,
+  ) {
+    this.handleEventSubscription(callback, "subscribe", TAG_CREATED);
+  }
+
+  public static unsubscribeToTagCreatedEvent(
+    callback: (data: { tag: Tag }) => void,
+  ) {
+    this.handleEventSubscription(callback, "unsubscribe", TAG_CREATED);
+  }
+
+  public static subscribeToTagUpdatedEvent(
+    callback: (data: { tag: Tag }) => void,
+  ) {
+    this.handleEventSubscription(callback, "subscribe", TAG_UPDATED);
+  }
+
+  public static unsubscribeToTagUpdatedEvent(
+    callback: (data: { tag: Tag }) => void,
+  ) {
+    this.handleEventSubscription(callback, "unsubscribe", TAG_UPDATED);
+  }
+
+  public static subscribeToTagDeletedEvent(
+    callback: (data: { id: number }) => void,
+  ) {
+    this.handleEventSubscription(callback, "subscribe", TAG_DELETED);
+  }
+
+  public static unsubscribeToTagDeletedEvent(
+    callback: (data: { id: number }) => void,
+  ) {
+    this.handleEventSubscription(callback, "unsubscribe", TAG_DELETED);
+  }
+  public static subscribeToIssueTagCreatedEvent(
+    callback: (data: { issueTag: IssueTag }) => void,
+  ) {
+    this.handleEventSubscription(callback, "subscribe", ISSUE_TAG_CREATED);
+  }
+
+  public static unsubscribeToIssueTagCreatedEvent(
+    callback: (data: { issueTag: IssueTag }) => void,
+  ) {
+    this.handleEventSubscription(callback, "unsubscribe", ISSUE_TAG_CREATED);
+  }
+
+  public static subscribeToIssueTagUpdatedEvent(
+    callback: (data: { issueTag: IssueTag }) => void,
+  ) {
+    this.handleEventSubscription(callback, "subscribe", ISSUE_TAG_UPDATED);
+  }
+
+  public static unsubscribeToIssueTagUpdatedEvent(
+    callback: (data: { issueTag: IssueTag }) => void,
+  ) {
+    this.handleEventSubscription(callback, "unsubscribe", ISSUE_TAG_UPDATED);
+  }
+
+  public static subscribeToIssueTagDeletedEvent(
+    callback: (data: { id: number }) => void,
+  ) {
+    this.handleEventSubscription(callback, "subscribe", ISSUE_TAG_DELETED);
+  }
+
+  public static unsubscribeToIssueTagDeletedEvent(
+    callback: (data: { id: number }) => void,
+  ) {
+    this.handleEventSubscription(callback, "unsubscribe", ISSUE_TAG_DELETED);
   }
 }

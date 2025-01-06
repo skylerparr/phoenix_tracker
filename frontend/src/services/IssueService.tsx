@@ -27,6 +27,7 @@ interface UpdateIssueRequest {
 export class IssueService {
   private baseUrl = `${API_BASE_URL}/issues`;
   private callbacks: ((issues: Issue[]) => void)[] = [];
+  private issuesCache: Issue[] | null = null;
 
   private getHeaders(): HeadersInit {
     return {
@@ -48,6 +49,11 @@ export class IssueService {
 
   subscribeToGetAllIssues(callback: (issues: Issue[]) => void): void {
     this.callbacks.push(callback);
+
+    if (this.issuesCache !== null) {
+      this.callbacks.forEach((callback) => callback(this.issuesCache!));
+      return;
+    }
     this.notifyCallbacks();
     if (this.callbacks.length === 1) {
       WebsocketService.subscribeToIssueCreateEvent(
@@ -83,8 +89,8 @@ export class IssueService {
     });
     if (!response.ok) throw new Error("Failed to fetch issues");
     const data = await response.json();
-    const issues = data.map((item: any) => new Issue(item));
-    this.callbacks.forEach((callback) => callback(issues));
+    this.issuesCache = data.map((item: any) => new Issue(item));
+    this.callbacks.forEach((callback) => callback(this.issuesCache!));
   }
 
   async getIssue(id: number): Promise<Issue> {

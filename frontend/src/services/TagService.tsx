@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "../config/ApiConfig";
 import { Tag } from "../models/Tag";
 import { sessionStorage } from "../store/Session";
+import { WebsocketService } from "./WebSocketService";
 
 interface CreateTagRequest {
   name: string;
@@ -14,29 +15,77 @@ interface UpdateTagRequest {
 
 export class TagService {
   private baseUrl = `${API_BASE_URL}/tags`;
+  private tagsCache: Tag[] | null = null;
+  private callbacks: ((tags: Tag[]) => void)[] = [];
+  private loading: boolean = false;
+
+  private getHeaders(): HeadersInit {
+    return {
+      "Content-Type": "application/json",
+      Authorization: `${sessionStorage.getSession().user?.token}`,
+    };
+  }
 
   async createTag(request: CreateTagRequest): Promise<Tag> {
     const response = await fetch(this.baseUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
+      headers: this.getHeaders(),
       body: JSON.stringify(request),
     });
     if (!response.ok) throw new Error("Failed to create tag");
     return response.json();
   }
 
-  async getAllTags(): Promise<Tag[]> {
+  subscribeToGetAllTags(callback: (tags: Tag[]) => void): void {
+    this.callbacks.push(callback);
+    if (this.loading) {
+      return;
+    }
+
+    if (this.tagsCache !== null) {
+      this.callbacks.forEach((callback) => callback(this.tagsCache!));
+      return;
+    }
+
+    this.notifyCallbacks();
+    if (this.callbacks.length === 1) {
+      WebsocketService.subscribeToTagCreatedEvent(
+        this.notifyCallbacks.bind(this),
+      );
+      WebsocketService.subscribeToTagUpdatedEvent(
+        this.notifyCallbacks.bind(this),
+      );
+      WebsocketService.subscribeToTagDeletedEvent(
+        this.notifyCallbacks.bind(this),
+      );
+    }
+  }
+
+  unsubscribeFromGetAllTags(callback: (tags: Tag[]) => void): void {
+    this.callbacks = this.callbacks.filter((cb) => cb !== callback);
+    if (this.callbacks.length === 0) {
+      WebsocketService.unsubscribeToTagCreatedEvent(
+        this.notifyCallbacks.bind(this),
+      );
+      WebsocketService.unsubscribeToTagUpdatedEvent(
+        this.notifyCallbacks.bind(this),
+      );
+      WebsocketService.unsubscribeToTagDeletedEvent(
+        this.notifyCallbacks.bind(this),
+      );
+    }
+  }
+
+  private async notifyCallbacks(): Promise<void> {
+    this.loading = true;
     const response = await fetch(this.baseUrl, {
-      headers: {
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
+      headers: this.getHeaders(),
     });
     if (!response.ok) throw new Error("Failed to fetch tags");
     const data = await response.json();
-    return data.map((item: any) => new Tag(item));
+    this.tagsCache = data.map((item: any) => new Tag(item));
+    this.loading = false;
+    this.callbacks.forEach((callback) => callback(this.tagsCache!));
   }
 
   async getTag(id: number): Promise<Tag> {
@@ -52,10 +101,7 @@ export class TagService {
   async updateTag(id: number, request: UpdateTagRequest): Promise<Tag> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
+      headers: this.getHeaders(),
       body: JSON.stringify(request),
     });
     if (!response.ok) throw new Error("Failed to update tag");
@@ -65,9 +111,7 @@ export class TagService {
   async deleteTag(id: number): Promise<void> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
+      headers: this.getHeaders(),
     });
     if (!response.ok) throw new Error("Failed to delete tag");
   }
