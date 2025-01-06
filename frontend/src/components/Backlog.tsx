@@ -5,9 +5,18 @@ import { issueService } from "../services/IssueService";
 import { Issue } from "../models/Issue";
 import IssueGroup from "./IssueGroup";
 import { IssueComponent } from "./IssueComponent";
+import {
+  STATUS_IN_PROGRESS,
+  STATUS_ACCEPTED,
+  STATUS_COMPLETED,
+} from "../services/StatusService";
 
 const Backlog: React.FC = () => {
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [acceptedIssues, setAcceptedIssues] = useState<Issue[]>([]);
+  const [inProgressIssues, setInprogressIssues] = useState<Issue[]>([]);
+  const [expandedAcceptedIssues, setExpandedAcceptedIssues] =
+    useState<boolean>(false);
 
   useEffect(() => {
     issueService.subscribeToGetAllIssues(handleIssuesChanged);
@@ -17,7 +26,22 @@ const Backlog: React.FC = () => {
   }, []);
 
   const handleIssuesChanged = (issues: Issue[]) => {
-    setIssues(issues);
+    const accepted = issues.filter((issue) => issue.status === STATUS_ACCEPTED);
+    const inProgress = issues.filter(
+      (issue) =>
+        issue.status === STATUS_IN_PROGRESS ||
+        issue.status === STATUS_COMPLETED,
+    );
+    const prioritizable = issues.filter(
+      (issue) =>
+        issue.status !== STATUS_ACCEPTED &&
+        issue.status !== STATUS_IN_PROGRESS &&
+        issue.status !== STATUS_COMPLETED,
+    );
+
+    setAcceptedIssues(accepted);
+    setInprogressIssues(inProgress);
+    setIssues(prioritizable);
   };
 
   const handleDragEnd = (result: any) => {
@@ -41,6 +65,35 @@ const Backlog: React.FC = () => {
         }}
       >
         <IssueGroup issues={issues} weeksFromNow={0} />
+        {!expandedAcceptedIssues ? (
+          <Box
+            sx={{
+              border: "1px solid #ddd",
+              borderRadius: 1,
+              width: "100%",
+              bgcolor: "#c6d9b7",
+              padding: "5px",
+              cursor: "pointer",
+              color: "#333333",
+              textAlign: "center",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onClick={() => setExpandedAcceptedIssues(true)}
+          >
+            Show {acceptedIssues.length} Accepted Issues
+          </Box>
+        ) : (
+          <>
+            {acceptedIssues.map((issue: Issue) => (
+              <IssueComponent key={issue.id} issue={issue} />
+            ))}
+          </>
+        )}
+        {inProgressIssues.map((issue: Issue) => (
+          <IssueComponent key={issue.id} issue={issue} />
+        ))}
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId="issues">
             {(provided) => (

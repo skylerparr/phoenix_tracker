@@ -4,7 +4,11 @@ import { Box, Typography, Stack, Button } from "@mui/material";
 import { PointsIcon } from "./PointsIcon";
 import WorkTypeIcon from "./WorkTypeIcons";
 import StatusButton from "./StatusButton";
-import { STATUS_IN_PROGRESS, STATUS_ACCEPTED } from "../services/StatusService";
+import {
+  STATUS_IN_PROGRESS,
+  STATUS_ACCEPTED,
+  STATUS_COMPLETED,
+} from "../services/StatusService";
 import { IssueDetail } from "./IssueDetail";
 import { issueTagService } from "../services/IssueTagService";
 import { Tag } from "../models/Tag";
@@ -29,6 +33,8 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
     switch (status) {
       case STATUS_IN_PROGRESS:
         return "#FFFFE0";
+      case STATUS_COMPLETED:
+        return "#FFFFE0";
       case STATUS_ACCEPTED:
         return "#c6d9b7";
       default:
@@ -49,7 +55,6 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
             width: "100%",
             bgcolor: getBackgroundColor(issue.status),
             padding: "5px",
-            cursor: "move",
           }}
           onClick={() => setExpanded(true)}
         >
