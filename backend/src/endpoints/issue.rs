@@ -42,6 +42,11 @@ pub struct UpdateIssueRequest {
     work_type: Option<i32>,
     target_release_at: Option<DateTimeWithTimeZone>,
 }
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BulkPriorityUpdate {
+    issue_priorities: Vec<(i32, i32)>, // (issue_id, new_priority)
+}
 pub fn issue_routes() -> Router<AppState> {
     Router::new()
         .route("/issues", post(create_issue))
@@ -53,6 +58,7 @@ pub fn issue_routes() -> Router<AppState> {
         .route("/issues/:id/accept", put(accept_issue))
         .route("/issues/:id/reject", put(reject_issue))
         .route("/issues/:id", delete(delete_issue))
+        .route("/issues/bulk-priority", put(bulk_update_priorities))
 }
 
 #[axum::debug_handler]
@@ -229,6 +235,25 @@ async fn delete_issue(
         Err(e) => {
             println!("Error deleting issue {}: {:?}", id, e);
             StatusCode::INTERNAL_SERVER_ERROR
+        }
+    }
+}
+
+#[axum::debug_handler]
+async fn bulk_update_priorities(
+    Extension(app_state): Extension<AppState>,
+    Json(payload): Json<BulkPriorityUpdate>,
+) -> impl IntoResponse {
+    let issue_crud = IssueCrud::new(app_state);
+
+    match issue_crud
+        .bulk_update_priorities(payload.issue_priorities)
+        .await
+    {
+        Ok(updated_issues) => Ok(Json(updated_issues)),
+        Err(e) => {
+            println!("Error updating issue priorities: {:?}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
 }

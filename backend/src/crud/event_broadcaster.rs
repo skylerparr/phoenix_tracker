@@ -10,6 +10,7 @@ pub struct EventBroadcaster {
 pub const ISSUE_CREATED: &str = "issue_created";
 pub const ISSUE_UPDATED: &str = "issue_updated";
 pub const ISSUE_DELETED: &str = "issue_deleted";
+pub const ISSUES_PRIORITIZED: &str = "issues_prioritized";
 
 impl EventBroadcaster {
     pub fn new(tx: Arc<Sender<String>>) -> Self {

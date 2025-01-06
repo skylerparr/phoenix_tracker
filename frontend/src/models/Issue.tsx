@@ -2,7 +2,7 @@ export class Issue {
   id: number;
   title: string;
   description: string;
-  priority: string;
+  priority: number | null;
   points: number;
   status: number;
   isIcebox: boolean;

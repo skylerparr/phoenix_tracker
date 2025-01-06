@@ -1,5 +1,7 @@
 use crate::crud::event_broadcaster::EventBroadcaster;
-use crate::crud::event_broadcaster::{ISSUE_CREATED, ISSUE_DELETED, ISSUE_UPDATED};
+use crate::crud::event_broadcaster::{
+    ISSUES_PRIORITIZED, ISSUE_CREATED, ISSUE_DELETED, ISSUE_UPDATED,
+};
 use crate::crud::issue_assignee::IssueAssigneeCrud;
 use crate::crud::issue_tag::IssueTagCrud;
 use crate::crud::status::get_unfinished_statuses;
@@ -193,5 +195,41 @@ impl IssueCrud {
         broadcaster.broadcast_event(*project_id, ISSUE_DELETED, serde_json::json!({ "id": id }));
 
         Ok(result)
+    }
+
+    pub async fn bulk_update_priorities(
+        &self,
+        issue_priorities: Vec<(i32, i32)>,
+    ) -> Result<Vec<issue::Model>, DbErr> {
+        let mut updated_issues = Vec::new();
+        let txn = self.app_state.db.begin().await?;
+
+        for (issue_id, new_priority) in issue_priorities {
+            let issue = issue::Entity::find_by_id(issue_id)
+                .one(&txn)
+                .await?
+                .ok_or(DbErr::Custom("Issue not found".to_owned()))?;
+
+            let current_version = issue.lock_version;
+            let mut issue: issue::ActiveModel = issue.into();
+
+            issue.priority = Set(new_priority);
+            issue.lock_version = Set(current_version + 1);
+
+            let updated_issue = issue.update(&txn).await?;
+            updated_issues.push(updated_issue);
+        }
+
+        txn.commit().await?;
+
+        let project_id = &self.app_state.project.clone().unwrap().id;
+        let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+        broadcaster.broadcast_event(
+            *project_id,
+            ISSUE_UPDATED,
+            serde_json::json!(updated_issues),
+        );
+
+        Ok(updated_issues)
     }
 }

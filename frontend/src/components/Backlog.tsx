@@ -56,7 +56,12 @@ const Backlog: React.FC = () => {
 
     setAcceptedIssues(sortedAccepted);
     setInprogressIssues(sortedInProgressWithDate);
-    setIssues(prioritizable);
+
+    const sortedPrioritizable = prioritizable.sort(
+      (a, b) => (a.priority ?? -1) - (b.priority ?? -1),
+    );
+
+    setIssues(sortedPrioritizable);
   };
 
   const handleDragEnd = (result: any) => {
@@ -65,8 +70,13 @@ const Backlog: React.FC = () => {
     const items = Array.from(issues);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
-
     setIssues(items);
+
+    const updates: [number, number][] = items.map((issue, index) => [
+      issue.id,
+      (index + 1) * 5,
+    ]);
+    issueService.bulkUpdatePriorities(updates);
   };
 
   return (

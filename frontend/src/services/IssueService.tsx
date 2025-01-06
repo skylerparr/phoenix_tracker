@@ -144,6 +144,19 @@ export class IssueService {
     });
     if (!response.ok) throw new Error("Failed to delete issue");
   }
+
+  async bulkUpdatePriorities(
+    issuePriorities: [number, number][],
+  ): Promise<Issue[]> {
+    const response = await fetch(`${this.baseUrl}/bulk-priority`, {
+      method: "PUT",
+      headers: this.getHeaders(),
+      body: JSON.stringify({ issuePriorities }),
+    });
+    if (!response.ok) throw new Error("Failed to update issue priorities");
+    const data = await response.json();
+    return data.map((item: any) => new Issue(item));
+  }
 }
 
 export const issueService = new IssueService();
