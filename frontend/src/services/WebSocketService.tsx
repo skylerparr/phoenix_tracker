@@ -10,9 +10,6 @@ export const ISSUE_DELETED = "issue_deleted";
 export const TAG_CREATED = "tag_created";
 export const TAG_UPDATED = "tag_updated";
 export const TAG_DELETED = "tag_deleted";
-export const ISSUE_TAG_CREATED = "issue_tag_created";
-export const ISSUE_TAG_UPDATED = "issue_tag_updated";
-export const ISSUE_TAG_DELETED = "issue_tag_deleted";
 
 export class WebsocketService {
   private static socket: WebSocket;
@@ -162,40 +159,5 @@ export class WebsocketService {
     callback: (data: { id: number }) => void,
   ) {
     this.handleEventSubscription(callback, "unsubscribe", TAG_DELETED);
-  }
-  public static subscribeToIssueTagCreatedEvent(
-    callback: (data: { issueTag: IssueTag }) => void,
-  ) {
-    this.handleEventSubscription(callback, "subscribe", ISSUE_TAG_CREATED);
-  }
-
-  public static unsubscribeToIssueTagCreatedEvent(
-    callback: (data: { issueTag: IssueTag }) => void,
-  ) {
-    this.handleEventSubscription(callback, "unsubscribe", ISSUE_TAG_CREATED);
-  }
-
-  public static subscribeToIssueTagUpdatedEvent(
-    callback: (data: { issueTag: IssueTag }) => void,
-  ) {
-    this.handleEventSubscription(callback, "subscribe", ISSUE_TAG_UPDATED);
-  }
-
-  public static unsubscribeToIssueTagUpdatedEvent(
-    callback: (data: { issueTag: IssueTag }) => void,
-  ) {
-    this.handleEventSubscription(callback, "unsubscribe", ISSUE_TAG_UPDATED);
-  }
-
-  public static subscribeToIssueTagDeletedEvent(
-    callback: (data: { id: number }) => void,
-  ) {
-    this.handleEventSubscription(callback, "subscribe", ISSUE_TAG_DELETED);
-  }
-
-  public static unsubscribeToIssueTagDeletedEvent(
-    callback: (data: { id: number }) => void,
-  ) {
-    this.handleEventSubscription(callback, "unsubscribe", ISSUE_TAG_DELETED);
   }
 }

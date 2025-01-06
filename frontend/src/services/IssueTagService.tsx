@@ -57,19 +57,14 @@ export class IssueTagService {
     if (!response.ok) throw new Error("Failed to delete issue tag");
   }
   async getTagsForIssue(issue: Issue): Promise<Tag[]> {
-    return new Promise((resolve) => {
-      const handleTags = async (sourceTags: Tag[]) => {
-        const issueTags = issue.issueTagIds;
-        const associatedTags = issueTags
-          .map((issueTagId) =>
-            sourceTags.find((sourceTag) => sourceTag.id === issueTagId),
-          )
-          .filter((tag): tag is Tag => tag !== undefined);
-        resolve(associatedTags);
-      };
-
-      tagService.subscribeToGetAllTags(handleTags);
-    });
+    const sourceTags = await tagService.getAllTags();
+    const issueTags = issue.issueTagIds;
+    const associatedTags = issueTags
+      .map((issueTagId) =>
+        sourceTags.find((sourceTag) => sourceTag.id === issueTagId),
+      )
+      .filter((tag): tag is Tag => tag !== undefined);
+    return associatedTags;
   }
 }
 

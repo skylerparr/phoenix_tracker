@@ -32,7 +32,7 @@ async fn create_issue_tag(
     Json(payload): Json<CreateIssueTagRequest>,
 ) -> impl IntoResponse {
     debug!("Creating issue tag");
-    let issue_tag_crud = IssueTagCrud::new(app_state.db);
+    let issue_tag_crud = IssueTagCrud::new(app_state);
     match issue_tag_crud
         .create(payload.issue_id, payload.tag_id)
         .await
@@ -50,7 +50,7 @@ async fn get_issue_tags(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
-    let issue_tag_crud = IssueTagCrud::new(app_state.db);
+    let issue_tag_crud = IssueTagCrud::new(app_state);
     match issue_tag_crud.find_by_issue_id(id).await {
         Ok(issue_tags) => Ok(Json(issue_tags)),
         Err(e) => {
@@ -65,7 +65,7 @@ async fn get_tag_issues(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
-    let issue_tag_crud = IssueTagCrud::new(app_state.db);
+    let issue_tag_crud = IssueTagCrud::new(app_state);
     match issue_tag_crud.find_by_tag_id(id).await {
         Ok(issue_tags) => Ok(Json(issue_tags)),
         Err(e) => {
@@ -80,7 +80,7 @@ async fn delete_issue_tag(
     Extension(app_state): Extension<AppState>,
     Path((issue_id, tag_id)): Path<(i32, i32)>,
 ) -> StatusCode {
-    let issue_tag_crud = IssueTagCrud::new(app_state.db);
+    let issue_tag_crud = IssueTagCrud::new(app_state);
     match issue_tag_crud.delete(issue_id, tag_id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TextField, Box, Autocomplete, Chip, Button } from "@mui/material";
+import { TextField, Box, Button } from "@mui/material";
 import { issueService } from "../services/IssueService";
 import { sessionStorage } from "../store/Session";
 import { STATUS_UNSTARTED } from "../services/StatusService";
@@ -33,6 +33,10 @@ const CreateIssue: React.FC = () => {
       tagService.subscribeToGetAllTags(fetchTags);
     };
     fetchData();
+
+    return () => {
+      tagService.unsubscribeFromGetAllTags(fetchTags);
+    };
   }, []);
 
   const fetchUsers = async () => {

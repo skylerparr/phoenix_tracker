@@ -1,16 +1,18 @@
+use crate::crud::event_broadcaster::EventBroadcaster;
+use crate::crud::event_broadcaster::ISSUE_UPDATED;
 use crate::entities::issue_tag;
+use crate::AppState;
 use sea_orm::*;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct IssueTagCrud {
-    db: DatabaseConnection,
+    app_state: AppState,
 }
 
 impl IssueTagCrud {
-    pub fn new(db: DatabaseConnection) -> Self {
-        Self { db }
+    pub fn new(app_state: AppState) -> Self {
+        Self { app_state }
     }
-
     pub async fn create(&self, issue_id: i32, tag_id: i32) -> Result<issue_tag::Model, DbErr> {
         let model = self.find_by_ids(issue_id, tag_id).await?;
         if let Some(model) = model {
@@ -22,7 +24,17 @@ impl IssueTagCrud {
             ..Default::default()
         };
 
-        issue_tag.insert(&self.db).await
+        let result = issue_tag.insert(&self.app_state.db).await?;
+
+        let project_id = &self.app_state.project.clone().unwrap().id;
+        let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+        broadcaster.broadcast_event(
+            *project_id,
+            ISSUE_UPDATED,
+            serde_json::json!({ "id": issue_id }),
+        );
+
+        Ok(result)
     }
 
     pub async fn find_by_ids(
@@ -33,36 +45,46 @@ impl IssueTagCrud {
         issue_tag::Entity::find()
             .filter(issue_tag::Column::IssueId.eq(issue_id))
             .filter(issue_tag::Column::TagId.eq(tag_id))
-            .one(&self.db)
+            .one(&self.app_state.db)
             .await
     }
 
     pub async fn find_by_issue_id(&self, issue_id: i32) -> Result<Vec<issue_tag::Model>, DbErr> {
         issue_tag::Entity::find()
             .filter(issue_tag::Column::IssueId.eq(issue_id))
-            .all(&self.db)
+            .all(&self.app_state.db)
             .await
     }
 
     pub async fn find_by_tag_id(&self, tag_id: i32) -> Result<Vec<issue_tag::Model>, DbErr> {
         issue_tag::Entity::find()
             .filter(issue_tag::Column::TagId.eq(tag_id))
-            .all(&self.db)
+            .all(&self.app_state.db)
             .await
     }
 
     pub async fn delete(&self, issue_id: i32, tag_id: i32) -> Result<DeleteResult, DbErr> {
-        issue_tag::Entity::delete_many()
+        let result = issue_tag::Entity::delete_many()
             .filter(issue_tag::Column::IssueId.eq(issue_id))
             .filter(issue_tag::Column::TagId.eq(tag_id))
-            .exec(&self.db)
-            .await
+            .exec(&self.app_state.db)
+            .await?;
+
+        let project_id = &self.app_state.project.clone().unwrap().id;
+        let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+        broadcaster.broadcast_event(
+            *project_id,
+            ISSUE_UPDATED,
+            serde_json::json!({ "id": issue_id }),
+        );
+
+        Ok(result)
     }
 
     pub async fn delete_all_by_issue_id(&self, issue_id: i32) -> Result<DeleteResult, DbErr> {
         issue_tag::Entity::delete_many()
             .filter(issue_tag::Column::IssueId.eq(issue_id))
-            .exec(&self.db)
+            .exec(&self.app_state.db)
             .await
     }
 }

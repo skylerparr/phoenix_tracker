@@ -72,7 +72,7 @@ impl IssueCrud {
         let mut issues = query.all(&self.app_state.db).await?;
 
         for issue in &mut issues {
-            let tag_ids = IssueTagCrud::new(self.app_state.db.clone())
+            let tag_ids = IssueTagCrud::new(self.app_state.clone())
                 .find_by_issue_id(issue.id)
                 .await?
                 .into_iter()
@@ -181,7 +181,7 @@ impl IssueCrud {
         let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.db.clone());
         issue_assignee_crud.delete_all_by_issue_id(id).await?;
 
-        let issue_tag_crud = IssueTagCrud::new(self.app_state.db.clone());
+        let issue_tag_crud = IssueTagCrud::new(self.app_state.clone());
         issue_tag_crud.delete_all_by_issue_id(id).await?;
 
         let result = issue::Entity::delete_by_id(id)
