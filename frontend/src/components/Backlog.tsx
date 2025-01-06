@@ -32,6 +32,11 @@ const Backlog: React.FC = () => {
         issue.status === STATUS_IN_PROGRESS ||
         issue.status === STATUS_COMPLETED,
     );
+    const sortedInProgress = [
+      ...inProgress.filter((issue) => issue.status === STATUS_COMPLETED),
+      ...inProgress.filter((issue) => issue.status === STATUS_IN_PROGRESS),
+    ];
+
     const prioritizable = issues.filter(
       (issue) =>
         issue.status !== STATUS_ACCEPTED &&
@@ -40,7 +45,7 @@ const Backlog: React.FC = () => {
     );
 
     setAcceptedIssues(accepted);
-    setInprogressIssues(inProgress);
+    setInprogressIssues(sortedInProgress);
     setIssues(prioritizable);
   };
 
