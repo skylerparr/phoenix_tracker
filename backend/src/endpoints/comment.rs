@@ -11,19 +11,11 @@ use axum::{
 use serde::Deserialize;
 use tracing::debug;
 
-use super::user;
-
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateCommentRequest {
     content: String,
     issue_id: i32,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpdateCommentRequest {
-    content: Option<String>,
 }
 
 pub fn comment_routes() -> Router<AppState> {

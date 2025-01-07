@@ -6,4 +6,5 @@ pub mod issue_tag;
 pub mod owner;
 pub mod project;
 pub mod tag;
+pub mod task;
 pub mod user;

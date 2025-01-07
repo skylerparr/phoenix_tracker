@@ -9,6 +9,7 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
+  Checkbox,
 } from "@mui/material";
 import { issueService } from "../services/IssueService";
 import {
@@ -16,6 +17,9 @@ import {
   Link as LinkIcon,
   AccessTime,
   DeleteOutline as Delete,
+  Edit,
+  Save,
+  Clear,
 } from "@mui/icons-material";
 import { formatDistanceToNow } from "date-fns";
 import { Issue, POINTS } from "../models/Issue";
@@ -34,6 +38,8 @@ import { User } from "../models/User";
 import { IssueAssignee } from "../models/IssueAssignee";
 import { commentService } from "../services/CommentService";
 import { Comment } from "../models/Comment";
+import { Task } from "../models/Task";
+import { taskService } from "../services/TaskService";
 
 const lightTheme = createTheme({
   palette: {
@@ -62,11 +68,16 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   const [users, setUsers] = useState<User[]>([]);
   const [requestedBy, setRequestedBy] = useState<User | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [editableTaskIds, setEditableTaskIds] = useState<
+    { id: number; title: string }[]
+  >([]);
 
   React.useEffect(() => {
     const fetchData = async () => {
       await fetchUsers();
       await fetchComments();
+      await fetchTasks();
       setIssue(originalIssue);
     };
     tagService.subscribeToGetAllTags(handleTagsUpdate);
@@ -105,6 +116,15 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   const fetchComments = async () => {
     const comments = await commentService.getCommentsByIssue(originalIssue.id);
     setComments(comments);
+  };
+
+  const fetchTasks = async () => {
+    const tasks = await taskService.getTasksByIssue(originalIssue.id);
+    const sortedTasks = tasks.sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+    setTasks(sortedTasks);
   };
 
   const handleTagsUpdate = async (tags: Tag[]) => {
@@ -243,6 +263,43 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     });
     setComment("");
   };
+
+  const handleTaskComplete = (id: number, checked: boolean) => {
+    taskService.updateTask(id, { completed: checked });
+  };
+
+  const handleEditTask = (id: number, title: string) => {
+    setEditableTaskIds((prevState: Array<{ id: number; title: string }>) => [
+      ...prevState,
+      { id, title },
+    ]);
+  };
+
+  const handleSaveTask = async (id: number, title: string) => {
+    await taskService.updateTask(id, { title });
+    setEditableTaskIds((prevState: Array<{ id: number; title: string }>) =>
+      prevState.filter((task) => task.id !== id),
+    );
+  };
+
+  const handleDeleteTask = async (id: number) => {
+    await taskService.deleteTask(id);
+  };
+
+  const createTaskHandler = async () => {
+    const task = await taskService.createTask({
+      issueId: issue.id,
+      title: "",
+      completed: false,
+      percent: 0,
+    });
+
+    setEditableTaskIds((prevState: Array<{ id: number; title: string }>) => [
+      ...prevState,
+      { id: task.id, title: "" },
+    ]);
+  };
+
   return (
     <Stack
       spacing={2}
@@ -587,12 +644,134 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         placeholder="Add labels..."
         handleCreateNew={handleCreateNewTag}
       />
-      <Typography sx={{ color: "#666", fontWeight: "bold" }}>
-        TASKS (0/0)
-      </Typography>
-      <Typography sx={{ color: "#666", cursor: "pointer" }}>
-        + Add a task
-      </Typography>
+      <Stack
+        direction="row"
+        spacing={2}
+        alignItems="center"
+        sx={{ width: "100%" }}
+      >
+        <Typography sx={{ color: "#666", fontWeight: "bold" }}>
+          TASKS ({tasks.filter((t) => t.completed).length}/{tasks.length})
+        </Typography>
+        <Box
+          sx={{
+            flexGrow: 1,
+            height: "3px",
+            bgcolor: "#FFE082",
+            borderRadius: "4px",
+          }}
+        >
+          <Box
+            sx={{
+              width: `${tasks.length > 0 ? (tasks.filter((t) => t.completed).length / tasks.length) * 100 : 0}%`,
+              height: "100%",
+              bgcolor: "#4CAF50",
+              borderRadius: "4px",
+              transition: "width 0.3s ease-in-out",
+            }}
+          />
+        </Box>
+        <Typography sx={{ color: "#666", fontSize: "12px" }}>
+          {tasks.length > 0
+            ? Math.round(
+                (tasks.filter((t) => t.completed).length / tasks.length) * 100,
+              )
+            : 0}
+          %
+        </Typography>
+      </Stack>{" "}
+      <Button onClick={createTaskHandler} sx={{ width: "150px" }}>
+        <Typography sx={{ color: "#666", cursor: "pointer" }}>
+          + Add a task
+        </Typography>
+      </Button>
+      {tasks.map((task: Task) => (
+        <Stack key={task.id} direction="row" spacing={1} alignItems="center">
+          <Checkbox
+            checked={task.completed}
+            onChange={(e) => handleTaskComplete(task.id, e.target.checked)}
+            sx={{ color: "#666" }}
+          />
+          {editableTaskIds.find(
+            ({ id }: { id: number; title: string }) => id === task.id,
+          ) ? (
+            <>
+              <TextField
+                value={
+                  editableTaskIds.find(({ id }) => id === task.id)?.title ?? ""
+                }
+                sx={{
+                  bgcolor: "white",
+                  "& .MuiInputBase-input": { color: "black" },
+                }}
+                fullWidth
+                placeholder="Enter task title"
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                  if (e.key === "Enter") {
+                    handleSaveTask(
+                      task.id,
+                      editableTaskIds.find(({ id }) => id === task.id)?.title ??
+                        "",
+                    );
+                  }
+                }}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setEditableTaskIds(
+                    editableTaskIds.map(
+                      (editableTask: { id: number; title: string }) =>
+                        editableTask.id === task.id
+                          ? { ...editableTask, title: e.target.value }
+                          : editableTask,
+                    ),
+                  )
+                }
+                InputProps={{
+                  endAdornment: (
+                    <IconButton
+                      onClick={() =>
+                        setEditableTaskIds(
+                          editableTaskIds.map(
+                            (editableTask: { id: number; title: string }) =>
+                              editableTask.id === task.id
+                                ? { ...editableTask, title: "" }
+                                : editableTask,
+                          ),
+                        )
+                      }
+                    >
+                      <Clear sx={{ color: "#666" }} />
+                    </IconButton>
+                  ),
+                }}
+              />{" "}
+              <IconButton
+                onClick={() =>
+                  handleSaveTask(
+                    task.id,
+                    editableTaskIds.find(({ id }) => id === task.id)?.title ||
+                      task.title,
+                  )
+                }
+              >
+                <Save sx={{ color: "#666" }} />
+              </IconButton>{" "}
+            </>
+          ) : (
+            <>
+              <Typography sx={{ color: "#333", flexGrow: 1 }}>
+                {task.title}
+              </Typography>
+              <IconButton onClick={() => handleEditTask(task.id, task.title)}>
+                <Edit sx={{ color: "#666" }} />
+              </IconButton>
+            </>
+          )}
+
+          <IconButton onClick={() => handleDeleteTask(task.id)}>
+            <Delete sx={{ color: "#666" }} />
+          </IconButton>
+        </Stack>
+      ))}
       <Stack spacing={1}>
         <Typography sx={{ color: "#666", fontWeight: "bold" }}>
           Activity
@@ -625,6 +804,12 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
             setComment(e.target.value)
           }
+          onKeyPress={(e) => {
+            if (e.key === "Enter" && !e.shiftKey && comment.length >= 2) {
+              e.preventDefault();
+              handlePostComment();
+            }
+          }}
         />
 
         <Button

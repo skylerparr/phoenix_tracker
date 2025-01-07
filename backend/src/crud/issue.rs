@@ -3,6 +3,7 @@ use crate::crud::event_broadcaster::{ISSUE_CREATED, ISSUE_DELETED, ISSUE_UPDATED
 use crate::crud::issue_assignee::IssueAssigneeCrud;
 use crate::crud::issue_tag::IssueTagCrud;
 use crate::crud::status::get_unfinished_statuses;
+use crate::crud::status::STATUS_ACCEPTED;
 use crate::entities::issue;
 use crate::AppState;
 use sea_orm::entity::prelude::*;
@@ -68,6 +69,26 @@ impl IssueCrud {
         if !include_finished {
             query = query.filter(issue::Column::Status.is_in(get_unfinished_statuses()));
         }
+
+        let mut issues = query.all(&self.app_state.db).await?;
+
+        for issue in &mut issues {
+            let tag_ids = IssueTagCrud::new(self.app_state.clone())
+                .find_by_issue_id(issue.id)
+                .await?
+                .into_iter()
+                .map(|tag| tag.tag_id)
+                .collect();
+            issue.issue_tag_ids = tag_ids;
+        }
+
+        Ok(issues)
+    }
+
+    pub async fn find_all_accepted(&self, project_id: i32) -> Result<Vec<issue::Model>, DbErr> {
+        let query = issue::Entity::find()
+            .filter(issue::Column::ProjectId.eq(project_id))
+            .filter(issue::Column::Status.eq(STATUS_ACCEPTED));
 
         let mut issues = query.all(&self.app_state.db).await?;
 

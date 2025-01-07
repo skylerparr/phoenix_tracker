@@ -17,7 +17,7 @@ use axum::{
 use endpoints::{
     auth::auth_routes, comment::comment_routes, issue::issue_routes,
     issue_assignee::issue_assignee_routes, issue_tag::issue_tag_routes, owner::owner_routes,
-    project::project_routes, tag::tag_routes, user::user_routes,
+    project::project_routes, tag::tag_routes, task::task_routes, user::user_routes,
 };
 use sea_orm::{Database, DatabaseConnection};
 use std::net::SocketAddr;
@@ -156,6 +156,7 @@ fn main() {
             .merge(tag_routes())
             .merge(issue_tag_routes())
             .merge(issue_assignee_routes())
+            .merge(task_routes())
             .route("/ws", get(websocket::ws_handler))
             .route("/", get(|| async { "Tracker Root" }))
             .layer(middleware::from_fn(logging_middleware))
