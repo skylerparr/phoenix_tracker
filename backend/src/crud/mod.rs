@@ -1,3 +1,4 @@
+pub mod blocker;
 pub mod comment;
 pub mod event_broadcaster;
 pub mod history;

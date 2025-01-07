@@ -1,3 +1,4 @@
+pub mod blocker;
 pub mod comment;
 pub mod history;
 pub mod issue;

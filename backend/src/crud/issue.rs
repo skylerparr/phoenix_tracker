@@ -1,9 +1,12 @@
+use crate::crud::blocker::BlockerCrud;
+use crate::crud::comment::CommentCrud;
 use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::{ISSUE_CREATED, ISSUE_DELETED, ISSUE_UPDATED};
 use crate::crud::issue_assignee::IssueAssigneeCrud;
 use crate::crud::issue_tag::IssueTagCrud;
 use crate::crud::status::get_unfinished_statuses;
 use crate::crud::status::STATUS_ACCEPTED;
+use crate::crud::task::TaskCrud;
 use crate::entities::issue;
 use crate::AppState;
 use sea_orm::entity::prelude::*;
@@ -210,6 +213,15 @@ impl IssueCrud {
 
         let issue_tag_crud = IssueTagCrud::new(self.app_state.clone());
         issue_tag_crud.delete_all_by_issue_id(id).await?;
+
+        let comment_crud = CommentCrud::new(self.app_state.clone());
+        comment_crud.delete_all_by_issue_id(id).await?;
+
+        let task_crud = TaskCrud::new(self.app_state.clone());
+        task_crud.delete_all_by_issue_id(id).await?;
+
+        let blocker_crud = BlockerCrud::new(self.app_state.clone());
+        blocker_crud.delete_all_by_issue_id(id).await?;
 
         let result = issue::Entity::delete_by_id(id)
             .exec(&self.app_state.db)

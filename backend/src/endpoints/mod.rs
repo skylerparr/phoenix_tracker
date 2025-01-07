@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod blocker;
 pub mod comment;
 pub mod issue;
 pub mod issue_assignee;

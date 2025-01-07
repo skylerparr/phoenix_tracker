@@ -69,4 +69,11 @@ impl CommentCrud {
             .exec(&self.app_state.db)
             .await
     }
+
+    pub async fn delete_all_by_issue_id(&self, issue_id: i32) -> Result<DeleteResult, DbErr> {
+        comment::Entity::delete_many()
+            .filter(comment::Column::IssueId.eq(issue_id))
+            .exec(&self.app_state.db)
+            .await
+    }
 }
