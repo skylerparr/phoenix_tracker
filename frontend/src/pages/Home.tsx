@@ -12,6 +12,7 @@ import Backlog from "../components/Backlog";
 import { sessionStorage } from "../store/Session";
 import { WebsocketService } from "../services/WebSocketService";
 import MyIssuesComponent from "../components/MyIssuesComponent";
+import SearchComponent from "../components/SearchComponent";
 
 const toolbarButtons = [
   {
@@ -48,7 +49,7 @@ const toolbarButtons = [
     tooltip: "Search",
     icon: <SearchIcon />,
     id: "search",
-    component: Box,
+    component: SearchComponent,
   },
 ];
 const Home = () => {
@@ -56,8 +57,34 @@ const Home = () => {
   WebsocketService.subscribe();
 
   const [activeButtons, setActiveButtons] = useState<string[]>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.toString()) {
+      const storedButtons = sessionStorage.getActiveButtons();
+      return storedButtons.includes("search")
+        ? storedButtons
+        : [...storedButtons, "search"];
+    }
     return sessionStorage.getActiveButtons();
   });
+
+  const createParamMap = () => {
+    const params = new URLSearchParams(window.location.search);
+    const paramMap = new Map();
+    params.forEach((value, key) => {
+      paramMap.set(key, value);
+    });
+    return paramMap;
+  };
+  const [queryParams, setQueryParams] = useState(() => createParamMap());
+
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setQueryParams(createParamMap());
+    };
+
+    window.addEventListener("popstate", handleLocationChange);
+    return () => window.removeEventListener("popstate", handleLocationChange);
+  }, []);
 
   useEffect(() => {
     sessionStorage.setActiveButtons(activeButtons);
