@@ -27,7 +27,9 @@ interface UpdateIssueRequest {
 export class IssueService {
   private baseUrl = `${API_BASE_URL}/issues`;
   private callbacks: ((issues: Issue[]) => void)[] = [];
+  private myIssuesCallbacks: ((issues: Issue[]) => void)[] = [];
   private issuesCache: Issue[] | null = null;
+  private myIssuesCache: Issue[] | null = null;
 
   private getHeaders(): HeadersInit {
     return {
@@ -46,53 +48,92 @@ export class IssueService {
     const data = await response.json();
     return new Issue(data);
   }
+  private setupSubscriptions(
+    isMyIssues: boolean,
+    callback: (issues: Issue[]) => void,
+  ): void {
+    const callbacks = isMyIssues ? this.myIssuesCallbacks : this.callbacks;
+    const cache = isMyIssues ? this.myIssuesCache : this.issuesCache;
+    callbacks.push(callback);
 
-  subscribeToGetAllIssues(callback: (issues: Issue[]) => void): void {
-    this.callbacks.push(callback);
-
-    if (this.issuesCache !== null) {
-      this.callbacks.forEach((callback) => callback(this.issuesCache!));
+    if (cache !== null) {
+      callbacks.forEach((cb) => cb(cache!));
       return;
     }
-    this.notifyCallbacks();
-    if (this.callbacks.length === 1) {
-      WebsocketService.subscribeToIssueCreateEvent(
-        this.notifyCallbacks.bind(this),
-      );
-      WebsocketService.subscribeToIssueUpdatedEvent(
-        this.notifyCallbacks.bind(this),
-      );
-      WebsocketService.subscribeToIssueDeletedEvent(
-        this.notifyCallbacks.bind(this),
-      );
+
+    const notifyMethod = isMyIssues
+      ? this.notifyMyIssuesCallbacks.bind(this)
+      : this.notifyCallbacks.bind(this);
+
+    notifyMethod();
+    if (callbacks.length === 1) {
+      WebsocketService.subscribeToIssueCreateEvent(notifyMethod);
+      WebsocketService.subscribeToIssueUpdatedEvent(notifyMethod);
+      WebsocketService.subscribeToIssueDeletedEvent(notifyMethod);
     }
   }
 
-  unsubscribeFromGetAllIssues(callback: (issues: Issue[]) => void): void {
-    this.callbacks = this.callbacks.filter((cb) => cb !== callback);
-    if (this.callbacks.length === 0) {
-      WebsocketService.unsubscribeToIssueCreateEvent(
-        this.notifyCallbacks.bind(this),
-      );
-      WebsocketService.unsubscribeToIssueUpdatedEvent(
-        this.notifyCallbacks.bind(this),
-      );
-      WebsocketService.unsubscribeToIssueDeletedEvent(
-        this.notifyCallbacks.bind(this),
+  private cleanupSubscriptions(
+    isMyIssues: boolean,
+    callback: (issues: Issue[]) => void,
+  ): void {
+    const callbacks = isMyIssues ? this.myIssuesCallbacks : this.callbacks;
+    const notifyMethod = isMyIssues
+      ? this.notifyMyIssuesCallbacks.bind(this)
+      : this.notifyCallbacks.bind(this);
+
+    if (isMyIssues) {
+      this.myIssuesCallbacks = callbacks.filter((cb) => cb !== callback);
+    } else {
+      this.callbacks = callbacks.filter((cb) => cb !== callback);
+    }
+
+    if (callbacks.length === 0) {
+      WebsocketService.unsubscribeToIssueCreateEvent(notifyMethod);
+      WebsocketService.unsubscribeToIssueUpdatedEvent(notifyMethod);
+      WebsocketService.unsubscribeToIssueDeletedEvent(notifyMethod);
+    }
+  }
+
+  private async fetchIssues(isMyIssues: boolean): Promise<Issue[]> {
+    const url = isMyIssues ? `${this.baseUrl}/me` : this.baseUrl;
+    const response = await fetch(url, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) {
+      throw new Error(
+        isMyIssues ? "Failed to fetch my issues" : "Failed to fetch issues",
       );
     }
+    const data = await response.json();
+    return data.map((item: any) => new Issue(item));
   }
 
   private async notifyCallbacks(): Promise<void> {
-    const response = await fetch(this.baseUrl, {
-      headers: this.getHeaders(),
-    });
-    if (!response.ok) throw new Error("Failed to fetch issues");
-    const data = await response.json();
-    this.issuesCache = data.map((item: any) => new Issue(item));
+    this.issuesCache = await this.fetchIssues(false);
     this.callbacks.forEach((callback) => callback(this.issuesCache!));
   }
 
+  private async notifyMyIssuesCallbacks(): Promise<void> {
+    this.myIssuesCache = await this.fetchIssues(true);
+    this.myIssuesCallbacks.forEach((callback) => callback(this.myIssuesCache!));
+  }
+
+  subscribeToGetAllIssues(callback: (issues: Issue[]) => void): void {
+    this.setupSubscriptions(false, callback);
+  }
+
+  unsubscribeFromGetAllIssues(callback: (issues: Issue[]) => void): void {
+    this.cleanupSubscriptions(false, callback);
+  }
+
+  subscribeToGetMyIssues(callback: (issues: Issue[]) => void): void {
+    this.setupSubscriptions(true, callback);
+  }
+
+  unsubscribeFromGetMyIssues(callback: (issues: Issue[]) => void): void {
+    this.cleanupSubscriptions(true, callback);
+  }
   async getIssue(id: number): Promise<Issue> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       headers: this.getHeaders(),

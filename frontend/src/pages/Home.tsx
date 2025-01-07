@@ -11,6 +11,7 @@ import CreateIssue from "../components/CreateIssue";
 import Backlog from "../components/Backlog";
 import { sessionStorage } from "../store/Session";
 import { WebsocketService } from "../services/WebSocketService";
+import MyIssuesComponent from "../components/MyIssuesComponent";
 
 const toolbarButtons = [
   {
@@ -23,7 +24,7 @@ const toolbarButtons = [
     tooltip: "My Work",
     icon: <HomeIcon />,
     id: "my_work",
-    component: Box,
+    component: MyIssuesComponent,
   },
   {
     tooltip: "Backlog",

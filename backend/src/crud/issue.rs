@@ -8,6 +8,7 @@ use crate::crud::status::get_unfinished_statuses;
 use crate::crud::status::STATUS_ACCEPTED;
 use crate::crud::task::TaskCrud;
 use crate::entities::issue;
+use crate::entities::issue_assignee;
 use crate::AppState;
 use sea_orm::entity::prelude::*;
 use sea_orm::*;
@@ -107,6 +108,32 @@ impl IssueCrud {
 
         Ok(issues)
     }
+
+    pub async fn find_all_by_user_id(&self, user_id: i32) -> Result<Vec<issue::Model>, DbErr> {
+        let issues = issue_assignee::Entity::find()
+            .filter(issue_assignee::Column::UserId.eq(user_id))
+            .find_also_related(issue::Entity)
+            .all(&self.app_state.db)
+            .await?
+            .into_iter()
+            .filter_map(|(_, issue)| issue)
+            .collect::<Vec<issue::Model>>();
+
+        let mut issues_with_tags = Vec::new();
+        for mut issue in issues {
+            let tag_ids = IssueTagCrud::new(self.app_state.clone())
+                .find_by_issue_id(issue.id)
+                .await?
+                .into_iter()
+                .map(|tag| tag.tag_id)
+                .collect();
+            issue.issue_tag_ids = tag_ids;
+            issues_with_tags.push(issue);
+        }
+
+        Ok(issues_with_tags)
+    }
+
     pub async fn update(
         &self,
         id: i32,

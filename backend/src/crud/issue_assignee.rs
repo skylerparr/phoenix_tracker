@@ -30,7 +30,17 @@ impl IssueAssigneeCrud {
                     ..Default::default()
                 };
 
-                issue_assignee.insert(&self.app_state.db).await
+                let result = issue_assignee.insert(&self.app_state.db).await?;
+
+                let project_id = &self.app_state.project.clone().unwrap().id;
+                let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+                broadcaster.broadcast_event(
+                    *project_id,
+                    ISSUE_UPDATED,
+                    serde_json::json!({"user_id": user_id}),
+                );
+
+                Ok(result)
             }
         }
     }
