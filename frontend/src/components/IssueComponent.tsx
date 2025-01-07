@@ -15,10 +15,15 @@ import { Tag } from "../models/Tag";
 
 interface IssueComponentProps {
   issue: Issue;
+  expanded: boolean;
+  onToggleExpanded: () => void;
 }
 
-export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
-  const [expanded, setExpanded] = React.useState(false);
+export const IssueComponent: React.FC<IssueComponentProps> = ({
+  issue,
+  expanded,
+  onToggleExpanded,
+}) => {
   const [tags, setTags] = React.useState<Tag[]>([]);
 
   React.useEffect(() => {
@@ -45,7 +50,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
   return (
     <Box>
       {expanded ? (
-        <IssueDetail issue={issue} closeHandler={() => setExpanded(false)} />
+        <IssueDetail issue={issue} closeHandler={onToggleExpanded} />
       ) : (
         <Box
           className="issue-container"
@@ -56,7 +61,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({ issue }) => {
             bgcolor: getBackgroundColor(issue.status),
             padding: "5px",
           }}
-          onClick={() => setExpanded(true)}
+          onClick={onToggleExpanded}
         >
           <Stack direction="row" spacing={2}>
             <WorkTypeIcon id={issue.workType} />

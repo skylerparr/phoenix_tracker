@@ -17,6 +17,9 @@ const Backlog: React.FC = () => {
   const [inProgressIssues, setInprogressIssues] = useState<Issue[]>([]);
   const [expandedAcceptedIssues, setExpandedAcceptedIssues] =
     useState<boolean>(false);
+  const [expandedIssueIds, setExpandedIssueIds] = useState<Set<number>>(
+    new Set(),
+  );
 
   useEffect(() => {
     issueService.subscribeToGetAllIssues(handleIssuesChanged);
@@ -79,6 +82,16 @@ const Backlog: React.FC = () => {
     issueService.bulkUpdatePriorities(updates);
   };
 
+  const handleExpandIssue = (issueId: number) => {
+    const copyOfExpandedIssueIds = new Set(expandedIssueIds);
+    if (copyOfExpandedIssueIds.has(issueId)) {
+      copyOfExpandedIssueIds.delete(issueId);
+    } else {
+      copyOfExpandedIssueIds.add(issueId);
+    }
+    setExpandedIssueIds(copyOfExpandedIssueIds);
+  };
+
   return (
     <Box className="backlog-container">
       <Box
@@ -112,12 +125,22 @@ const Backlog: React.FC = () => {
         ) : (
           <>
             {acceptedIssues.map((issue: Issue) => (
-              <IssueComponent key={issue.id} issue={issue} />
+              <IssueComponent
+                key={issue.id}
+                issue={issue}
+                expanded={expandedIssueIds.has(issue.id)}
+                onToggleExpanded={() => handleExpandIssue(issue.id)}
+              />
             ))}
           </>
         )}
         {inProgressIssues.map((issue: Issue) => (
-          <IssueComponent key={issue.id} issue={issue} />
+          <IssueComponent
+            key={issue.id}
+            issue={issue}
+            expanded={expandedIssueIds.has(issue.id)}
+            onToggleExpanded={() => handleExpandIssue(issue.id)}
+          />
         ))}
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId="issues">
@@ -135,7 +158,11 @@ const Backlog: React.FC = () => {
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
                       >
-                        <IssueComponent issue={issue} />
+                        <IssueComponent
+                          issue={issue}
+                          expanded={expandedIssueIds.has(issue.id)}
+                          onToggleExpanded={() => handleExpandIssue(issue.id)}
+                        />
                       </Box>
                     )}
                   </Draggable>
