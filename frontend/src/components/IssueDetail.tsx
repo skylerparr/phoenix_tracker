@@ -32,6 +32,8 @@ import { issueTagService } from "../services/IssueTagService";
 import { Tag } from "../models/Tag";
 import { User } from "../models/User";
 import { IssueAssignee } from "../models/IssueAssignee";
+import { commentService } from "../services/CommentService";
+import { Comment } from "../models/Comment";
 
 const lightTheme = createTheme({
   palette: {
@@ -50,7 +52,8 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
 }) => {
   const [issue, setIssue] = useState<Issue>(originalIssue);
   const [assignedUsers, setAssignedUsers] = useState<User[]>([]);
-  const [comment, setComment] = useState("");
+  const [comment, setComment] = useState<string>("");
+  const [comments, setComments] = useState<Comment[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagInputValue, setTagInputValue] = useState("");
@@ -63,6 +66,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   React.useEffect(() => {
     const fetchData = async () => {
       await fetchUsers();
+      await fetchComments();
       setIssue(originalIssue);
     };
     tagService.subscribeToGetAllTags(handleTagsUpdate);
@@ -96,6 +100,11 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
       (user) => user.id === originalIssue.createdById,
     );
     setRequestedBy(requestedBy || null);
+  };
+
+  const fetchComments = async () => {
+    const comments = await commentService.getCommentsByIssue(originalIssue.id);
+    setComments(comments);
   };
 
   const handleTagsUpdate = async (tags: Tag[]) => {
@@ -227,6 +236,13 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     closeHandler();
   };
 
+  const handlePostComment = async () => {
+    await commentService.createComment({
+      issueId: issue.id,
+      content: comment,
+    });
+    setComment("");
+  };
   return (
     <Stack
       spacing={2}
@@ -581,6 +597,21 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         <Typography sx={{ color: "#666", fontWeight: "bold" }}>
           Activity
         </Typography>
+
+        {comments.map((comment: Comment) => (
+          <React.Fragment key={comment.id}>
+            <Stack spacing={1}>
+              <Typography sx={{ color: "#666", fontSize: "12px" }}>
+                Posted by{" "}
+                {users.find((user: User) => user.id === comment.userId)?.name}{" "}
+                on {new Date(comment.createdAt).toLocaleString()}{" "}
+              </Typography>
+              <Typography sx={{ color: "#333" }}>{comment.content}</Typography>
+            </Stack>
+            <hr />
+          </React.Fragment>
+        ))}
+
         <TextField
           multiline
           rows={4}
@@ -590,13 +621,17 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             bgcolor: "white",
             "& .MuiInputBase-input": { color: "black" },
           }}
-          onChange={(e) => setComment(e.target.value)}
+          value={comment}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setComment(e.target.value)
+          }
         />
 
         <Button
           variant="contained"
           disabled={!comment || comment.length < 2}
-          sx={{ mt: 1 }}
+          sx={{ width: "200px", marginLeft: "auto", display: "block" }}
+          onClick={handlePostComment}
         >
           Post Comment
         </Button>

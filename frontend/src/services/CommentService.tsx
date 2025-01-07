@@ -4,7 +4,6 @@ import { sessionStorage } from "../store/Session";
 
 interface CreateCommentRequest {
   content: string;
-  userId: number;
   issueId: number;
 }
 
@@ -25,27 +24,8 @@ export class CommentService {
       body: JSON.stringify(request),
     });
     if (!response.ok) throw new Error("Failed to create comment");
-    return response.json();
-  }
-
-  async getAllComments(): Promise<Comment[]> {
-    const response = await fetch(this.baseUrl, {
-      headers: {
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
-    });
-    if (!response.ok) throw new Error("Failed to fetch comments");
-    return response.json();
-  }
-
-  async getComment(id: number): Promise<Comment> {
-    const response = await fetch(`${this.baseUrl}/${id}`, {
-      headers: {
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
-    });
-    if (!response.ok) throw new Error("Failed to fetch comment");
-    return response.json();
+    const data = await response.json();
+    return new Comment(data);
   }
 
   async getCommentsByIssue(issueId: number): Promise<Comment[]> {
@@ -55,7 +35,8 @@ export class CommentService {
       },
     });
     if (!response.ok) throw new Error("Failed to fetch comments by issue");
-    return response.json();
+    const data = await response.json();
+    return data.map((commentData: any) => new Comment(commentData));
   }
 
   async getCommentsByUser(userId: number): Promise<Comment[]> {
@@ -65,33 +46,8 @@ export class CommentService {
       },
     });
     if (!response.ok) throw new Error("Failed to fetch comments by user");
-    return response.json();
-  }
-
-  async updateComment(
-    id: number,
-    request: UpdateCommentRequest,
-  ): Promise<Comment> {
-    const response = await fetch(`${this.baseUrl}/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
-      body: JSON.stringify(request),
-    });
-    if (!response.ok) throw new Error("Failed to update comment");
-    return response.json();
-  }
-
-  async deleteComment(id: number): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
-    });
-    if (!response.ok) throw new Error("Failed to delete comment");
+    const data = await response.json();
+    return data.map((commentData: any) => new Comment(commentData));
   }
 }
 
