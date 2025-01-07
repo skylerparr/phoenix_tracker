@@ -2,7 +2,7 @@
 
 Rising from the ashes of a beloved issue tracker. I was a fan, I'm sad it's gone. So I made my own.
 
-![Phoenix Tracker Demo](media/issueTracker.gif)
+![Phoenix Tracker Demo](https://github.com/skylerparr/phoenix_tracker/blob/main/media/IssueTracker.gif?raw=true)
 
 ## Development Setup
 
