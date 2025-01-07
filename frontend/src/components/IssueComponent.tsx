@@ -19,6 +19,19 @@ interface IssueComponentProps {
   onToggleExpanded: () => void;
 }
 
+export const getBackgroundColor = (status: number) => {
+  switch (status) {
+    case STATUS_IN_PROGRESS:
+      return "#FFFFE0";
+    case STATUS_COMPLETED:
+      return "#FFFFE0";
+    case STATUS_ACCEPTED:
+      return "#c6d9b7";
+    default:
+      return "#f5f5f5";
+  }
+};
+
 export const IssueComponent: React.FC<IssueComponentProps> = ({
   issue,
   expanded,
@@ -33,19 +46,6 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
     };
     fetchData();
   }, [issue]);
-
-  const getBackgroundColor = (status: number) => {
-    switch (status) {
-      case STATUS_IN_PROGRESS:
-        return "#FFFFE0";
-      case STATUS_COMPLETED:
-        return "#FFFFE0";
-      case STATUS_ACCEPTED:
-        return "#c6d9b7";
-      default:
-        return "#f5f5f5";
-    }
-  };
 
   return (
     <Box>

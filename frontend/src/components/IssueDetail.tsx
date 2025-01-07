@@ -10,8 +10,8 @@ import {
   MenuItem,
   SelectChangeEvent,
   Checkbox,
+  Autocomplete,
 } from "@mui/material";
-import { issueService } from "../services/IssueService";
 import {
   KeyboardArrowDown as KeyboardArrowDownIcon,
   Link as LinkIcon,
@@ -23,6 +23,7 @@ import {
 } from "@mui/icons-material";
 import { formatDistanceToNow } from "date-fns";
 import { Issue, POINTS } from "../models/Issue";
+import { issueService } from "../services/IssueService";
 import { workTypes } from "./WorkTypeButtons";
 import WorkTypeIcon from "./WorkTypeIcons";
 import { getStatusArray, Status } from "../services/StatusService";
@@ -40,6 +41,9 @@ import { commentService } from "../services/CommentService";
 import { Comment } from "../models/Comment";
 import { Task } from "../models/Task";
 import { taskService } from "../services/TaskService";
+import { Blocker } from "../models/Blocker";
+import { blockerService } from "../services/BlockerService";
+import { getBackgroundColor } from "./IssueComponent";
 
 const lightTheme = createTheme({
   palette: {
@@ -57,6 +61,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   closeHandler,
 }) => {
   const [issue, setIssue] = useState<Issue>(originalIssue);
+  const [issues, setIssues] = useState<Issue[]>([]);
   const [assignedUsers, setAssignedUsers] = useState<User[]>([]);
   const [comment, setComment] = useState<string>("");
   const [comments, setComments] = useState<Comment[]>([]);
@@ -72,20 +77,31 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   const [editableTaskIds, setEditableTaskIds] = useState<
     { id: number; title: string }[]
   >([]);
+  const [blockers, setBlockers] = useState<Blocker[]>([]);
+  const [blocker, setBlocker] = useState<boolean>(false);
 
   React.useEffect(() => {
     const fetchData = async () => {
-      await fetchUsers();
-      await fetchComments();
-      await fetchTasks();
+      await Promise.all([
+        fetchUsers(),
+        fetchComments(),
+        fetchTasks(),
+        fetchBlockers(),
+      ]);
       setIssue(originalIssue);
     };
+    issueService.subscribeToGetAllIssues(handleIssuesUpdate);
     tagService.subscribeToGetAllTags(handleTagsUpdate);
     fetchData();
     return () => {
       tagService.unsubscribeFromGetAllTags(handleTagsUpdate);
+      issueService.unsubscribeFromGetAllIssues(handleIssuesUpdate);
     };
   }, [originalIssue]);
+
+  const handleIssuesUpdate = (issues: Issue[]) => {
+    setIssues(issues);
+  };
 
   const fetchUsers = async () => {
     const users = await userService.getAllUsers();
@@ -125,6 +141,11 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
     setTasks(sortedTasks);
+  };
+
+  const fetchBlockers = async () => {
+    const blockers = await blockerService.getBlockedIssues(originalIssue.id);
+    setBlockers(blockers);
   };
 
   const handleTagsUpdate = async (tags: Tag[]) => {
@@ -298,6 +319,22 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
       ...prevState,
       { id: task.id, title: "" },
     ]);
+  };
+
+  const handleCreateBlankBlocker = () => {
+    setBlocker(true);
+  };
+
+  const handleSaveBlocker = async (blockerId: number) => {
+    await blockerService.createBlocker({
+      blockedId: issue.id,
+      blockerId,
+    });
+    setBlocker(false);
+  };
+
+  const handleDeleteBlocker = async (blockerId: number) => {
+    await blockerService.deleteBlocker(blockerId, issue.id);
   };
 
   return (
@@ -614,11 +651,106 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
       <Typography sx={{ color: "#666", fontWeight: "bold", mt: 2 }}>
         BLOCKERS
       </Typography>
-      <Button sx={{ width: "150px" }}>
+      <Button
+        sx={{ width: "150px" }}
+        onClick={() => handleCreateBlankBlocker()}
+      >
         <Typography sx={{ color: "#666", cursor: "pointer" }}>
           + Add blocker
         </Typography>
       </Button>
+      {blocker && (
+        <Box sx={{ mt: 1, width: "100%" }}>
+          <Autocomplete
+            options={issues
+              .filter((i) => i.id !== issue.id)
+              .map((issue: Issue) => issue.title)}
+            renderInput={(params) => (
+              <TextField
+                sx={{
+                  backgroundColor: "#ffffff",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                  "& .MuiInputBase-input": {
+                    color: "#000000",
+                  },
+                }}
+                {...params}
+                placeholder="Search for blocker type..."
+                size="small"
+              />
+            )}
+            onChange={(event: React.SyntheticEvent, newValue: string) => {
+              const selectedIssue = issues.find((i) => i.title === newValue);
+              if (selectedIssue) {
+                handleSaveBlocker(selectedIssue.id);
+              }
+            }}
+            onKeyDown={(event: React.KeyboardEvent) => {
+              if (event.key === "Enter") {
+                const inputValue = (event.target as HTMLInputElement).value;
+                const selectedIssue = issues.find(
+                  (i) => i.title === inputValue,
+                );
+                if (selectedIssue) {
+                  handleSaveBlocker(selectedIssue.id);
+                }
+              }
+            }}
+            disableClearable
+            fullWidth
+          />
+        </Box>
+      )}
+      {blockers.map((blocker: Blocker) => (
+        <Box
+          key={blocker.blockerId}
+          sx={{
+            mt: 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            border: "1px solid black",
+            p: 1,
+          }}
+        >
+          <Box
+            sx={{
+              border: "1px solid black",
+              bgcolor: getBackgroundColor(
+                (issues.find((i: Issue) => i.id === blocker.blockerId)
+                  ?.status as number) || 0,
+              ),
+              width: "5px",
+              height: "5px",
+              p: 1,
+            }}
+          ></Box>
+          <Typography variant="body2" sx={{ color: "grey" }}>
+            #{issues.find((i: Issue) => i.id === blocker.blockerId)?.id}
+          </Typography>
+          <Typography variant="body2" sx={{ color: "grey" }}>
+            {(
+              issues.find((i: Issue) => i.id === blocker.blockerId)?.title || ""
+            ).length > 50
+              ? `${issues.find((i: Issue) => i.id === blocker.blockerId)?.title?.slice(0, 50)}...`
+              : issues.find((i: Issue) => i.id === blocker.blockerId)?.title}
+          </Typography>
+          <Box
+            sx={{
+              marginLeft: "auto",
+              border: "1px solid black",
+              borderRadius: "4px",
+            }}
+          >
+            <IconButton
+              size="small"
+              onClick={() => handleDeleteBlocker(blocker.blockerId)}
+            >
+              <Delete sx={{ fontSize: 16, color: "grey" }} />
+            </IconButton>
+          </Box>
+        </Box>
+      ))}
       <Typography sx={{ color: "#666", fontWeight: "bold" }}>
         DESCRIPTION
       </Typography>
