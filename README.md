@@ -18,7 +18,8 @@ docker compose up
 ```bash
 docker exec -it phoenix-tracker-backend-1 sea-orm-cli migrate fresh --database-url sqlite:/data/app.db
 ```
-
+4. Navigate to http://localhost:3000
+   
 ## Tools
 
 Source the `.proj` files to get easy aliases.
