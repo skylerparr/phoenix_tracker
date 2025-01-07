@@ -19,13 +19,20 @@ impl IssueAssigneeCrud {
         issue_id: i32,
         user_id: i32,
     ) -> Result<issue_assignee::Model, DbErr> {
-        let issue_assignee = issue_assignee::ActiveModel {
-            issue_id: Set(issue_id),
-            user_id: Set(user_id),
-            ..Default::default()
-        };
+        match self.find_by_ids(issue_id, user_id).await {
+            Ok(Some(model)) => {
+                return Ok(model);
+            }
+            _ => {
+                let issue_assignee = issue_assignee::ActiveModel {
+                    issue_id: Set(issue_id),
+                    user_id: Set(user_id),
+                    ..Default::default()
+                };
 
-        issue_assignee.insert(&self.app_state.db).await
+                issue_assignee.insert(&self.app_state.db).await
+            }
+        }
     }
 
     pub async fn find_by_ids(

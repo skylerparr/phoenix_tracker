@@ -141,13 +141,19 @@ impl IssueCrud {
         issue.project_id = Set(project_id);
         issue.lock_version = Set(current_version + 1);
 
-        let result = issue.update(&txn).await?;
+        let result = issue.clone().update(&txn).await?;
         if result.lock_version != current_version + 1 {
             txn.rollback().await?;
             return Err(DbErr::Custom("Optimistic lock error".to_owned()));
         }
 
         txn.commit().await?;
+
+        let current_user_id = &self.app_state.user.clone().unwrap().id;
+        let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
+        issue_assignee_crud
+            .create(issue.id.clone().unwrap(), *current_user_id)
+            .await?;
 
         let project_id = &self.app_state.project.clone().unwrap().id;
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
