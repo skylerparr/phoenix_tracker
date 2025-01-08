@@ -125,11 +125,6 @@ impl TaskCrud {
     }
 
     pub async fn delete_all_by_issue_id(&self, issue_id: i32) -> Result<DeleteResult, DbErr> {
-        let tasks = task::Entity::find()
-            .filter(task::Column::IssueId.eq(issue_id))
-            .all(&self.app_state.db)
-            .await?;
-
         let result = task::Entity::delete_many()
             .filter(task::Column::IssueId.eq(issue_id))
             .exec(&self.app_state.db)

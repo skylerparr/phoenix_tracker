@@ -49,15 +49,32 @@ impl IssueCrud {
             target_release_at: Set(target_release_at),
             ..Default::default()
         };
-
-        let issue = issue.insert(&self.app_state.db).await?;
+        let mut issue = issue.insert(&self.app_state.db).await?;
+        self.populate_issue_tags(&mut issue).await?;
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
         broadcaster.broadcast_event(project_id, ISSUE_CREATED, serde_json::json!(issue));
         Ok(issue)
     }
 
+    async fn populate_issue_tags(&self, issue: &mut issue::Model) -> Result<(), DbErr> {
+        let tag_ids = IssueTagCrud::new(self.app_state.clone())
+            .find_by_issue_id(issue.id)
+            .await?
+            .into_iter()
+            .map(|tag| tag.tag_id)
+            .collect();
+        issue.issue_tag_ids = tag_ids;
+        Ok(())
+    }
+
     pub async fn find_by_id(&self, id: i32) -> Result<Option<issue::Model>, DbErr> {
-        issue::Entity::find_by_id(id).one(&self.app_state.db).await
+        let mut issue = issue::Entity::find_by_id(id)
+            .one(&self.app_state.db)
+            .await?;
+        if let Some(ref mut issue) = issue {
+            self.populate_issue_tags(issue).await?;
+        }
+        Ok(issue)
     }
 
     pub async fn find_all_for_backlog(
@@ -75,42 +92,27 @@ impl IssueCrud {
         }
 
         let mut issues = query.all(&self.app_state.db).await?;
-
         for issue in &mut issues {
-            let tag_ids = IssueTagCrud::new(self.app_state.clone())
-                .find_by_issue_id(issue.id)
-                .await?
-                .into_iter()
-                .map(|tag| tag.tag_id)
-                .collect();
-            issue.issue_tag_ids = tag_ids;
+            self.populate_issue_tags(issue).await?;
         }
-
         Ok(issues)
     }
 
     pub async fn find_all_accepted(&self, project_id: i32) -> Result<Vec<issue::Model>, DbErr> {
-        let query = issue::Entity::find()
+        let mut issues = issue::Entity::find()
             .filter(issue::Column::ProjectId.eq(project_id))
-            .filter(issue::Column::Status.eq(STATUS_ACCEPTED));
-
-        let mut issues = query.all(&self.app_state.db).await?;
+            .filter(issue::Column::Status.eq(STATUS_ACCEPTED))
+            .all(&self.app_state.db)
+            .await?;
 
         for issue in &mut issues {
-            let tag_ids = IssueTagCrud::new(self.app_state.clone())
-                .find_by_issue_id(issue.id)
-                .await?
-                .into_iter()
-                .map(|tag| tag.tag_id)
-                .collect();
-            issue.issue_tag_ids = tag_ids;
+            self.populate_issue_tags(issue).await?;
         }
-
         Ok(issues)
     }
 
     pub async fn find_all_by_user_id(&self, user_id: i32) -> Result<Vec<issue::Model>, DbErr> {
-        let issues = issue_assignee::Entity::find()
+        let mut issues = issue_assignee::Entity::find()
             .filter(issue_assignee::Column::UserId.eq(user_id))
             .find_also_related(issue::Entity)
             .all(&self.app_state.db)
@@ -119,19 +121,10 @@ impl IssueCrud {
             .filter_map(|(_, issue)| issue)
             .collect::<Vec<issue::Model>>();
 
-        let mut issues_with_tags = Vec::new();
-        for mut issue in issues {
-            let tag_ids = IssueTagCrud::new(self.app_state.clone())
-                .find_by_issue_id(issue.id)
-                .await?
-                .into_iter()
-                .map(|tag| tag.tag_id)
-                .collect();
-            issue.issue_tag_ids = tag_ids;
-            issues_with_tags.push(issue);
+        for issue in &mut issues {
+            self.populate_issue_tags(issue).await?;
         }
-
-        Ok(issues_with_tags)
+        Ok(issues)
     }
 
     pub async fn update(
@@ -192,7 +185,7 @@ impl IssueCrud {
         issue.project_id = Set(project_id);
         issue.lock_version = Set(current_version + 1);
 
-        let result = issue.clone().update(&txn).await?;
+        let mut result = issue.clone().update(&txn).await?;
         if result.lock_version != current_version + 1 {
             txn.rollback().await?;
             return Err(DbErr::Custom("Optimistic lock error".to_owned()));
@@ -206,6 +199,7 @@ impl IssueCrud {
             .create(issue.id.clone().unwrap(), *current_user_id)
             .await?;
 
+        self.populate_issue_tags(&mut result).await?;
         let project_id = &self.app_state.project.clone().unwrap().id;
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
         broadcaster.broadcast_event(*project_id, ISSUE_UPDATED, serde_json::json!(result));
