@@ -91,18 +91,24 @@ const Home = () => {
   }, [activeButtons]);
 
   const handleButtonClick = (buttonId: string) => {
-    setActiveButtons((prevButtons) => {
+    setActiveButtons((prevButtons: string[]) => {
       const newButtons = prevButtons.includes(buttonId)
-        ? prevButtons.filter((id) => id !== buttonId)
+        ? prevButtons.filter((id: string) => id !== buttonId)
         : [...prevButtons, buttonId];
-      return newButtons.sort((a, b) => {
+
+      // Clear URL params when search tab is closed
+      if (buttonId === "search" && prevButtons.includes("search")) {
+        window.history.pushState({}, "", window.location.pathname);
+        setQueryParams(new Map());
+      }
+
+      return newButtons.sort((a: string, b: string) => {
         const aIndex = toolbarButtons.findIndex((button) => button.id === a);
         const bIndex = toolbarButtons.findIndex((button) => button.id === b);
         return aIndex - bIndex;
       });
     });
   };
-
   return (
     <RequireAuth>
       <Box sx={{ display: "flex" }}>
