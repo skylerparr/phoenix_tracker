@@ -38,7 +38,7 @@ impl CommentCrud {
         broadcaster.broadcast_event(
             *project_id,
             ISSUE_UPDATED,
-            serde_json::json!({"user_id": user_id}),
+            serde_json::json!({"id": user_id}),
         );
 
         return Ok(result);

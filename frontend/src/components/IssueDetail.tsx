@@ -358,7 +358,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         </IconButton>
         <TextField
           fullWidth
-          defaultValue={issue.title}
+          value={issue.title}
           onChange={(e) => handleTitleUpdate(e.target.value)}
           variant="outlined"
           size="small"

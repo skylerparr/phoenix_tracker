@@ -1,27 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { useSearchParams } from "react-router-dom";
-import { Issue } from "../models/Issue";
-import { issueService } from "../services/IssueService";
-import { IssueDetail } from "./IssueDetail";
+import StandAloneIssueDetailComponent from "./StandaloneIssueDetailComponent";
 
 const SearchComponent = () => {
   const [searchParams] = useSearchParams();
-  const [issue, setIssue] = useState<Issue | null>(null);
+  const [issueId, setIssueId] = useState<string | null>(null);
 
   useEffect(() => {
     const id = searchParams.get("id");
-    if (id) {
-      const fetchIssue = async () => {
-        const fetchedIssue = await issueService.getIssue(parseInt(id));
-        setIssue(fetchedIssue);
-      };
-      fetchIssue();
-    }
+    setIssueId(id);
   }, [searchParams]);
 
-  if (searchParams.get("id") && issue) {
-    return <IssueDetail issue={issue} closeHandler={() => setIssue(null)} />;
+  if (searchParams.get("id") && issueId) {
+    return (
+      <StandAloneIssueDetailComponent
+        issueId={issueId}
+        onClose={() => setIssueId(null)}
+      />
+    );
   }
 
   return (
