@@ -4,7 +4,6 @@ use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::{ISSUE_CREATED, ISSUE_DELETED, ISSUE_UPDATED};
 use crate::crud::issue_assignee::IssueAssigneeCrud;
 use crate::crud::issue_tag::IssueTagCrud;
-use crate::crud::status::get_unfinished_statuses;
 use crate::crud::status::STATUS_ACCEPTED;
 use crate::crud::task::TaskCrud;
 use crate::entities::issue;
@@ -12,10 +11,8 @@ use crate::entities::issue_assignee;
 use crate::entities::issue_tag;
 use crate::AppState;
 use chrono::Datelike;
-use chrono::Weekday;
 use sea_orm::entity::prelude::*;
 use sea_orm::*;
-use tracing::error;
 
 #[derive(Clone)]
 pub struct IssueCrud {
@@ -85,7 +82,6 @@ impl IssueCrud {
         &self,
         project_id: i32,
         is_icebox: bool,
-        include_finished: bool,
     ) -> Result<Vec<issue::Model>, DbErr> {
         let now = chrono::Utc::now().date_naive();
         let days_from_monday = now.weekday().num_days_from_monday();

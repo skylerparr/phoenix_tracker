@@ -13,7 +13,7 @@ interface IssueListProps {
 }
 
 const IssueList: React.FC<IssueListProps> = ({
-  issues,
+  issues: originalIssues,
   enableDragDrop = false,
   enableGrouping = false,
   onDragEnd,
@@ -21,6 +21,11 @@ const IssueList: React.FC<IssueListProps> = ({
   const [expandedIssueIds, setExpandedIssueIds] = useState<Set<number>>(
     new Set(),
   );
+  const [issues, setIssues] = useState<Issue[]>([]);
+
+  React.useEffect(() => {
+    setIssues(originalIssues);
+  }, [originalIssues]);
 
   const handleExpandIssue = (issueId: number) => {
     const copyOfExpandedIssueIds = new Set(expandedIssueIds);
@@ -43,6 +48,7 @@ const IssueList: React.FC<IssueListProps> = ({
       issue.id,
       (index + 1) * 5,
     ]);
+    setIssues(items);
     onDragEnd(updates);
   };
 

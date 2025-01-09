@@ -3,7 +3,6 @@ use crate::crud::status::{
     STATUS_ACCEPTED, STATUS_COMPLETED, STATUS_IN_PROGRESS, STATUS_REJECTED, STATUS_UNSTARTED,
 };
 use crate::AppState;
-use axum::extract::Query;
 use axum::Extension;
 use axum::{
     extract::Path,
@@ -14,7 +13,6 @@ use axum::{
 };
 use sea_orm::entity::prelude::*;
 use serde::Deserialize;
-use std::collections::HashMap;
 use tracing::debug;
 
 #[derive(Deserialize)]
@@ -60,6 +58,7 @@ pub fn issue_routes() -> Router<AppState> {
         .route("/issues/bulk-priority", put(bulk_update_priorities))
         .route("/issues/me", get(get_issues_for_me))
         .route("/issues/tag/:id", get(get_issues_by_tag))
+        .route("/issues/accepted", get(get_accepted_issues))
 }
 
 #[axum::debug_handler]
@@ -97,18 +96,10 @@ pub async fn create_issue(
 #[axum::debug_handler]
 async fn get_all_issues_for_backlog(
     Extension(app_state): Extension<AppState>,
-    Query(params): Query<HashMap<String, String>>,
 ) -> impl IntoResponse {
     let project_id = app_state.project.clone().unwrap().id;
     let issue_crud = IssueCrud::new(app_state);
-    let is_finished = params
-        .get("is_finished")
-        .and_then(|v| v.parse::<bool>().ok())
-        .unwrap_or(false);
-    match issue_crud
-        .find_all_for_backlog(project_id, is_finished, false)
-        .await
-    {
+    match issue_crud.find_all_for_backlog(project_id, false).await {
         Ok(issues) => Ok(Json(issues)),
         Err(e) => {
             println!("Error getting all issues: {:?}", e);
@@ -117,10 +108,7 @@ async fn get_all_issues_for_backlog(
     }
 }
 #[axum::debug_handler]
-async fn get_issues_for_me(
-    Extension(app_state): Extension<AppState>,
-    Query(params): Query<HashMap<String, String>>,
-) -> impl IntoResponse {
+async fn get_issues_for_me(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
     let user_id = app_state.user.clone().unwrap().id;
     let issue_crud = IssueCrud::new(app_state);
     match issue_crud.find_all_by_user_id(user_id).await {
@@ -285,6 +273,16 @@ async fn get_issues_by_tag(
 ) -> impl IntoResponse {
     let issue_crud = IssueCrud::new(app_state);
     match issue_crud.find_all_by_tag_id(tag_id).await {
+        Ok(issues) => Ok(Json(issues)),
+        Err(e) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+#[axum::debug_handler]
+async fn get_accepted_issues(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
+    let project_id = app_state.project.clone().unwrap().id;
+    let issue_crud = IssueCrud::new(app_state);
+    match issue_crud.find_all_accepted(project_id).await {
         Ok(issues) => Ok(Json(issues)),
         Err(e) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
