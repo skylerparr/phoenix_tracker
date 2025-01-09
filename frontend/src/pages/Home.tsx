@@ -80,12 +80,30 @@ const Home = () => {
   useEffect(() => {
     const handleLocationChange = () => {
       setQueryParams(createParamMap());
+      const params = new URLSearchParams(window.location.search);
+      if (params.toString() && !activeButtons.includes("search")) {
+        setActiveButtons((prev) =>
+          [...prev, "search"].sort((a, b) => {
+            const aIndex = toolbarButtons.findIndex(
+              (button) => button.id === a,
+            );
+            const bIndex = toolbarButtons.findIndex(
+              (button) => button.id === b,
+            );
+            return aIndex - bIndex;
+          }),
+        );
+      }
     };
 
     window.addEventListener("popstate", handleLocationChange);
-    return () => window.removeEventListener("popstate", handleLocationChange);
-  }, []);
+    window.addEventListener("urlchange", handleLocationChange);
 
+    return () => {
+      window.removeEventListener("popstate", handleLocationChange);
+      window.removeEventListener("urlchange", handleLocationChange);
+    };
+  }, [activeButtons]);
   useEffect(() => {
     sessionStorage.setActiveButtons(activeButtons);
   }, [activeButtons]);

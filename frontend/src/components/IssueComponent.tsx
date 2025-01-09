@@ -49,7 +49,10 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
   }, [issue]);
 
   const searchTagsForIssue = (tagId: number) => {
-    window.location.href = `?${PARAM_TAG}=${tagId}`;
+    const url = new URL(window.location.href);
+    url.searchParams.set(PARAM_TAG, tagId.toString());
+    window.history.pushState({}, "", url);
+    window.dispatchEvent(new Event("urlchange"));
   };
 
   return (

@@ -3,96 +3,124 @@ import { Box, Typography } from "@mui/material";
 import { useSearchParams } from "react-router-dom";
 import { issueService } from "../services/IssueService";
 import { WebsocketService } from "../services/WebSocketService";
-import { Issue } from "../models/Issue";
 import { IssueDetail } from "./IssueDetail";
-import { IssueComponent } from "./IssueComponent";
+import IssueList from "./IssueList";
+import { useIssueFilter } from "../hooks/useIssueFilter";
+import AcceptedIssuesToggle from "./AcceptedIssuesToggle";
 
 export const PARAM_ID = "id";
 export const PARAM_TAG = "tagId";
 
 const SearchComponent = () => {
   const [searchParams] = useSearchParams();
-  const [paramKey, setParamKey] = useState<string | null>(null);
-  const [issues, setIssues] = useState<Issue[]>([]);
+  const {
+    issues,
+    acceptedIssues,
+    inProgressIssues,
+    expandedAcceptedIssues,
+    setExpandedAcceptedIssues,
+    handleIssuesChanged,
+  } = useIssueFilter();
 
   useEffect(() => {
     const id = searchParams.get(PARAM_ID);
     const tagId = searchParams.get(PARAM_TAG);
-    switch (true) {
-      case !!id:
-        setParamKey(PARAM_ID);
-        fetchData(PARAM_ID);
-        break;
-      case !!tagId:
-        setParamKey(PARAM_TAG);
-        fetchData(PARAM_TAG);
-        break;
-      default:
-        setParamKey(null);
+
+    if (id) {
+      fetchIssueById(parseInt(id));
+    } else if (tagId) {
+      fetchIssuesByTag(parseInt(tagId));
     }
+
+    const handleUrlChange = () => {
+      const newSearchParams = new URLSearchParams(window.location.search);
+      const newId = newSearchParams.get(PARAM_ID);
+      const newTagId = newSearchParams.get(PARAM_TAG);
+
+      if (newId) {
+        fetchIssueById(parseInt(newId));
+      } else if (newTagId) {
+        fetchIssuesByTag(parseInt(newTagId));
+      }
+    };
+
+    window.addEventListener("urlchange", handleUrlChange);
+    WebsocketService.unsubscribeToIssueUpdatedEvent(handleIssueUpdated);
     WebsocketService.subscribeToIssueUpdatedEvent(handleIssueUpdated);
+
     return () => {
+      window.removeEventListener("urlchange", handleUrlChange);
       WebsocketService.unsubscribeToIssueUpdatedEvent(handleIssueUpdated);
     };
-  }, [searchParams]);
+  }, []);
 
-  const fetchData = async (paramKey: string | null) => {
-    switch (paramKey) {
-      case PARAM_ID:
-        const id = searchParams.get(PARAM_ID);
-        if (id) {
-          const fetchedIssue = await issueService.getIssue(parseInt(id));
-          setIssues([fetchedIssue]);
-        }
-        break;
-      case PARAM_TAG:
-        const tagId = searchParams.get(PARAM_TAG);
-        if (tagId) {
-          const fetchedIssues = await issueService.getIssuesByTag(
-            parseInt(tagId),
-          );
-          setIssues(fetchedIssues);
-        }
-        break;
-      default:
-        break;
+  const fetchIssueById = async (id: number) => {
+    const fetchedIssue = await issueService.getIssue(id);
+    if (fetchedIssue) {
+      handleIssuesChanged([fetchedIssue]);
     }
+  };
+
+  const fetchIssuesByTag = async (tagId: number) => {
+    const fetchedIssues = await issueService.getIssuesByTag(tagId);
+    handleIssuesChanged(fetchedIssues);
   };
 
   const handleIssueUpdated = () => {
-    fetchData(paramKey);
+    const newSearchParams = new URLSearchParams(window.location.search);
+    const id = newSearchParams.get(PARAM_ID);
+    const tagId = newSearchParams.get(PARAM_TAG);
+
+    if (id) {
+      fetchIssueById(parseInt(id));
+    } else if (tagId) {
+      fetchIssuesByTag(parseInt(tagId));
+    }
   };
 
-  if (issues.length == 1) {
+  if (issues.length + inProgressIssues.length + acceptedIssues.length === 1) {
     return (
       <IssueDetail
-        issue={issues[0]}
+        issue={[...issues, ...inProgressIssues, ...acceptedIssues][0]}
         closeHandler={() => {
           window.location.href = "?";
         }}
       />
     );
   }
-  if (issues.length > 1) {
-    return (
-      <>
-        {issues.map((issue: Issue) => (
-          <IssueComponent
-            key={issue.id}
-            issue={issue}
-            expanded={false}
-            onToggleExpanded={() => {}}
-          />
-        ))}
-      </>
-    );
-  }
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Typography variant="h4" component="h1">
-        No results found
-      </Typography>
+    <Box>
+      {issues.length > 0 ? (
+        <>
+          {expandedAcceptedIssues ? (
+            <IssueList
+              issues={acceptedIssues}
+              enableDragDrop={false}
+              enableGrouping={false}
+            />
+          ) : (
+            <AcceptedIssuesToggle
+              acceptedIssuesCount={acceptedIssues.length}
+              onToggle={() => setExpandedAcceptedIssues(true)}
+            />
+          )}
+          <IssueList
+            issues={inProgressIssues}
+            enableDragDrop={false}
+            enableGrouping={false}
+          />
+          <IssueList
+            issues={issues}
+            enableDragDrop={false}
+            enableGrouping={false}
+          />
+        </>
+      ) : (
+        <Typography variant="h4" component="h1">
+          No results found
+        </Typography>
+      )}
     </Box>
   );
 };
