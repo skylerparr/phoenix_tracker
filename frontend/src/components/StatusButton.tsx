@@ -105,7 +105,7 @@ const StatusButton: React.FC<StatusButtonProps> = ({ issueId, status }) => {
   ]);
 
   return (
-    <Box>
+    <Box sx={{ display: "flex", flexDirection: "row", gap: 0.2 }}>
       {statusMap
         .get(status)
         ?.map(
