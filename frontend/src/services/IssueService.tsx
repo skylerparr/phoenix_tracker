@@ -198,6 +198,15 @@ export class IssueService {
     const data = await response.json();
     return data.map((item: any) => new Issue(item));
   }
+
+  async getIssuesByTag(tagId: number): Promise<Issue[]> {
+    const response = await fetch(`${this.baseUrl}/tag/${tagId}`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error("Failed to fetch issues by tag");
+    const data = await response.json();
+    return data.map((item: any) => new Issue(item));
+  }
 }
 
 export const issueService = new IssueService();

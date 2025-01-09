@@ -12,6 +12,7 @@ import {
 import { IssueDetail } from "./IssueDetail";
 import { issueTagService } from "../services/IssueTagService";
 import { Tag } from "../models/Tag";
+import { PARAM_TAG } from "./SearchComponent";
 
 interface IssueComponentProps {
   issue: Issue;
@@ -46,6 +47,10 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
     };
     fetchData();
   }, [issue]);
+
+  const searchTagsForIssue = (tagId: number) => {
+    window.location.href = `?${PARAM_TAG}=${tagId}`;
+  };
 
   return (
     <Box>
@@ -90,7 +95,10 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
                       fontStyle: issue.points === null ? "italic" : "normal",
                       padding: 0,
                     }}
-                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                    onClick={(e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      searchTagsForIssue(tag.id);
+                    }}
                   >
                     {tag.name}
                   </Button>

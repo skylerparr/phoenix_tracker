@@ -59,6 +59,7 @@ pub fn issue_routes() -> Router<AppState> {
         .route("/issues/:id", delete(delete_issue))
         .route("/issues/bulk-priority", put(bulk_update_priorities))
         .route("/issues/me", get(get_issues_for_me))
+        .route("/issues/tag/:id", get(get_issues_by_tag))
 }
 
 #[axum::debug_handler]
@@ -274,5 +275,17 @@ async fn bulk_update_priorities(
             println!("Error updating issue priorities: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
+    }
+}
+
+#[axum::debug_handler]
+async fn get_issues_by_tag(
+    Extension(app_state): Extension<AppState>,
+    Path(tag_id): Path<i32>,
+) -> impl IntoResponse {
+    let issue_crud = IssueCrud::new(app_state);
+    match issue_crud.find_all_by_tag_id(tag_id).await {
+        Ok(issues) => Ok(Json(issues)),
+        Err(e) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
