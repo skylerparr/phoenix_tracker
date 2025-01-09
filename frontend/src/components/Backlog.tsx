@@ -5,7 +5,6 @@ import IssueList from "./IssueList";
 import IssueGroup from "./IssueGroup";
 import { useIssueFilter } from "../hooks/useIssueFilter";
 import AcceptedIssuesToggle from "./AcceptedIssuesToggle";
-import { Issue } from "../models/Issue";
 
 const Backlog: React.FC = () => {
   const {

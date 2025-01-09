@@ -10,6 +10,8 @@ const AcceptedIssuesToggle: React.FC<AcceptedIssuesToggleProps> = ({
   acceptedIssuesCount,
   onToggle,
 }) => {
+  if (acceptedIssuesCount === 0) return null;
+
   return (
     <Box
       sx={{

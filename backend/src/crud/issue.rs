@@ -11,8 +11,11 @@ use crate::entities::issue;
 use crate::entities::issue_assignee;
 use crate::entities::issue_tag;
 use crate::AppState;
+use chrono::Datelike;
+use chrono::Weekday;
 use sea_orm::entity::prelude::*;
 use sea_orm::*;
+use tracing::error;
 
 #[derive(Clone)]
 pub struct IssueCrud {
@@ -84,15 +87,24 @@ impl IssueCrud {
         is_icebox: bool,
         include_finished: bool,
     ) -> Result<Vec<issue::Model>, DbErr> {
-        let mut query = issue::Entity::find()
+        let now = chrono::Utc::now().date_naive();
+        let days_from_monday = now.weekday().num_days_from_monday();
+        let monday = now - chrono::Duration::days(days_from_monday as i64);
+
+        let mut issues = issue::Entity::find()
             .filter(issue::Column::ProjectId.eq(project_id))
-            .filter(issue::Column::IsIcebox.eq(is_icebox));
-
-        if !include_finished {
-            query = query.filter(issue::Column::Status.is_in(get_unfinished_statuses()));
-        }
-
-        let mut issues = query.all(&self.app_state.db).await?;
+            .filter(issue::Column::IsIcebox.eq(is_icebox))
+            .filter(
+                Condition::any()
+                    .add(issue::Column::Status.ne(STATUS_ACCEPTED))
+                    .add(
+                        Condition::all()
+                            .add(issue::Column::Status.eq(STATUS_ACCEPTED))
+                            .add(issue::Column::UpdatedAt.gte(monday)),
+                    ),
+            )
+            .all(&self.app_state.db)
+            .await?;
         for issue in &mut issues {
             self.populate_issue_tags(issue).await?;
         }
@@ -113,9 +125,22 @@ impl IssueCrud {
     }
 
     pub async fn find_all_by_user_id(&self, user_id: i32) -> Result<Vec<issue::Model>, DbErr> {
+        let now = chrono::Utc::now().date_naive();
+        let days_from_monday = now.weekday().num_days_from_monday();
+        let monday = now - chrono::Duration::days(days_from_monday as i64);
+
         let mut issues = issue_assignee::Entity::find()
             .filter(issue_assignee::Column::UserId.eq(user_id))
             .find_also_related(issue::Entity)
+            .filter(
+                Condition::any()
+                    .add(issue::Column::Status.ne(STATUS_ACCEPTED))
+                    .add(
+                        Condition::all()
+                            .add(issue::Column::Status.eq(STATUS_ACCEPTED))
+                            .add(issue::Column::UpdatedAt.gte(monday)),
+                    ),
+            )
             .all(&self.app_state.db)
             .await?
             .into_iter()
@@ -127,7 +152,6 @@ impl IssueCrud {
         }
         Ok(issues)
     }
-
     pub async fn find_all_by_tag_id(&self, tag_id: i32) -> Result<Vec<issue::Model>, DbErr> {
         let mut issues = issue_tag::Entity::find()
             .filter(issue_tag::Column::TagId.eq(tag_id))

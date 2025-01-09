@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
-import { useSearchParams } from "react-router-dom";
 import { issueService } from "../services/IssueService";
 import { WebsocketService } from "../services/WebSocketService";
 import { IssueDetail } from "./IssueDetail";
@@ -12,7 +11,6 @@ export const PARAM_ID = "id";
 export const PARAM_TAG = "tagId";
 
 const SearchComponent = () => {
-  const [searchParams] = useSearchParams();
   const {
     issues,
     acceptedIssues,
@@ -23,6 +21,7 @@ const SearchComponent = () => {
   } = useIssueFilter();
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
     const id = searchParams.get(PARAM_ID);
     const tagId = searchParams.get(PARAM_TAG);
 
