@@ -8,6 +8,7 @@ import {
   TaskAlt as TaskAltIcon,
   Search as SearchIcon,
   Add as AddIcon,
+  ArrowBack as ArrowBackIcon,
 } from "@mui/icons-material";
 import CreateIssue from "../components/CreateIssue";
 import Backlog from "../components/Backlog";
@@ -131,6 +132,13 @@ const Home = () => {
       });
     });
   };
+
+  const handleBackToProjects = () => {
+    window.history.pushState({}, "", "/projects");
+    const navigationEvent = new PopStateEvent("popstate");
+    window.dispatchEvent(navigationEvent);
+  };
+
   return (
     <RequireAuth>
       <Box sx={{ display: "flex" }}>
@@ -167,6 +175,19 @@ const Home = () => {
               </IconButton>
             </Tooltip>
           ))}
+          <Tooltip title="Back to Projects" placement="right">
+            <IconButton
+              onClick={handleBackToProjects}
+              sx={{
+                color: "inherit",
+                "&:hover": {
+                  backgroundColor: "rgba(0, 0, 0, 0.04)",
+                },
+              }}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+          </Tooltip>
         </Box>
         <Box
           sx={{
