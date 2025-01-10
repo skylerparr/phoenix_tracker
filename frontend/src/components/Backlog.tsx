@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Box } from "@mui/material";
 import { issueService } from "../services/IssueService";
 import IssueList from "./IssueList";
@@ -9,6 +9,7 @@ import AcceptedIssuesToggle from "./AcceptedIssuesToggle";
 const Backlog: React.FC = () => {
   const {
     issues,
+    setIssues,
     acceptedIssues,
     inProgressIssues,
     expandedAcceptedIssues,
@@ -24,8 +25,15 @@ const Backlog: React.FC = () => {
   }, []);
   const handlePriorityUpdates = (updates: [number, number][]) => {
     issueService.bulkUpdatePriorities(updates);
+    const sortedIssues = [...issues].sort((a, b) => {
+      const updateA = updates.find(([id]) => id === a.id);
+      const updateB = updates.find(([id]) => id === b.id);
+      const priorityA = updateA ? updateA[1] : a.priority || 0;
+      const priorityB = updateB ? updateB[1] : b.priority || 0;
+      return priorityA - priorityB;
+    });
+    setIssues(sortedIssues);
   };
-
   return (
     <Box className="backlog-container">
       <Box

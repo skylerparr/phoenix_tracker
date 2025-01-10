@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Box, Typography } from "@mui/material";
 import { issueService } from "../services/IssueService";
 import { WebsocketService } from "../services/WebSocketService";

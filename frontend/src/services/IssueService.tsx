@@ -208,11 +208,11 @@ export class IssueService {
     return data.map((item: any) => new Issue(item));
   }
 
-  async getAcceptedIssues(): Promise<Issue[]> {
+  async getAllAccepted(): Promise<Issue[]> {
     const response = await fetch(`${this.baseUrl}/accepted`, {
       headers: this.getHeaders(),
     });
-    if (!response.ok) throw new Error("Failed to fetch accepted issues");
+    if (!response.ok) throw new Error("Failed to fetch all accepted issues");
     const data = await response.json();
     return data.map((item: any) => new Issue(item));
   }

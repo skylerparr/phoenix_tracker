@@ -1,6 +1,5 @@
-import { API_BASE_URL } from "../config/ApiConfig";
+import { BaseService } from "./base/BaseService";
 import { Owner } from "../models/Owner";
-import { sessionStorage } from "../store/Session";
 
 interface CreateOwnerRequest {
   userId?: number;
@@ -10,63 +9,29 @@ interface UpdateOwnerRequest {
   userId?: number;
 }
 
-export class OwnerService {
-  private baseUrl = `${API_BASE_URL}/owners`;
+export class OwnerService extends BaseService<Owner> {
+  constructor() {
+    super("/owners");
+  }
 
   async createOwner(request: CreateOwnerRequest): Promise<Owner> {
-    const response = await fetch(this.baseUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
-      body: JSON.stringify(request),
-    });
-    if (!response.ok) throw new Error("Failed to create owner");
-    return response.json();
+    return this.post<Owner>("", request);
   }
 
   async getAllOwners(): Promise<Owner[]> {
-    const response = await fetch(this.baseUrl, {
-      headers: {
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
-    });
-    if (!response.ok) throw new Error("Failed to fetch owners");
-    return response.json();
+    return this.get<Owner[]>();
   }
 
   async getOwner(id: number): Promise<Owner> {
-    const response = await fetch(`${this.baseUrl}/${id}`, {
-      headers: {
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
-    });
-    if (!response.ok) throw new Error("Failed to fetch owner");
-    return response.json();
+    return this.get<Owner>(`/${id}`);
   }
 
   async updateOwner(id: number, request: UpdateOwnerRequest): Promise<Owner> {
-    const response = await fetch(`${this.baseUrl}/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
-      body: JSON.stringify(request),
-    });
-    if (!response.ok) throw new Error("Failed to update owner");
-    return response.json();
+    return this.put<Owner>(`/${id}`, request);
   }
 
   async deleteOwner(id: number): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
-    });
-    if (!response.ok) throw new Error("Failed to delete owner");
+    return this.delete(`/${id}`);
   }
 }
 
