@@ -28,7 +28,11 @@ import { Issue, POINTS } from "../models/Issue";
 import { issueService } from "../services/IssueService";
 import { workTypes } from "./WorkTypeButtons";
 import WorkTypeIcon from "./WorkTypeIcons";
-import { getStatusArray, Status } from "../services/StatusService";
+import {
+  getStatusArray,
+  Status,
+  STATUS_ACCEPTED,
+} from "../services/StatusService";
 import { createTheme, ThemeProvider } from "@mui/material";
 import StatusButton from "./StatusButton";
 import IssueAutoCompleteComponent from "./IssueAutoCompleteComponent";
@@ -460,6 +464,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             e.stopPropagation();
             handleDeleteIssue();
           }}
+          disabled={issue.status === STATUS_ACCEPTED}
         >
           <Delete sx={{ fontSize: "14px" }} />
         </IconButton>{" "}
@@ -482,13 +487,14 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
               isIcebox: !issue.isIcebox,
             });
           }}
+          disabled={issue.status === STATUS_ACCEPTED}
         >
           {issue.isIcebox ? (
             <AssignmentIcon sx={{ fontSize: "14px" }} />
           ) : (
             <AcUnit sx={{ fontSize: "14px" }} />
           )}
-        </IconButton>
+        </IconButton>{" "}
       </Stack>
       <Stack sx={{ backgroundColor: "#f6f6f6", padding: "5px" }}>
         <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>

@@ -68,6 +68,10 @@ export class TagService extends WebSocketEnabledService<Tag> {
     return this.delete(`/${id}`);
   }
 
+  async getTagsWithCounts(): Promise<Tag[]> {
+    return this.get<Tag[]>("/counts");
+  }
+
   subscribeToGetAllTags(callback: (tags: Tag[]) => void): void {
     this.subscribe(callback, this.notifyCallbacks.bind(this));
     this.setupWebSocketSubscription(this.notifyCallbacks.bind(this), [

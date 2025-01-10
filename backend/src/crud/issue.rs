@@ -177,6 +177,23 @@ impl IssueCrud {
         Ok(issues)
     }
 
+    pub async fn count_issues_by_tag_ids(
+        &self,
+        tag_ids: Vec<i32>,
+    ) -> Result<Vec<(i32, i64)>, DbErr> {
+        let counts = issue_tag::Entity::find()
+            .filter(issue_tag::Column::TagId.is_in(tag_ids))
+            .group_by(issue_tag::Column::TagId)
+            .select_only()
+            .column(issue_tag::Column::TagId)
+            .column_as(issue_tag::Column::IssueId.count(), "count")
+            .into_tuple()
+            .all(&self.app_state.db)
+            .await?;
+
+        Ok(counts)
+    }
+
     pub async fn update(
         &self,
         id: i32,
