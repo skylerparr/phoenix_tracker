@@ -9,6 +9,7 @@ use axum::{
     routing::{delete, get, post, put},
     Json, Router,
 };
+use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -27,12 +28,13 @@ pub struct UpdateTagRequest {
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct TagWithCount {
     id: i32,
     name: String,
     is_epic: bool,
     count: i64,
+    created_at: DateTimeWithTimeZone,
+    updated_at: DateTimeWithTimeZone,
 }
 
 pub fn tag_routes() -> Router<AppState> {
@@ -109,6 +111,8 @@ async fn get_tags_with_counts(Extension(app_state): Extension<AppState>) -> impl
             name: tag.name,
             is_epic: tag.is_epic,
             count: counts_map.get(&tag.id).copied().unwrap_or(0),
+            created_at: tag.created_at.into(),
+            updated_at: tag.updated_at.into(),
         })
         .collect();
 

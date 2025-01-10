@@ -1,3 +1,6 @@
+use crate::crud::event_broadcaster::EventBroadcaster;
+use crate::crud::event_broadcaster::{TAG_CREATED, TAG_DELETED, TAG_UPDATED};
+use crate::crud::issue_tag::IssueTagCrud;
 use crate::entities::tag;
 use crate::AppState;
 use sea_orm::*;
@@ -25,7 +28,17 @@ impl TagCrud {
             ..Default::default()
         };
 
-        tag.insert(&self.app_state.db).await
+        let result = tag.insert(&self.app_state.db).await?;
+
+        let project_id = &self.app_state.project.clone().unwrap().id;
+        let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+        broadcaster.broadcast_event(
+            *project_id,
+            TAG_CREATED,
+            serde_json::json!({ "project_id": project_id }),
+        );
+
+        Ok(result)
     }
 
     pub async fn find_by_id(&self, id: i32) -> Result<Option<tag::Model>, DbErr> {
@@ -60,10 +73,37 @@ impl TagCrud {
             tag.is_epic = Set(is_epic);
         }
 
-        tag.update(&self.app_state.db).await
+        let result = tag.update(&self.app_state.db).await?;
+
+        let project_id = &self.app_state.project.clone().unwrap().id;
+        let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+        broadcaster.broadcast_event(
+            *project_id,
+            TAG_UPDATED,
+            serde_json::json!({ "project_id": project_id }),
+        );
+
+        return Ok(result);
     }
 
     pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {
-        tag::Entity::delete_by_id(id).exec(&self.app_state.db).await
+        // First delete all associated issue tags
+        let issue_tag_crud = IssueTagCrud::new(self.app_state.clone());
+        issue_tag_crud.delete_by_tag_id(id).await?;
+
+        // Then delete the tag itself
+        let result = tag::Entity::delete_by_id(id)
+            .exec(&self.app_state.db)
+            .await?;
+
+        let project_id = &self.app_state.project.clone().unwrap().id;
+        let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+        broadcaster.broadcast_event(
+            *project_id,
+            TAG_DELETED,
+            serde_json::json!({ "project_id": project_id }),
+        );
+
+        return Ok(result);
     }
 }

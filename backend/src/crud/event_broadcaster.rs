@@ -11,6 +11,10 @@ pub const ISSUE_CREATED: &str = "issue_created";
 pub const ISSUE_UPDATED: &str = "issue_updated";
 pub const ISSUE_DELETED: &str = "issue_deleted";
 
+pub const TAG_CREATED: &str = "tag_created";
+pub const TAG_UPDATED: &str = "tag_updated";
+pub const TAG_DELETED: &str = "tag_deleted";
+
 impl EventBroadcaster {
     pub fn new(tx: Arc<Sender<String>>) -> Self {
         Self { tx }

@@ -9,6 +9,7 @@ import {
   Search as SearchIcon,
   Add as AddIcon,
   ArrowBack as ArrowBackIcon,
+  Sell,
 } from "@mui/icons-material";
 import CreateIssue from "../components/CreateIssue";
 import Backlog from "../components/Backlog";
@@ -18,6 +19,7 @@ import MyIssuesComponent from "../components/MyIssuesComponent";
 import SearchComponent from "../components/SearchComponent";
 import AcceptedIssuesComponent from "../components/AcceptedIssuesComponent";
 import IceboxIssuesComponent from "../components/IceboxIssuesComponent";
+import ManageTagsComponent from "../components/ManageTagsComponent";
 
 const toolbarButtons = [
   {
@@ -49,6 +51,12 @@ const toolbarButtons = [
     icon: <TaskAltIcon />,
     id: "accepted_work",
     component: AcceptedIssuesComponent,
+  },
+  {
+    tooltip: "Manage Tags",
+    icon: <Sell />,
+    id: "manage_tags",
+    component: ManageTagsComponent,
   },
   {
     tooltip: "Search",

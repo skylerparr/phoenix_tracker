@@ -39,6 +39,13 @@ export const getBackgroundColor = (issue: Issue | undefined) => {
   }
 };
 
+export const searchTagsForIssue = (tagId: number) => {
+  const url = new URL(window.location.href);
+  url.searchParams.set(PARAM_TAG, tagId.toString());
+  window.history.pushState({}, "", url);
+  window.dispatchEvent(new Event("urlchange"));
+};
+
 export const IssueComponent: React.FC<IssueComponentProps> = ({
   issue,
   expanded,
@@ -53,13 +60,6 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
     };
     fetchData();
   }, [issue]);
-
-  const searchTagsForIssue = (tagId: number) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set(PARAM_TAG, tagId.toString());
-    window.history.pushState({}, "", url);
-    window.dispatchEvent(new Event("urlchange"));
-  };
 
   return (
     <Box>
