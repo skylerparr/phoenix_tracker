@@ -13,7 +13,6 @@ import { IssueDetail } from "./IssueDetail";
 import { issueTagService } from "../services/IssueTagService";
 import { Tag } from "../models/Tag";
 import { PARAM_TAG } from "./SearchComponent";
-import { useNavigate } from "react-router-dom";
 
 interface IssueComponentProps {
   issue: Issue;

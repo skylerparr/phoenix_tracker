@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Issue } from "../models/Issue";
-import { issueService } from "../services/IssueService";
 import {
   STATUS_IN_PROGRESS,
   STATUS_ACCEPTED,
@@ -35,9 +34,8 @@ export const useIssueFilter = () => {
 
     const sortedAccepted = accepted.sort(
       (a, b) =>
-        new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
     );
-
     const sortedInProgressWithDate = sortedInProgress.sort(
       (a, b) =>
         new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
@@ -55,6 +53,7 @@ export const useIssueFilter = () => {
 
   return {
     issues,
+    setIssues,
     acceptedIssues,
     inProgressIssues,
     expandedAcceptedIssues,

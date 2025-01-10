@@ -60,6 +60,7 @@ pub fn issue_routes() -> Router<AppState> {
         .route("/issues/bulk-priority", put(bulk_update_priorities))
         .route("/issues/me", get(get_issues_for_me))
         .route("/issues/tag/:id", get(get_issues_by_tag))
+        .route("/issues/accepted", get(get_all_accepted))
 }
 
 #[axum::debug_handler]
@@ -285,6 +286,16 @@ async fn get_issues_by_tag(
 ) -> impl IntoResponse {
     let issue_crud = IssueCrud::new(app_state);
     match issue_crud.find_all_by_tag_id(tag_id).await {
+        Ok(issues) => Ok(Json(issues)),
+        Err(e) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+#[axum::debug_handler]
+async fn get_all_accepted(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
+    let project_id = app_state.project.clone().unwrap().id;
+    let issue_crud = IssueCrud::new(app_state);
+    match issue_crud.find_all_accepted(project_id).await {
         Ok(issues) => Ok(Json(issues)),
         Err(e) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }

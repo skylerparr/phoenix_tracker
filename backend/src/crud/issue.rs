@@ -115,9 +115,9 @@ impl IssueCrud {
         let mut issues = issue::Entity::find()
             .filter(issue::Column::ProjectId.eq(project_id))
             .filter(issue::Column::Status.eq(STATUS_ACCEPTED))
+            .order_by(issue::Column::UpdatedAt, Order::Desc)
             .all(&self.app_state.db)
             .await?;
-
         for issue in &mut issues {
             self.populate_issue_tags(issue).await?;
         }

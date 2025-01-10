@@ -13,6 +13,7 @@ import { sessionStorage } from "../store/Session";
 import { WebsocketService } from "../services/WebSocketService";
 import MyIssuesComponent from "../components/MyIssuesComponent";
 import SearchComponent from "../components/SearchComponent";
+import AcceptedIssuesComponent from "../components/AcceptedIssuesComponent";
 
 const toolbarButtons = [
   {
@@ -40,10 +41,10 @@ const toolbarButtons = [
     component: Box,
   },
   {
-    tooltip: "Finished Work",
+    tooltip: "Accepted Work",
     icon: <TaskAltIcon />,
-    id: "finished_work",
-    component: Box,
+    id: "accepted_work",
+    component: AcceptedIssuesComponent,
   },
   {
     tooltip: "Search",
