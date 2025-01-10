@@ -216,6 +216,14 @@ export class IssueService {
     const data = await response.json();
     return data.map((item: any) => new Issue(item));
   }
+  async getAllIcebox(): Promise<Issue[]> {
+    const response = await fetch(`${this.baseUrl}/icebox`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error("Failed to fetch icebox issues");
+    const data = await response.json();
+    return data.map((item: any) => new Issue(item));
+  }
 }
 
 export const issueService = new IssueService();

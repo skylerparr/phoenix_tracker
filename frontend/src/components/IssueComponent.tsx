@@ -20,8 +20,14 @@ interface IssueComponentProps {
   onToggleExpanded: () => void;
 }
 
-export const getBackgroundColor = (status: number) => {
-  switch (status) {
+export const getBackgroundColor = (issue: Issue | undefined) => {
+  if (!issue) {
+    return "#f5f5f5";
+  }
+  if (issue.isIcebox) {
+    return "#e4eff6";
+  }
+  switch (issue.status) {
     case STATUS_IN_PROGRESS:
       return "#FFFFE0";
     case STATUS_COMPLETED:
@@ -66,7 +72,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
             border: "1px solid #ddd",
             borderRadius: 1,
             width: "100%",
-            bgcolor: getBackgroundColor(issue.status),
+            bgcolor: getBackgroundColor(issue),
             padding: "5px",
           }}
           onClick={onToggleExpanded}

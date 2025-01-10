@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Box, Tooltip, IconButton } from "@mui/material";
 import RequireAuth from "../components/RequireAuth";
-import HomeIcon from "@mui/icons-material/Home";
-import AssignmentIcon from "@mui/icons-material/Assignment";
-import ArchiveIcon from "@mui/icons-material/Archive";
-import TaskAltIcon from "@mui/icons-material/TaskAlt";
-import SearchIcon from "@mui/icons-material/Search";
-import AddIcon from "@mui/icons-material/Add";
+import {
+  Home as HomeIcon,
+  Assignment as AssignmentIcon,
+  AcUnit,
+  TaskAlt as TaskAltIcon,
+  Search as SearchIcon,
+  Add as AddIcon,
+} from "@mui/icons-material";
 import CreateIssue from "../components/CreateIssue";
 import Backlog from "../components/Backlog";
 import { sessionStorage } from "../store/Session";
@@ -14,6 +16,7 @@ import { WebsocketService } from "../services/WebSocketService";
 import MyIssuesComponent from "../components/MyIssuesComponent";
 import SearchComponent from "../components/SearchComponent";
 import AcceptedIssuesComponent from "../components/AcceptedIssuesComponent";
+import IceboxIssuesComponent from "../components/IceboxIssuesComponent";
 
 const toolbarButtons = [
   {
@@ -36,9 +39,9 @@ const toolbarButtons = [
   },
   {
     tooltip: "Ice Box",
-    icon: <ArchiveIcon />,
-    id: "profile",
-    component: Box,
+    icon: <AcUnit />,
+    id: "ice_box",
+    component: IceboxIssuesComponent,
   },
   {
     tooltip: "Accepted Work",

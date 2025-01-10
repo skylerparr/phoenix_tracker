@@ -4,7 +4,7 @@ use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::{ISSUE_CREATED, ISSUE_DELETED, ISSUE_UPDATED};
 use crate::crud::issue_assignee::IssueAssigneeCrud;
 use crate::crud::issue_tag::IssueTagCrud;
-use crate::crud::status::STATUS_ACCEPTED;
+use crate::crud::status::{STATUS_ACCEPTED, STATUS_UNSTARTED};
 use crate::crud::task::TaskCrud;
 use crate::entities::issue;
 use crate::entities::issue_assignee;
@@ -119,6 +119,19 @@ impl IssueCrud {
         }
         Ok(issues)
     }
+    pub async fn find_all_icebox(&self, project_id: i32) -> Result<Vec<issue::Model>, DbErr> {
+        let mut issues = issue::Entity::find()
+            .filter(issue::Column::ProjectId.eq(project_id))
+            .filter(issue::Column::IsIcebox.eq(true))
+            .order_by(issue::Column::UpdatedAt, Order::Desc)
+            .all(&self.app_state.db)
+            .await?;
+
+        for issue in &mut issues {
+            self.populate_issue_tags(issue).await?;
+        }
+        Ok(issues)
+    }
 
     pub async fn find_all_by_user_id(&self, user_id: i32) -> Result<Vec<issue::Model>, DbErr> {
         let now = chrono::Utc::now().date_naive();
@@ -214,9 +227,11 @@ impl IssueCrud {
         if let Some(target_release_at) = target_release_at {
             issue.target_release_at = Set(Some(target_release_at));
         }
-
         if let Some(is_icebox) = is_icebox {
             issue.is_icebox = Set(is_icebox);
+            if is_icebox {
+                issue.status = Set(STATUS_UNSTARTED);
+            }
         }
 
         issue.project_id = Set(project_id);
@@ -241,28 +256,6 @@ impl IssueCrud {
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
         broadcaster.broadcast_event(*project_id, ISSUE_UPDATED, serde_json::json!(result));
 
-        Ok(result)
-    }
-    pub async fn set_icebox(&self, issue_id: i32, icebox: bool) -> Result<issue::Model, DbErr> {
-        let txn = self.app_state.db.begin().await?;
-
-        let issue = issue::Entity::find_by_id(issue_id)
-            .one(&txn)
-            .await?
-            .ok_or(DbErr::Custom("Issue not found".to_owned()))?;
-
-        let current_version = issue.lock_version;
-        let mut issue: issue::ActiveModel = issue.into();
-        issue.is_icebox = Set(icebox);
-        issue.lock_version = Set(current_version + 1);
-
-        let result = issue.update(&txn).await?;
-        if result.lock_version != current_version + 1 {
-            txn.rollback().await?;
-            return Err(DbErr::Custom("Optimistic lock error".to_owned()));
-        }
-
-        txn.commit().await?;
         Ok(result)
     }
     pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {

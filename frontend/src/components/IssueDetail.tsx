@@ -20,6 +20,8 @@ import {
   Edit,
   Save,
   Clear,
+  Assignment as AssignmentIcon,
+  AcUnit,
 } from "@mui/icons-material";
 import { formatDistanceToNow } from "date-fns";
 import { Issue, POINTS } from "../models/Issue";
@@ -437,7 +439,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             backgroundColor: "#f5f5f5",
             borderRadius: "0px",
           }}
-          title="Link to this issue"
+          title="See history of this issue"
         >
           <AccessTime sx={{ fontSize: "14px" }} />
         </IconButton>{" "}
@@ -453,7 +455,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             backgroundColor: "#f5f5f5",
             borderRadius: "0px",
           }}
-          title="Link to this issue"
+          title="Permanently delete this issue"
           onClick={(e) => {
             e.stopPropagation();
             handleDeleteIssue();
@@ -461,6 +463,32 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         >
           <Delete sx={{ fontSize: "14px" }} />
         </IconButton>{" "}
+        <IconButton
+          size="small"
+          sx={{
+            marginLeft: "2px",
+            width: "18px",
+            height: "18px",
+            padding: "2px",
+            color: "#000000",
+            border: "1px solid #333333",
+            backgroundColor: "#f5f5f5",
+            borderRadius: "0px",
+          }}
+          title={issue.isIcebox ? "Move to backlog" : "Move to icebox"}
+          onClick={(e) => {
+            e.stopPropagation();
+            issueService.updateIssue(issue.id, {
+              isIcebox: !issue.isIcebox,
+            });
+          }}
+        >
+          {issue.isIcebox ? (
+            <AssignmentIcon sx={{ fontSize: "14px" }} />
+          ) : (
+            <AcUnit sx={{ fontSize: "14px" }} />
+          )}
+        </IconButton>
       </Stack>
       <Stack sx={{ backgroundColor: "#f6f6f6", padding: "5px" }}>
         <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>
@@ -717,8 +745,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             sx={{
               border: "1px solid black",
               bgcolor: getBackgroundColor(
-                (issues.find((i: Issue) => i.id === blocker.blockerId)
-                  ?.status as number) || 0,
+                issues.find((i: Issue) => i.id === blocker.blockerId),
               ),
               width: "5px",
               height: "5px",

@@ -1,16 +1,15 @@
 import React, { useEffect } from "react";
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { issueService } from "../services/IssueService";
 import IssueList from "./IssueList";
-import IssueGroup from "./IssueGroup";
 import { useIssueFilter } from "../hooks/useIssueFilter";
 import { WebsocketService } from "../services/WebSocketService";
 
-const AcceptedIssuesComponent: React.FC = () => {
+const IceboxIssuesComponent: React.FC = () => {
   const { issues, setIssues } = useIssueFilter();
 
   const fetchData = async () => {
-    const loadedIssues = await issueService.getAllAccepted();
+    const loadedIssues = await issueService.getAllIcebox();
     setIssues(loadedIssues);
   };
 
@@ -27,7 +26,6 @@ const AcceptedIssuesComponent: React.FC = () => {
   const handleIssueUpdated = async () => {
     fetchData();
   };
-
   return (
     <Box className="backlog-container">
       <Box
@@ -38,15 +36,18 @@ const AcceptedIssuesComponent: React.FC = () => {
           width: "100%",
         }}
       >
-        <IssueGroup issues={issues} weeksFromNow={0} />
-        <IssueList
-          issues={issues}
-          enableDragDrop={false}
-          enableGrouping={true}
-        />
+        {issues.length === 0 ? (
+          <Typography>There are no iceboxed issues</Typography>
+        ) : (
+          <IssueList
+            issues={issues}
+            enableDragDrop={false}
+            enableGrouping={true}
+          />
+        )}
       </Box>
     </Box>
   );
 };
 
-export default AcceptedIssuesComponent;
+export default IceboxIssuesComponent;

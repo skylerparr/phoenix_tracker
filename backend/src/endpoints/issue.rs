@@ -59,6 +59,7 @@ pub fn issue_routes() -> Router<AppState> {
         .route("/issues/me", get(get_issues_for_me))
         .route("/issues/tag/:id", get(get_issues_by_tag))
         .route("/issues/accepted", get(get_all_accepted))
+        .route("/issues/icebox", get(get_all_icebox))
 }
 
 #[axum::debug_handler]
@@ -205,6 +206,7 @@ async fn reject_issue(
 async fn update_issue_status(app_state: AppState, id: i32, status: i32) -> impl IntoResponse {
     let project_id = app_state.project.clone().unwrap().id;
     let issue_crud = IssueCrud::new(app_state);
+    // whenever the status is updated, the is_icebox flag should be set to false
     match issue_crud
         .update(
             id,
@@ -213,7 +215,7 @@ async fn update_issue_status(app_state: AppState, id: i32, status: i32) -> impl 
             None,
             None,
             Some(status),
-            None,
+            Some(false),
             None,
             None,
             project_id,
@@ -283,6 +285,16 @@ async fn get_all_accepted(Extension(app_state): Extension<AppState>) -> impl Int
     let project_id = app_state.project.clone().unwrap().id;
     let issue_crud = IssueCrud::new(app_state);
     match issue_crud.find_all_accepted(project_id).await {
+        Ok(issues) => Ok(Json(issues)),
+        Err(e) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+#[axum::debug_handler]
+async fn get_all_icebox(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
+    let project_id = app_state.project.clone().unwrap().id;
+    let issue_crud = IssueCrud::new(app_state);
+    match issue_crud.find_all_icebox(project_id).await {
         Ok(issues) => Ok(Json(issues)),
         Err(e) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
