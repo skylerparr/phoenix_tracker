@@ -11,6 +11,10 @@ export class IssueAssigneeService extends BaseService<IssueAssignee> {
     super("/issue-assignees");
   }
 
+  protected createInstance(data: any): IssueAssignee {
+    return new IssueAssignee(data);
+  }
+
   async createIssueAssignee(
     request: CreateIssueAssigneeRequest,
   ): Promise<IssueAssignee> {

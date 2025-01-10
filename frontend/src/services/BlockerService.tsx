@@ -11,6 +11,10 @@ export class BlockerService extends BaseService<Blocker> {
     super("/blockers");
   }
 
+  protected createInstance(data: any): Blocker {
+    return new Blocker(data);
+  }
+
   async createBlocker(request: CreateBlockerRequest): Promise<Blocker> {
     return this.post<Blocker>("", request);
   }
@@ -27,5 +31,4 @@ export class BlockerService extends BaseService<Blocker> {
     return this.delete(`/${blockerId}/${blockedId}`);
   }
 }
-
 export const blockerService = new BlockerService();

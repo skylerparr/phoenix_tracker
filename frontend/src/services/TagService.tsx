@@ -20,6 +20,10 @@ export class TagService extends WebSocketEnabledService<Tag> {
     super("/tags");
   }
 
+  createInstance(data: any): Tag {
+    return new Tag(data);
+  }
+
   async createTag(request: CreateTagRequest): Promise<Tag> {
     return this.post<Tag>("", request);
   }
@@ -39,7 +43,7 @@ export class TagService extends WebSocketEnabledService<Tag> {
 
     if (!response.ok) throw new Error("Failed to fetch tags");
     const data = await response.json();
-    this.tagsCache = data.map((item: any) => new Tag(item));
+    this.tagsCache = data.map((item: any) => this.createInstance(item));
 
     while (this.getAllPromisesCache.length > 0) {
       const resolve = this.getAllPromisesCache.pop();

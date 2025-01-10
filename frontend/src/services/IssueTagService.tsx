@@ -1,7 +1,6 @@
-import { API_BASE_URL } from "../config/ApiConfig";
-import { sessionStorage } from "../store/Session";
+import { BaseService } from "./base/BaseService";
 import { IssueTag } from "../models/IssueTag";
-import { tagService } from "../services/TagService";
+import { tagService } from "./TagService";
 import { Tag } from "../models/Tag";
 import { Issue } from "../models/Issue";
 
@@ -10,52 +9,31 @@ interface CreateIssueTagRequest {
   tagId: number;
 }
 
-export class IssueTagService {
-  private baseUrl = `${API_BASE_URL}/issue-tags`;
-
-  private getHeaders(): HeadersInit {
-    return {
-      "Content-Type": "application/json",
-      Authorization: `${sessionStorage.getSession().user?.token}`,
-    };
+export class IssueTagService extends BaseService<IssueTag> {
+  constructor() {
+    super("/issue-tags");
   }
 
-  async createIssueTag(request: CreateIssueTagRequest): Promise<IssueTag> {
-    const response = await fetch(this.baseUrl, {
-      method: "POST",
-      headers: this.getHeaders(),
-      body: JSON.stringify(request),
-    });
-    if (!response.ok) throw new Error("Failed to create issue tag");
-    const data = await response.json();
+  protected createInstance(data: any): IssueTag {
     return new IssueTag(data);
   }
 
+  async createIssueTag(request: CreateIssueTagRequest): Promise<IssueTag> {
+    return this.post<IssueTag>("", request);
+  }
+
   async getIssueTagsByIssueId(issueId: number): Promise<IssueTag[]> {
-    const response = await fetch(`${this.baseUrl}/issue/${issueId}`, {
-      headers: this.getHeaders(),
-    });
-    if (!response.ok) throw new Error("Failed to fetch issue tags");
-    const data = await response.json();
-    return data.map((item: any) => new IssueTag(item));
+    return this.get<IssueTag[]>(`/issue/${issueId}`);
   }
 
   async getIssuesByTagId(tagId: number): Promise<IssueTag[]> {
-    const response = await fetch(`${this.baseUrl}/tag/${tagId}`, {
-      headers: this.getHeaders(),
-    });
-    if (!response.ok) throw new Error("Failed to fetch tag issues");
-    const data = await response.json();
-    return data.map((item: any) => new IssueTag(item));
+    return this.get<IssueTag[]>(`/tag/${tagId}`);
   }
 
   async deleteIssueTag(issueId: number, tagId: number): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/${issueId}/${tagId}`, {
-      method: "DELETE",
-      headers: this.getHeaders(),
-    });
-    if (!response.ok) throw new Error("Failed to delete issue tag");
+    return this.delete(`/${issueId}/${tagId}`);
   }
+
   async getTagsForIssue(issue: Issue): Promise<Tag[]> {
     const sourceTags = await tagService.getAllTags();
     const issueTags = issue.issueTagIds;

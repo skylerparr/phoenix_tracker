@@ -10,6 +10,10 @@ export class ProjectService extends BaseService<Project> {
     super("/projects");
   }
 
+  createInstance(data: any): Project {
+    return new Project(data);
+  }
+
   async createProject(request: CreateProjectRequest): Promise<Project> {
     return this.post<Project>("", request);
   }

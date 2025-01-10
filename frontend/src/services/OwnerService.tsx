@@ -14,6 +14,10 @@ export class OwnerService extends BaseService<Owner> {
     super("/owners");
   }
 
+  protected createInstance(data: any): Owner {
+    return new Owner(data);
+  }
+
   async createOwner(request: CreateOwnerRequest): Promise<Owner> {
     return this.post<Owner>("", request);
   }

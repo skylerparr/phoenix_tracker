@@ -11,6 +11,10 @@ export class CommentService extends BaseService<Comment> {
     super("/comments");
   }
 
+  protected createInstance(data: any): Comment {
+    return new Comment(data);
+  }
+
   async createComment(request: CreateCommentRequest): Promise<Comment> {
     return this.post<Comment>("", request);
   }

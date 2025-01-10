@@ -19,6 +19,10 @@ export class TaskService extends BaseService<Task> {
     super("/tasks");
   }
 
+  protected createInstance(data: any): Task {
+    return new Task(data);
+  }
+
   async createTask(request: CreateTaskRequest): Promise<Task> {
     return this.post<Task>("", request);
   }
