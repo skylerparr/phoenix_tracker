@@ -12,6 +12,7 @@ use axum::{
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use tracing::info;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -60,7 +61,7 @@ async fn create_tag(
     {
         Ok(tag) => Ok(Json(tag)),
         Err(e) => {
-            println!("Error creating tag: {:?}", e);
+            info!("Error creating tag: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -73,7 +74,7 @@ async fn get_all_tags(Extension(app_state): Extension<AppState>) -> impl IntoRes
     match tag_crud.find_all(project_id).await {
         Ok(tags) => Ok(Json(tags)),
         Err(e) => {
-            println!("Error getting all tags: {:?}", e);
+            info!("Error getting all tags: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -88,7 +89,7 @@ async fn get_tags_with_counts(Extension(app_state): Extension<AppState>) -> impl
     let tags = match tag_crud.find_all(project_id).await {
         Ok(t) => t,
         Err(e) => {
-            println!("Error getting tags: {:?}", e);
+            info!("Error getting tags: {:?}", e);
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
@@ -97,7 +98,7 @@ async fn get_tags_with_counts(Extension(app_state): Extension<AppState>) -> impl
     let counts = match issue_crud.count_issues_by_tag_ids(tag_ids).await {
         Ok(c) => c,
         Err(e) => {
-            println!("Error getting counts: {:?}", e);
+            info!("Error getting counts: {:?}", e);
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
@@ -128,7 +129,7 @@ async fn get_tag(
         Ok(Some(tag)) => Ok(Json(tag)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
         Err(e) => {
-            println!("Error getting tag {}: {:?}", id, e);
+            info!("Error getting tag {}: {:?}", id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -147,7 +148,7 @@ async fn update_tag(
             if e.to_string().contains("Tag not found") {
                 Err(StatusCode::NOT_FOUND)
             } else {
-                println!("Error updating tag {}: {:?}", id, e);
+                info!("Error updating tag {}: {:?}", id, e);
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
@@ -160,7 +161,7 @@ async fn delete_tag(Extension(app_state): Extension<AppState>, Path(id): Path<i3
     match tag_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {
-            println!("Error deleting tag {}: {:?}", id, e);
+            info!("Error deleting tag {}: {:?}", id, e);
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }

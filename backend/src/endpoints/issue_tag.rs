@@ -9,7 +9,7 @@ use axum::{
     Json, Router,
 };
 use serde::Deserialize;
-use tracing::debug;
+use tracing::{debug, info};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -39,7 +39,7 @@ async fn create_issue_tag(
     {
         Ok(issue_tag) => Ok(Json(issue_tag)),
         Err(e) => {
-            println!("Error creating issue tag: {:?}", e);
+            info!("Error creating issue tag: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -54,7 +54,7 @@ async fn get_issue_tags(
     match issue_tag_crud.find_by_issue_id(id).await {
         Ok(issue_tags) => Ok(Json(issue_tags)),
         Err(e) => {
-            println!("Error getting issue tags: {:?}", e);
+            info!("Error getting issue tags: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -69,7 +69,7 @@ async fn get_tag_issues(
     match issue_tag_crud.find_by_tag_id(id).await {
         Ok(issue_tags) => Ok(Json(issue_tags)),
         Err(e) => {
-            println!("Error getting tag issues: {:?}", e);
+            info!("Error getting tag issues: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -84,7 +84,7 @@ async fn delete_issue_tag(
     match issue_tag_crud.delete(issue_id, tag_id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {
-            println!("Error deleting issue tag: {:?}", e);
+            info!("Error deleting issue tag: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }

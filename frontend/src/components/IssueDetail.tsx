@@ -155,6 +155,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   };
 
   const handleTagsUpdate = async (tags: Tag[]) => {
+    console.log(tags);
     setAllTags(tags);
     setAvailableTags(tags.map((tag) => tag.name));
     const associatedTags = await issueTagService.getTagsForIssue(originalIssue);

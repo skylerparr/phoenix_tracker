@@ -9,7 +9,7 @@ use axum::{
     Json, Router,
 };
 use serde::Deserialize;
-use tracing::debug;
+use tracing::{debug, info};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -42,7 +42,7 @@ async fn create_issue_assignee(
     {
         Ok(issue_assignee) => Ok(Json(issue_assignee)),
         Err(e) => {
-            println!("Error creating issue assignee: {:?}", e);
+            info!("Error creating issue assignee: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -57,7 +57,7 @@ async fn get_issue_assignees(
     match issue_assignee_crud.find_by_issue_id(id).await {
         Ok(issue_assignees) => Ok(Json(issue_assignees)),
         Err(e) => {
-            println!("Error getting issue assignees: {:?}", e);
+            info!("Error getting issue assignees: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -72,7 +72,7 @@ async fn get_user_assignees(
     match issue_assignee_crud.find_by_user_id(id).await {
         Ok(issue_assignees) => Ok(Json(issue_assignees)),
         Err(e) => {
-            println!("Error getting user assignees: {:?}", e);
+            info!("Error getting user assignees: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -87,7 +87,7 @@ async fn delete_issue_assignee(
     match issue_assignee_crud.delete(issue_id, user_id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {
-            println!("Error deleting issue assignee: {:?}", e);
+            info!("Error deleting issue assignee: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }

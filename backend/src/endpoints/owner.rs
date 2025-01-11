@@ -8,6 +8,7 @@ use axum::{
     Json, Router,
 };
 use serde::Deserialize;
+use tracing::info;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -39,7 +40,7 @@ async fn create_owner(
     match owner_crud.create(payload.user_id).await {
         Ok(owner) => Ok(Json(owner)),
         Err(e) => {
-            println!("Error creating owner: {:?}", e);
+            info!("Error creating owner: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -51,7 +52,7 @@ async fn get_all_owners(State(app_state): State<AppState>) -> impl IntoResponse 
     match owner_crud.find_all().await {
         Ok(owners) => Ok(Json(owners)),
         Err(e) => {
-            println!("Error getting all owners: {:?}", e);
+            info!("Error getting all owners: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -64,7 +65,7 @@ async fn get_owner(State(app_state): State<AppState>, Path(id): Path<i32>) -> im
         Ok(Some(owner)) => Ok(Json(owner)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
         Err(e) => {
-            println!("Error getting owner {}: {:?}", id, e);
+            info!("Error getting owner {}: {:?}", id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -83,7 +84,7 @@ async fn update_owner(
             if e.to_string().contains("Owner not found") {
                 Err(StatusCode::NOT_FOUND)
             } else {
-                println!("Error updating owner {}: {:?}", id, e);
+                info!("Error updating owner {}: {:?}", id, e);
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
@@ -96,7 +97,7 @@ async fn delete_owner(State(app_state): State<AppState>, Path(id): Path<i32>) ->
     match owner_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {
-            println!("Error deleting owner {}: {:?}", id, e);
+            info!("Error deleting owner {}: {:?}", id, e);
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }

@@ -47,7 +47,7 @@ async fn create_user(
     match user_crud.create(payload.name, payload.email).await {
         Ok(user) => Ok(Json(user)),
         Err(e) => {
-            println!("Error creating user: {:?}", e);
+            info!("Error creating user: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -91,7 +91,7 @@ async fn get_user(
         Ok(Some(user)) => Ok(Json(user)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
         Err(e) => {
-            println!("Error getting user {}: {:?}", id, e);
+            info!("Error getting user {}: {:?}", id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -112,7 +112,7 @@ async fn get_user_by_email(
         Ok(Some(user)) => Ok(Json(user)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
         Err(e) => {
-            println!("Error getting user by email {}: {:?}", email, e);
+            info!("Error getting user by email {}: {:?}", email, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -131,7 +131,7 @@ async fn update_user(
             if e.to_string().contains("User not found") {
                 Err(StatusCode::NOT_FOUND)
             } else {
-                println!("Error updating user {}: {:?}", id, e);
+                info!("Error updating user {}: {:?}", id, e);
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
@@ -144,7 +144,7 @@ async fn delete_user(Extension(app_state): Extension<AppState>, Path(id): Path<i
     match user_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {
-            println!("Error deleting user {}: {:?}", id, e);
+            info!("Error deleting user {}: {:?}", id, e);
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }

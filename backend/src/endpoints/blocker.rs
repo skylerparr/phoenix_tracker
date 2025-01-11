@@ -9,7 +9,7 @@ use axum::{
     Json, Router,
 };
 use serde::Deserialize;
-use tracing::debug;
+use tracing::{debug, info};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -39,7 +39,7 @@ async fn create_blocker(
     {
         Ok(blocker) => Ok(Json(blocker)),
         Err(e) => {
-            println!("Error creating blocker: {:?}", e);
+            info!("Error creating blocker: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -54,7 +54,7 @@ async fn get_blocker_issues(
     match blocker_crud.find_by_blocker_id(id).await {
         Ok(blockers) => Ok(Json(blockers)),
         Err(e) => {
-            println!("Error getting blocker issues: {:?}", e);
+            info!("Error getting blocker issues: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -69,7 +69,7 @@ async fn get_blocked_issues(
     match blocker_crud.find_by_blocked_id(id).await {
         Ok(blockers) => Ok(Json(blockers)),
         Err(e) => {
-            println!("Error getting blocked issues: {:?}", e);
+            info!("Error getting blocked issues: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -84,7 +84,7 @@ async fn delete_blocker(
     match blocker_crud.delete(blocker_id, blocked_id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {
-            println!("Error deleting blocker: {:?}", e);
+            info!("Error deleting blocker: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }

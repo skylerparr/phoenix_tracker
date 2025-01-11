@@ -13,7 +13,7 @@ use axum::{
 };
 use sea_orm::entity::prelude::*;
 use serde::Deserialize;
-use tracing::debug;
+use tracing::{debug, info};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -89,7 +89,7 @@ pub async fn create_issue(
     {
         Ok(issue) => Ok(Json(issue)),
         Err(e) => {
-            println!("Error creating issue: {:?}", e);
+            info!("Error creating issue: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -103,7 +103,7 @@ async fn get_all_issues_for_backlog(
     match issue_crud.find_all_for_backlog(project_id, false).await {
         Ok(issues) => Ok(Json(issues)),
         Err(e) => {
-            println!("Error getting all issues: {:?}", e);
+            info!("Error getting all issues: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -115,7 +115,7 @@ async fn get_issues_for_me(Extension(app_state): Extension<AppState>) -> impl In
     match issue_crud.find_all_by_user_id(user_id).await {
         Ok(issues) => Ok(Json(issues)),
         Err(e) => {
-            println!("Error getting all issues: {:?}", e);
+            info!("Error getting all issues: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -130,7 +130,7 @@ async fn get_issue(
         Ok(Some(issue)) => Ok(Json(issue)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
         Err(e) => {
-            println!("Error getting issue {}: {:?}", id, e);
+            info!("Error getting issue {}: {:?}", id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -165,7 +165,7 @@ async fn update_issue(
             if e.to_string().contains("Issue not found") {
                 Err(StatusCode::NOT_FOUND)
             } else {
-                println!("Error updating issue {}: {:?}", id, e);
+                info!("Error updating issue {}: {:?}", id, e);
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
@@ -227,7 +227,7 @@ async fn update_issue_status(app_state: AppState, id: i32, status: i32) -> impl 
             if e.to_string().contains("Issue not found") {
                 Err(StatusCode::NOT_FOUND)
             } else {
-                println!("Error updating issue {}: {:?}", id, e);
+                info!("Error updating issue {}: {:?}", id, e);
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
@@ -243,7 +243,7 @@ async fn delete_issue(
     match issue_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {
-            println!("Error deleting issue {}: {:?}", id, e);
+            info!("Error deleting issue {}: {:?}", id, e);
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }
@@ -262,7 +262,7 @@ async fn bulk_update_priorities(
     {
         Ok(updated_issues) => Ok(Json(updated_issues)),
         Err(e) => {
-            println!("Error updating issue priorities: {:?}", e);
+            info!("Error updating issue priorities: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }

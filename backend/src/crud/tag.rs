@@ -4,6 +4,7 @@ use crate::crud::issue_tag::IssueTagCrud;
 use crate::entities::tag;
 use crate::AppState;
 use sea_orm::*;
+use tracing::error;            
 
 #[derive(Clone)]
 pub struct TagCrud {
@@ -46,6 +47,7 @@ impl TagCrud {
     }
 
     pub async fn find_all(&self, project_id: i32) -> Result<Vec<tag::Model>, DbErr> {
+        error!("Finding all tags for project {}", project_id);
         tag::Entity::find()
             .filter(tag::Column::ProjectId.eq(project_id))
             .all(&self.app_state.db)
