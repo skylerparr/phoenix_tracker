@@ -355,6 +355,7 @@ impl IssueCrud {
                 .filter(issue::Column::ProjectId.eq(project_id))
                 .filter(issue::Column::Points.is_not_null())
                 .filter(issue::Column::UpdatedAt.gte(monday))
+                .filter(issue::Column::Status.eq(STATUS_ACCEPTED))
                 .filter(issue::Column::UpdatedAt.lt(monday + chrono::Duration::days(7)))
                 .all(&self.app_state.db)
                 .await?;
