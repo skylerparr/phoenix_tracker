@@ -60,8 +60,11 @@ pub fn issue_routes() -> Router<AppState> {
         .route("/issues/tag/:id", get(get_issues_by_tag))
         .route("/issues/accepted", get(get_all_accepted))
         .route("/issues/icebox", get(get_all_icebox))
+        .route(
+            "/issues/weekly-points-average",
+            get(get_weekly_points_average),
+        )
 }
-
 #[axum::debug_handler]
 pub async fn create_issue(
     Extension(app_state): Extension<AppState>,
@@ -297,5 +300,19 @@ async fn get_all_icebox(Extension(app_state): Extension<AppState>) -> impl IntoR
     match issue_crud.find_all_icebox(project_id).await {
         Ok(issues) => Ok(Json(issues)),
         Err(e) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+#[axum::debug_handler]
+async fn get_weekly_points_average(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
+    let project_id = app_state.project.clone().unwrap().id;
+    let issue_crud = IssueCrud::new(app_state);
+
+    match issue_crud.calculate_weekly_points_average(project_id).await {
+        Ok(average) => Ok(Json(average)),
+        Err(e) => {
+            info!("Error calculating weekly points average: {:?}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
     }
 }

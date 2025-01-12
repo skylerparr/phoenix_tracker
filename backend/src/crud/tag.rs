@@ -37,7 +37,7 @@ impl TagCrud {
         // Spawn a new task for delayed broadcast
         let project_id_clone = *project_id;
         tokio::spawn(async move {
-            tokio::time::sleep(tokio::time::Duration::from_millis(250)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
             broadcaster.broadcast_event(
                 project_id_clone,
                 TAG_CREATED,

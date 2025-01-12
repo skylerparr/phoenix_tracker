@@ -337,4 +337,41 @@ impl IssueCrud {
 
         Ok(updated_issues)
     }
+
+    pub async fn calculate_weekly_points_average(&self, project_id: i32) -> Result<f64, DbErr> {
+        let now = chrono::Utc::now().date_naive();
+        let mut total_points = 0;
+        let mut weeks_with_data = 0;
+
+        for week_offset in 0..3 {
+            let days_from_monday = (now - chrono::Duration::weeks(week_offset))
+                .weekday()
+                .num_days_from_monday();
+            let monday = now
+                - chrono::Duration::days(days_from_monday as i64)
+                - chrono::Duration::weeks(week_offset);
+
+            let issues = issue::Entity::find()
+                .filter(issue::Column::ProjectId.eq(project_id))
+                .filter(issue::Column::Points.is_not_null())
+                .filter(issue::Column::UpdatedAt.gte(monday))
+                .filter(issue::Column::UpdatedAt.lt(monday + chrono::Duration::days(7)))
+                .all(&self.app_state.db)
+                .await?;
+
+            if !issues.is_empty() {
+                let weekly_points: i32 = issues.iter().filter_map(|issue| issue.points).sum();
+                total_points += weekly_points;
+                weeks_with_data += 1;
+            }
+        }
+
+        let average = if weeks_with_data > 0 {
+            total_points as f64 / weeks_with_data as f64
+        } else {
+            10.0
+        };
+
+        Ok(average)
+    }
 }

@@ -164,6 +164,13 @@ export class IssueService extends BaseService<Issue> {
   unsubscribeFromGetMyIssues(callback: (issues: Issue[]) => void): void {
     this.cleanupSubscriptions(true, callback);
   }
+  async getWeeklyPointsAverage(): Promise<number> {
+    const response = await fetch(`${this.baseUrl}/weekly-points-average`, {
+      headers: this.getHeaders(),
+    });
+    if (!response.ok) throw new Error("Failed to fetch weekly points average");
+    return response.json();
+  }
 }
 
 export const issueService = new IssueService();
