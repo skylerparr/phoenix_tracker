@@ -4,7 +4,7 @@ use crate::crud::issue_tag::IssueTagCrud;
 use crate::entities::tag;
 use crate::AppState;
 use sea_orm::*;
-use tracing::error;            
+use tracing::error;
 
 #[derive(Clone)]
 pub struct TagCrud {
@@ -33,11 +33,17 @@ impl TagCrud {
 
         let project_id = &self.app_state.project.clone().unwrap().id;
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
-        broadcaster.broadcast_event(
-            *project_id,
-            TAG_CREATED,
-            serde_json::json!({ "project_id": project_id }),
-        );
+
+        // Spawn a new task for delayed broadcast
+        let project_id_clone = *project_id;
+        tokio::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_millis(250)).await;
+            broadcaster.broadcast_event(
+                project_id_clone,
+                TAG_CREATED,
+                serde_json::json!({ "project_id": project_id_clone }),
+            );
+        });
 
         Ok(result)
     }
@@ -47,7 +53,6 @@ impl TagCrud {
     }
 
     pub async fn find_all(&self, project_id: i32) -> Result<Vec<tag::Model>, DbErr> {
-        error!("Finding all tags for project {}", project_id);
         tag::Entity::find()
             .filter(tag::Column::ProjectId.eq(project_id))
             .all(&self.app_state.db)

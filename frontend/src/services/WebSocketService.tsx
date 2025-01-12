@@ -22,7 +22,6 @@ export class WebsocketService {
     this.socket = new WebSocket(wsUrl);
 
     this.socket.onopen = () => {
-      console.log("Connected to server");
       this.isConnecting = false;
       this.heartbeatId && clearInterval(this.heartbeatId);
       this.heartbeatId = setInterval(() => {
@@ -32,7 +31,14 @@ export class WebsocketService {
 
     this.socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      const eventTypes = [ISSUE_CREATED, ISSUE_UPDATED, ISSUE_DELETED];
+      const eventTypes = [
+        ISSUE_CREATED,
+        ISSUE_UPDATED,
+        ISSUE_DELETED,
+        TAG_CREATED,
+        TAG_UPDATED,
+        TAG_DELETED,
+      ];
       const eventType = eventTypes.find((type) => type === data.event_type);
       if (eventType) {
         const callbacks = this.eventCallbacks.get(eventType) || [];

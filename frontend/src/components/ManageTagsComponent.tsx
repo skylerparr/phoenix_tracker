@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
-  Paper,
   TextField,
   IconButton,
   Menu,
@@ -11,17 +10,22 @@ import {
 } from "@mui/material";
 import { tagService } from "../services/TagService";
 import { Tag } from "../models/Tag";
-import SellIcon from "@mui/icons-material/Sell";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
+import {
+  Sell as SellIcon,
+  MoreVert as MoreVertIcon,
+  Save as SaveIcon,
+  Stars,
+} from "@mui/icons-material";
 import { searchTagsForIssue } from "./IssueComponent";
 import { issueService } from "../services/IssueService";
-
 const ManageTagsComponent: React.FC = () => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [filteredTags, setFilteredTags] = useState<Tag[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
+  const [editingTagId, setEditingTagId] = useState<number | null>(null);
+  const [editingTagName, setEditingTagName] = useState<string>("");
 
   useEffect(() => {
     loadTags();
@@ -34,14 +38,11 @@ const ManageTagsComponent: React.FC = () => {
   }, []);
 
   const onTagsUpdated = () => {
-    console.log("Tags updated");
     loadTags();
   };
 
   const loadTags = async (): Promise<void> => {
-    console.log("Loading tags");
     const fetchedTags = await tagService.getTagsWithCounts();
-    console.log("Fetched tags:", fetchedTags);
     setTags(fetchedTags);
     setFilteredTags(fetchedTags);
   };
@@ -69,6 +70,21 @@ const ManageTagsComponent: React.FC = () => {
   const searchForTagByIssue = (): void => {
     if (selectedTag) {
       searchTagsForIssue(selectedTag.id);
+      handleMenuClose();
+    }
+  };
+
+  const handleSaveTagName = async (tagId: number) => {
+    await tagService.updateTag(tagId, { name: editingTagName });
+    setEditingTagId(null);
+    setEditingTagName("");
+  };
+
+  const handleToggleEpic = async () => {
+    if (selectedTag) {
+      await tagService.updateTag(selectedTag.id, {
+        isEpic: !selectedTag.isEpic,
+      });
       handleMenuClose();
     }
   };
@@ -103,29 +119,63 @@ const ManageTagsComponent: React.FC = () => {
               "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.04)" },
             }}
           >
-            <SellIcon sx={{ mr: 1, color: "green" }} />
-            <Typography
-              onClick={() => searchTagsForIssue(tag.id)}
-              sx={{
-                color: "green",
-                fontWeight: tag.count && tag.count > 0 ? "bold" : "normal",
-                flexGrow: 1,
-                cursor: "pointer",
-                "&:hover": {
-                  textDecoration: "underline",
-                },
-              }}
-            >
-              {tag.name} ({tag.count || 0})
-            </Typography>
-
-            <IconButton
-              onClick={(e: React.MouseEvent<HTMLElement>) =>
-                handleMenuOpen(e, tag)
-              }
-            >
-              <MoreVertIcon sx={{ color: "#666666" }} />
-            </IconButton>
+            {tag.isEpic ? (
+              <Stars sx={{ mr: 1, color: "#673ab7" }} />
+            ) : (
+              <SellIcon sx={{ mr: 1, color: "green" }} />
+            )}
+            {editingTagId === tag.id ? (
+              <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
+                <TextField
+                  value={editingTagName}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setEditingTagName(e.target.value)
+                  }
+                  size="small"
+                  autoFocus
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (e.key === "Enter") {
+                      handleSaveTagName(tag.id);
+                    } else if (e.key === "Escape") {
+                      setEditingTagId(null);
+                      setEditingTagName("");
+                    }
+                  }}
+                  sx={{
+                    flexGrow: 1,
+                    backgroundColor: "#414141",
+                    color: "black",
+                  }}
+                />
+                <IconButton onClick={() => handleSaveTagName(tag.id)}>
+                  <SaveIcon sx={{ color: "green" }} />
+                </IconButton>
+              </Box>
+            ) : (
+              <Typography
+                onClick={() => searchTagsForIssue(tag.id)}
+                sx={{
+                  color: tag.isEpic ? "#673ab7" : "green",
+                  fontWeight: tag.count && tag.count > 0 ? "bold" : "normal",
+                  flexGrow: 1,
+                  cursor: "pointer",
+                  "&:hover": {
+                    textDecoration: "underline",
+                  },
+                }}
+              >
+                {tag.name} ({tag.count || 0})
+              </Typography>
+            )}
+            {editingTagId === null && (
+              <IconButton
+                onClick={(e: React.MouseEvent<HTMLElement>) =>
+                  handleMenuOpen(e, tag)
+                }
+              >
+                <MoreVertIcon sx={{ color: "#666666" }} />
+              </IconButton>
+            )}
           </Box>
           {index < filteredTags.length - 1 && (
             <Divider sx={{ bgcolor: "#666666" }} />
@@ -148,10 +198,24 @@ const ManageTagsComponent: React.FC = () => {
         >
           Delete
         </MenuItem>
-        <MenuItem onClick={handleMenuClose}>Rename</MenuItem>
+        <MenuItem
+          onClick={() => {
+            if (selectedTag) {
+              setEditingTagId(selectedTag.id);
+              setEditingTagName(selectedTag.name);
+              handleMenuClose();
+            }
+          }}
+        >
+          Rename
+        </MenuItem>
         <MenuItem onClick={searchForTagByIssue}>Show Stories</MenuItem>
-        <MenuItem onClick={handleMenuClose}>Convert to Epic</MenuItem>
-      </Menu>{" "}
+        <MenuItem onClick={handleToggleEpic}>
+          {selectedTag?.isEpic
+            ? "Convert to Standard Label"
+            : "Convert to Epic"}
+        </MenuItem>
+      </Menu>
     </Box>
   );
 };

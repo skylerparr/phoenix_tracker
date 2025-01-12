@@ -11,6 +11,7 @@ import {
 } from "../services/StatusService";
 import { IssueDetail } from "./IssueDetail";
 import { issueTagService } from "../services/IssueTagService";
+import { tagService } from "../services/TagService";
 import { Tag } from "../models/Tag";
 import { PARAM_TAG } from "./SearchComponent";
 
@@ -54,12 +55,22 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
   const [tags, setTags] = React.useState<Tag[]>([]);
 
   React.useEffect(() => {
-    const fetchData = async () => {
-      const associatedTags = await issueTagService.getTagsForIssue(issue);
-      setTags(associatedTags);
-    };
+    tagService.subscribeToGetAllTags(onTagsUpdated);
+
     fetchData();
+    return () => {
+      tagService.unsubscribeFromGetAllTags(onTagsUpdated);
+    };
   }, [issue]);
+
+  const fetchData = async () => {
+    const associatedTags = await issueTagService.getTagsForIssue(issue);
+    setTags(associatedTags);
+  };
+
+  const onTagsUpdated = () => {
+    fetchData();
+  };
 
   return (
     <Box>
@@ -98,7 +109,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
                     variant="text"
                     size="small"
                     sx={{
-                      color: "green",
+                      color: tag.isEpic ? "#673ab7" : "green",
                       minWidth: "auto",
                       textTransform: "none",
                       fontStyle: issue.points === null ? "italic" : "normal",

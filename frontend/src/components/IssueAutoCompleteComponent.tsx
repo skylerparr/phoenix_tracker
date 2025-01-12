@@ -1,6 +1,5 @@
 import React from "react";
 import { TextField, Autocomplete, Chip } from "@mui/material";
-
 interface IssueAutoCompleteComponentProps {
   options: string[];
   value: string[];
@@ -10,6 +9,7 @@ interface IssueAutoCompleteComponentProps {
   placeholder: string;
   handleCreateNew?: (value: string) => void;
   onSelected?: (value: string) => void;
+  getChipColor?: (value: string) => string;
 }
 
 const IssueAutoCompleteComponent: React.FC<IssueAutoCompleteComponentProps> = ({
@@ -20,6 +20,7 @@ const IssueAutoCompleteComponent: React.FC<IssueAutoCompleteComponentProps> = ({
   onInputChange,
   placeholder,
   handleCreateNew,
+  getChipColor = () => "#2e7d32",
 }) => {
   return (
     <Autocomplete
@@ -63,7 +64,7 @@ const IssueAutoCompleteComponent: React.FC<IssueAutoCompleteComponentProps> = ({
               label={option}
               {...props}
               size="small"
-              sx={{ color: "#FFFFFF", backgroundColor: "#2e7d32" }}
+              sx={{ color: "#FFFFFF", backgroundColor: getChipColor(option) }}
             />
           );
         })
@@ -89,5 +90,4 @@ const IssueAutoCompleteComponent: React.FC<IssueAutoCompleteComponentProps> = ({
     />
   );
 };
-
 export default IssueAutoCompleteComponent;

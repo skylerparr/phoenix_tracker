@@ -113,6 +113,11 @@ const CreateIssue: React.FC = () => {
     });
   };
 
+  const getChipColor = (tagName: string) => {
+    const tag = allTags.find((t) => t.name === tagName);
+    return tag?.isEpic ? "#673ab7" : "#2e7d32";
+  };
+
   return (
     <Box
       sx={{
@@ -178,6 +183,7 @@ const CreateIssue: React.FC = () => {
           onInputChange: setInputValue,
           onCreateNew: handleCreateNewTag,
           placeholder: "Add labels...",
+          getChipColor: getChipColor,
         },
       ].map(
         ({
@@ -189,6 +195,7 @@ const CreateIssue: React.FC = () => {
           onInputChange,
           onCreateNew,
           placeholder,
+          getChipColor,
         }) => (
           <IssueAutoCompleteComponent
             key={id}
@@ -199,6 +206,7 @@ const CreateIssue: React.FC = () => {
             onInputChange={onInputChange}
             placeholder={placeholder}
             handleCreateNew={onCreateNew}
+            getChipColor={getChipColor}
           />
         ),
       )}{" "}

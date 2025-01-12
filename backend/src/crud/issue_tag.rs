@@ -4,6 +4,8 @@ use crate::entities::issue_tag;
 use crate::AppState;
 use sea_orm::*;
 
+use super::event_broadcaster::TAG_DELETED;
+
 #[derive(Clone)]
 pub struct IssueTagCrud {
     app_state: AppState,
@@ -89,9 +91,19 @@ impl IssueTagCrud {
     }
 
     pub async fn delete_by_tag_id(&self, tag_id: i32) -> Result<DeleteResult, DbErr> {
-        issue_tag::Entity::delete_many()
+        let result = issue_tag::Entity::delete_many()
             .filter(issue_tag::Column::TagId.eq(tag_id))
             .exec(&self.app_state.db)
-            .await
+            .await?;
+
+        let project_id = &self.app_state.project.clone().unwrap().id;
+        let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+        broadcaster.broadcast_event(
+            *project_id,
+            TAG_DELETED,
+            serde_json::json!({ "project_id": project_id }),
+        );
+
+        return Ok(result);
     }
 }

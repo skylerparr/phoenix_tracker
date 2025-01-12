@@ -105,7 +105,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     };
   }, [originalIssue]);
 
-  const handleIssuesUpdate = (issues: Issue[]) => {
+  const handleIssuesUpdate = async (issues: Issue[]) => {
     setIssues(issues);
   };
 
@@ -155,11 +155,16 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   };
 
   const handleTagsUpdate = async (tags: Tag[]) => {
-    console.log(tags);
     setAllTags(tags);
     setAvailableTags(tags.map((tag) => tag.name));
     const associatedTags = await issueTagService.getTagsForIssue(originalIssue);
-    const associatedTagNames = associatedTags.map((tag) => tag.name);
+
+    const associatedTagNames = associatedTags
+      .sort(
+        (a, b) =>
+          new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+      )
+      .map((tag) => tag.name);
     setSelectedTags(associatedTagNames);
   };
 
@@ -342,6 +347,11 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
 
   const handleDeleteBlocker = async (blockerId: number) => {
     await blockerService.deleteBlocker(blockerId, issue.id);
+  };
+
+  const getChipColor = (tagName: string) => {
+    const tag = allTags.find((t) => t.name === tagName);
+    return tag?.isEpic ? "#673ab7" : "#2e7d32";
   };
 
   return (
@@ -809,6 +819,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         onInputChange={setTagInputValue}
         placeholder="Add labels..."
         handleCreateNew={handleCreateNewTag}
+        getChipColor={getChipColor}
       />
       <Stack
         direction="row"
