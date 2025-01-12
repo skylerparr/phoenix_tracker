@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Box, Tooltip, IconButton } from "@mui/material";
+import { Box, Tooltip, IconButton, Stack, Typography } from "@mui/material";
 import RequireAuth from "../components/RequireAuth";
 import {
   Home as HomeIcon,
@@ -10,6 +10,7 @@ import {
   Add as AddIcon,
   ArrowBack as ArrowBackIcon,
   Sell,
+  Close,
 } from "@mui/icons-material";
 import CreateIssue from "../components/CreateIssue";
 import Backlog from "../components/Backlog";
@@ -53,9 +54,9 @@ const toolbarButtons = [
     component: AcceptedIssuesComponent,
   },
   {
-    tooltip: "Manage Tags",
+    tooltip: "Labels",
     icon: <Sell />,
-    id: "manage_tags",
+    id: "manage_labels",
     component: ManageTagsComponent,
   },
   {
@@ -219,6 +220,26 @@ const Home = () => {
                 flexDirection: "column",
               }}
             >
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                sx={{
+                  paddingLeft: "8px",
+                  borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
+                }}
+              >
+                <Typography variant="subtitle1">
+                  {toolbarButtons.find((btn) => btn.id === buttonId)?.tooltip}
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => handleButtonClick(buttonId)}
+                  sx={{ color: "text.primary" }}
+                >
+                  <Close fontSize="small" />
+                </IconButton>
+              </Stack>
               {toolbarButtons.map((button) => {
                 if (button.id === buttonId) {
                   const Component = button.component;
