@@ -104,10 +104,7 @@ impl ProjectCrud {
             query.build(self.db.get_database_backend())
         );
         match query.all(&self.db).await {
-            Ok(data) => {
-                debug!("Query result data: {:?}", data);
-                Ok(data)
-            }
+            Ok(data) => Ok(data),
             Err(e) => {
                 debug!("Query error: {:?}", e);
                 Err(e)

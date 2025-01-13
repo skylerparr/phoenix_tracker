@@ -4,7 +4,7 @@ use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::{ISSUE_CREATED, ISSUE_DELETED, ISSUE_UPDATED};
 use crate::crud::issue_assignee::IssueAssigneeCrud;
 use crate::crud::issue_tag::IssueTagCrud;
-use crate::crud::status::{STATUS_ACCEPTED, STATUS_UNSTARTED};
+use crate::crud::status::{STATUS_ACCEPTED, STATUS_REJECTED, STATUS_UNSTARTED};
 use crate::crud::task::TaskCrud;
 use crate::entities::issue;
 use crate::entities::issue_assignee;
@@ -13,6 +13,7 @@ use crate::AppState;
 use chrono::Datelike;
 use sea_orm::entity::prelude::*;
 use sea_orm::*;
+use tracing::debug;
 
 #[derive(Clone)]
 pub struct IssueCrud {
@@ -99,12 +100,59 @@ impl IssueCrud {
                             .add(issue::Column::UpdatedAt.gte(monday)),
                     ),
             )
+            .order_by(issue::Column::Priority, Order::Asc)
             .all(&self.app_state.db)
             .await?;
+
         for issue in &mut issues {
             self.populate_issue_tags(issue).await?;
         }
-        Ok(issues)
+        Ok(self.schedule_issues(issues).await?)
+    }
+
+    async fn schedule_issues(&self, issues: Vec<issue::Model>) -> Result<Vec<issue::Model>, DbErr> {
+        let mut scheduled_issues = issues;
+        let project_id = &self.app_state.project.clone().unwrap().id;
+        let weekly_average = self.calculate_weekly_points_average(*project_id).await?;
+
+        let now = chrono::Utc::now();
+        let days_from_monday = now.weekday().num_days_from_monday();
+        let mut current_monday = now.date_naive() - chrono::Duration::days(days_from_monday as i64);
+
+        let mut current_week_points = 0;
+
+        for issue in &mut scheduled_issues {
+            let issue_points = issue.points.unwrap_or(0);
+
+            if issue.status != STATUS_UNSTARTED && issue.status != STATUS_REJECTED {
+                if chrono::Utc::now().weekday() == chrono::Weekday::Sun {
+                    current_monday = current_monday - chrono::Duration::days(7);
+                }
+
+                issue.scheduled_at = Some(
+                    current_monday
+                        .and_time(chrono::NaiveTime::default())
+                        .and_utc()
+                        .into(),
+                );
+            } else {
+                if current_week_points + issue_points >= weekly_average as i32 {
+                    current_monday = current_monday + chrono::Duration::days(7);
+                    current_week_points = issue_points;
+                } else {
+                    current_week_points += issue_points;
+                }
+
+                issue.scheduled_at = Some(
+                    current_monday
+                        .and_time(chrono::NaiveTime::default())
+                        .and_utc()
+                        .into(),
+                );
+            }
+        }
+
+        Ok(scheduled_issues)
     }
 
     pub async fn find_all_accepted(&self, project_id: i32) -> Result<Vec<issue::Model>, DbErr> {
@@ -374,5 +422,30 @@ impl IssueCrud {
         };
 
         Ok(average)
+    }
+    pub async fn get_backlog(&self, project_id: i32) -> Result<Vec<issue::Model>, DbErr> {
+        let issues = issue::Entity::find()
+            .filter(issue::Column::ProjectId.eq(project_id))
+            .filter(issue::Column::Status.ne(STATUS_ACCEPTED))
+            .order_by(issue::Column::Priority, Order::Asc)
+            .all(&self.app_state.db)
+            .await?;
+
+        Ok(issues)
+    }
+
+    pub async fn get_accepted_issues(&self, project_id: i32) -> Result<Vec<issue::Model>, DbErr> {
+        let now = chrono::Utc::now().date_naive();
+        let days_from_monday = now.weekday().num_days_from_monday();
+        let monday = now - chrono::Duration::days(days_from_monday as i64);
+
+        let issues = issue::Entity::find()
+            .filter(issue::Column::ProjectId.eq(project_id))
+            .filter(issue::Column::UpdatedAt.gte(monday))
+            .filter(issue::Column::Status.eq(STATUS_ACCEPTED))
+            .all(&self.app_state.db)
+            .await?;
+
+        Ok(issues)
     }
 }

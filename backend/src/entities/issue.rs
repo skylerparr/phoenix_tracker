@@ -21,6 +21,8 @@ pub struct Model {
     pub updated_at: DateTimeWithTimeZone,
     #[sea_orm(ignore)]
     pub issue_tag_ids: Vec<i32>,
+    #[sea_orm(ignore)]
+    pub scheduled_at: Option<DateTimeWithTimeZone>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

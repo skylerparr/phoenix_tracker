@@ -4,7 +4,6 @@ use crate::crud::issue_tag::IssueTagCrud;
 use crate::entities::tag;
 use crate::AppState;
 use sea_orm::*;
-use tracing::error;
 
 #[derive(Clone)]
 pub struct TagCrud {

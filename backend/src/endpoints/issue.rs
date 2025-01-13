@@ -299,7 +299,10 @@ async fn get_all_icebox(Extension(app_state): Extension<AppState>) -> impl IntoR
     let issue_crud = IssueCrud::new(app_state);
     match issue_crud.find_all_icebox(project_id).await {
         Ok(issues) => Ok(Json(issues)),
-        Err(e) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => {
+            info!("Error getting all icebox: {:?}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
     }
 }
 

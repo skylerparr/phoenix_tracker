@@ -87,30 +87,88 @@ const IssueList: React.FC<IssueListProps> = ({
 
     return (
       <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="issues">
+        <Droppable droppableId="issues" direction="vertical">
           {(provided) => (
             <Box {...provided.droppableProps} ref={provided.innerRef}>
-              {issues.map((issue: Issue, index: number) => (
-                <Draggable
-                  key={issue.id}
-                  draggableId={issue.id.toString()}
-                  index={index}
-                >
-                  {(provided) => (
-                    <Box
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                    >
-                      <IssueComponent
-                        issue={issue}
-                        expanded={expandedIssueIds.has(issue.id)}
-                        onToggleExpanded={() => handleExpandIssue(issue.id)}
-                      />
-                    </Box>
-                  )}
-                </Draggable>
-              ))}
+              {/* Future weeks groups */}
+              {enableGrouping &&
+                issues
+                  .map((issue: Issue) => {
+                    if (issue.scheduledAt) {
+                      const currentDate = new Date();
+                      const weeksDiff = Math.floor(
+                        (issue.scheduledAt.getTime() - currentDate.getTime()) /
+                          (7 * 24 * 60 * 60 * 1000),
+                      );
+                      if (weeksDiff > 0) {
+                        return {
+                          issue,
+                          weeksDiff,
+                        };
+                      }
+                    }
+                    return null;
+                  })
+                  .filter((value) => value !== null)
+                  .reduce<{ weeksFromNow: number; issues: Issue[] }[]>(
+                    (acc, curr) => {
+                      if (curr) {
+                        const existingGroup = acc.find(
+                          (group) => group.weeksFromNow === curr.weeksDiff,
+                        );
+                        if (existingGroup) {
+                          existingGroup.issues.push(curr.issue);
+                        } else {
+                          acc.push({
+                            weeksFromNow: curr.weeksDiff,
+                            issues: [curr.issue],
+                          });
+                        }
+                      }
+                      return acc;
+                    },
+                    [],
+                  )
+                  .map((group) => (
+                    <IssueGroup
+                      key={group.weeksFromNow}
+                      issues={group.issues}
+                      weeksFromNow={group.weeksFromNow}
+                    />
+                  ))}
+
+              {/* Current week's issues */}
+              {issues
+                .filter((issue) => {
+                  if (!issue.scheduledAt) return true;
+                  const currentDate = new Date();
+                  const weeksDiff = Math.floor(
+                    (issue.scheduledAt.getTime() - currentDate.getTime()) /
+                      (7 * 24 * 60 * 60 * 1000),
+                  );
+                  return weeksDiff <= 0;
+                })
+                .map((issue: Issue, index: number) => (
+                  <Draggable
+                    key={issue.id}
+                    draggableId={issue.id.toString()}
+                    index={index}
+                  >
+                    {(provided) => (
+                      <Box
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                      >
+                        <IssueComponent
+                          issue={issue}
+                          expanded={expandedIssueIds.has(issue.id)}
+                          onToggleExpanded={() => handleExpandIssue(issue.id)}
+                        />
+                      </Box>
+                    )}
+                  </Draggable>
+                ))}
               {provided.placeholder}
             </Box>
           )}
