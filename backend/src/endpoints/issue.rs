@@ -160,6 +160,7 @@ async fn update_issue(
             payload.work_type,
             payload.target_release_at,
             project_id,
+            None,
         )
         .await
     {
@@ -210,6 +211,12 @@ async fn update_issue_status(app_state: AppState, id: i32, status: i32) -> impl 
     let project_id = app_state.project.clone().unwrap().id;
     let issue_crud = IssueCrud::new(app_state);
     // whenever the status is updated, the is_icebox flag should be set to false
+    let accepted_at = if status == STATUS_ACCEPTED {
+        Some(chrono::Utc::now().with_timezone(&chrono::FixedOffset::east(0)))
+    } else {
+        None
+    };
+
     match issue_crud
         .update(
             id,
@@ -222,6 +229,7 @@ async fn update_issue_status(app_state: AppState, id: i32, status: i32) -> impl 
             None,
             None,
             project_id,
+            accepted_at,
         )
         .await
     {

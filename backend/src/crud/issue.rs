@@ -13,7 +13,7 @@ use crate::AppState;
 use chrono::Datelike;
 use sea_orm::entity::prelude::*;
 use sea_orm::*;
-use tracing::debug;
+use tracing::{debug, error};
 
 #[derive(Clone)]
 pub struct IssueCrud {
@@ -97,7 +97,7 @@ impl IssueCrud {
                     .add(
                         Condition::all()
                             .add(issue::Column::Status.eq(STATUS_ACCEPTED))
-                            .add(issue::Column::UpdatedAt.gte(monday)),
+                            .add(issue::Column::AcceptedAt.gte(monday)),
                     ),
             )
             .order_by(issue::Column::Priority, Order::Asc)
@@ -254,6 +254,7 @@ impl IssueCrud {
         work_type: Option<i32>,
         target_release_at: Option<DateTimeWithTimeZone>,
         project_id: i32,
+        accepted_at: Option<DateTimeWithTimeZone>,
     ) -> Result<issue::Model, DbErr> {
         let txn = self.app_state.db.begin().await?;
 
@@ -297,6 +298,9 @@ impl IssueCrud {
             if is_icebox {
                 issue.status = Set(STATUS_UNSTARTED);
             }
+        }
+        if let Some(accepted_at) = accepted_at {
+            issue.accepted_at = Set(Some(accepted_at));
         }
 
         issue.project_id = Set(project_id);

@@ -17,6 +17,7 @@ pub struct Model {
     pub created_by_id: i32,
     pub target_release_at: Option<DateTimeWithTimeZone>,
     pub lock_version: i32,
+    pub accepted_at: Option<DateTimeWithTimeZone>,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
     #[sea_orm(ignore)]

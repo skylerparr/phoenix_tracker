@@ -12,6 +12,7 @@ export class Issue {
   issueTagIds: number[];
   createdAt: Date;
   updatedAt: Date;
+  acceptedAt: Date | null;
   scheduledAt: Date | null;
 
   constructor(data: any) {
@@ -28,6 +29,7 @@ export class Issue {
     this.issueTagIds = data.issue_tag_ids;
     this.createdAt = new Date(data.created_at);
     this.updatedAt = new Date(data.updated_at);
+    this.acceptedAt = data.accepted_at ? new Date(data.accepted_at) : null;
     this.scheduledAt = data.scheduled_at ? new Date(data.scheduled_at) : null;
   }
 }
