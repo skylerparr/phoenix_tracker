@@ -28,17 +28,34 @@ const GlobalStyles = styled("div")({
     backgroundColor: "#121212",
     color: "#ffffff",
   },
+  "#root": {
+    overflow: "hidden",
+    position: "fixed",
+    width: "100%",
+    height: "100%",
+  },
 });
-
 const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <GlobalStyles />
-      <Container maxWidth={false} disableGutters></Container>
-      <Sidebar />
+      <Container
+        maxWidth={false}
+        disableGutters
+        sx={{
+          height: "100vh",
+          overflow: "hidden",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+        }}
+      >
+        <Sidebar />
+      </Container>
     </ThemeProvider>
   );
 };
-
 export default App;

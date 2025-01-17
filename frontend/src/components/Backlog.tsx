@@ -40,7 +40,6 @@ const Backlog: React.FC = () => {
         className="backlog-content"
         sx={{
           maxHeight: "100vh",
-          overflowY: "auto",
           width: "100%",
         }}
       >

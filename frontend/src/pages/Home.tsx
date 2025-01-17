@@ -211,8 +211,7 @@ const Home = () => {
               sx={{
                 border: "1px solid navy",
                 backgroundColor: "#333333",
-                height: "calc(100vh - 48px)",
-                overflow: "hidden",
+                height: "100vh",
                 flexGrow: 1,
                 minWidth: "250px",
                 maxWidth: "800px",
@@ -227,6 +226,7 @@ const Home = () => {
                 sx={{
                   paddingLeft: "8px",
                   borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
+                  flexShrink: 0,
                 }}
               >
                 <Typography variant="subtitle1">
@@ -240,13 +240,21 @@ const Home = () => {
                   <Close fontSize="small" />
                 </IconButton>
               </Stack>
-              {toolbarButtons.map((button) => {
-                if (button.id === buttonId) {
-                  const Component = button.component;
-                  return <Component key={button.id} />;
-                }
-                return null;
-              })}
+              <Box
+                sx={{
+                  height: 0,
+                  flexGrow: 1,
+                  overflowY: "auto",
+                }}
+              >
+                {toolbarButtons.map((button) => {
+                  if (button.id === buttonId) {
+                    const Component = button.component;
+                    return <Component key={button.id} />;
+                  }
+                  return null;
+                })}
+              </Box>
             </Box>
           ))}
         </Box>

@@ -75,17 +75,9 @@ const MyIssuesComponent: React.FC = () => {
     }
     setExpandedIssueIds(copyOfExpandedIssueIds);
   };
-
   return (
     <Box className="backlog-container">
-      <Box
-        className="backlog-content"
-        sx={{
-          maxHeight: "100vh",
-          overflowY: "auto",
-          width: "100%",
-        }}
-      >
+      <Box className="backlog-content" sx={{ width: "100%" }}>
         <IssueGroup issues={issues} weeksFromNow={0} />
         {!expandedAcceptedIssues ? (
           <Box

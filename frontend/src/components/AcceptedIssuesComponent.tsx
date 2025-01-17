@@ -54,14 +54,7 @@ const AcceptedIssuesComponent: React.FC = () => {
 
   return (
     <Box className="backlog-container">
-      <Box
-        className="backlog-content"
-        sx={{
-          maxHeight: "100vh",
-          overflowY: "auto",
-          width: "100%",
-        }}
-      >
+      <Box className="backlog-content" sx={{ width: "100%" }}>
         {groupIssuesByWeek(issues).map(([weekNum, weekIssues]) => (
           <Box key={weekNum}>
             <IssueGroup issues={weekIssues} weeksFromNow={weekNum} />
