@@ -21,7 +21,6 @@ import SearchComponent from "../components/SearchComponent";
 import AcceptedIssuesComponent from "../components/AcceptedIssuesComponent";
 import IceboxIssuesComponent from "../components/IceboxIssuesComponent";
 import ManageTagsComponent from "../components/ManageTagsComponent";
-
 const toolbarButtons = [
   {
     tooltip: "Create Task",
@@ -212,7 +211,8 @@ const Home = () => {
               sx={{
                 border: "1px solid navy",
                 backgroundColor: "#333333",
-                height: "100vh",
+                height: "calc(100vh - 48px)",
+                overflow: "hidden",
                 flexGrow: 1,
                 minWidth: "250px",
                 maxWidth: "800px",
@@ -249,8 +249,8 @@ const Home = () => {
               })}
             </Box>
           ))}
-        </Box>{" "}
-      </Box>{" "}
+        </Box>
+      </Box>
     </RequireAuth>
   );
 };
