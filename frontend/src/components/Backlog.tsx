@@ -5,6 +5,7 @@ import IssueList from "./IssueList";
 import IssueGroup from "./IssueGroup";
 import { useIssueFilter } from "../hooks/useIssueFilter";
 import AcceptedIssuesToggle from "./AcceptedIssuesToggle";
+import { Issue } from "../models/Issue";
 
 const Backlog: React.FC = () => {
   const {
@@ -17,12 +18,41 @@ const Backlog: React.FC = () => {
     handleIssuesChanged,
   } = useIssueFilter();
 
+  const getWeekNumber = (date: Date): number => {
+    const baseDate = new Date(issues[0].scheduledAt!);
+    baseDate.setHours(0, 0, 0, 0);
+    const targetDate = new Date(date);
+    targetDate.setHours(0, 0, 0, 0);
+    const diff = targetDate.getTime() - baseDate.getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24 * 7));
+  };
+  const groupIssuesByWeek = (issues: Issue[]) => {
+    if (!issues.length) return [];
+
+    const groupedIssues = new Map<number, Issue[]>();
+
+    issues.forEach((issue) => {
+      if (issue.scheduledAt) {
+        const weekNum = getWeekNumber(new Date(issue.scheduledAt));
+        if (!groupedIssues.has(weekNum)) {
+          groupedIssues.set(weekNum, []);
+        }
+        groupedIssues.get(weekNum)?.push(issue);
+      }
+    });
+
+    const result = Array.from(groupedIssues.entries()).sort(
+      ([weekA], [weekB]) => weekA - weekB,
+    );
+    return result;
+  };
   useEffect(() => {
     issueService.subscribeToGetAllIssues(handleIssuesChanged);
     return () => {
       issueService.unsubscribeFromGetAllIssues(handleIssuesChanged);
     };
   }, []);
+
   const handlePriorityUpdates = (updates: [number, number][]) => {
     issueService.bulkUpdatePriorities(updates);
     const sortedIssues = [...issues].sort((a, b) => {
@@ -34,6 +64,7 @@ const Backlog: React.FC = () => {
     });
     setIssues(sortedIssues);
   };
+
   return (
     <Box className="backlog-container">
       <Box
@@ -43,7 +74,6 @@ const Backlog: React.FC = () => {
           width: "100%",
         }}
       >
-        <IssueGroup issues={issues} weeksFromNow={0} />
         {expandedAcceptedIssues ? (
           <IssueList
             issues={acceptedIssues}
@@ -61,12 +91,19 @@ const Backlog: React.FC = () => {
           enableDragDrop={false}
           enableGrouping={false}
         />
-        <IssueList
-          issues={issues}
-          enableDragDrop={true}
-          enableGrouping={true}
-          onDragEnd={handlePriorityUpdates}
-        />
+        {groupIssuesByWeek(issues).map(([weekNum, weekIssues]) => {
+          return (
+            <Box key={weekNum}>
+              <IssueGroup issues={weekIssues} weeksFromNow={weekNum} />
+              <IssueList
+                issues={weekIssues}
+                enableDragDrop={true}
+                enableGrouping={true}
+                onDragEnd={handlePriorityUpdates}
+              />
+            </Box>
+          );
+        })}
       </Box>
     </Box>
   );
