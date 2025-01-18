@@ -314,11 +314,13 @@ impl IssueCrud {
 
         txn.commit().await?;
 
-        let current_user_id = &self.app_state.user.clone().unwrap().id;
-        let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
-        issue_assignee_crud
-            .create(issue.id.clone().unwrap(), *current_user_id)
-            .await?;
+        if let Some(status) = status {
+            let current_user_id = &self.app_state.user.clone().unwrap().id;
+            let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
+            issue_assignee_crud
+                .create(issue.id.clone().unwrap(), *current_user_id)
+                .await?;
+        }
 
         self.populate_issue_tags(&mut result).await?;
         let project_id = &self.app_state.project.clone().unwrap().id;

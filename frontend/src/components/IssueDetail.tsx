@@ -93,6 +93,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         fetchComments(),
         fetchTasks(),
         fetchBlockers(),
+        handleTagsUpdate(),
       ]);
       setIssue(originalIssue);
     };
@@ -154,9 +155,11 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     setBlockers(blockers);
   };
 
-  const handleTagsUpdate = async (tags: Tag[]) => {
-    setAllTags(tags);
-    setAvailableTags(tags.map((tag) => tag.name));
+  const handleTagsUpdate = async () => {
+    const loadTags = await tagService.getAllTags();
+    setAllTags(loadTags);
+    console.log(loadTags);
+    setAvailableTags(loadTags.map((tag) => tag.name));
     const associatedTags = await issueTagService.getTagsForIssue(originalIssue);
 
     const associatedTagNames = associatedTags

@@ -31,6 +31,7 @@ const ManageTagsComponent: React.FC = () => {
     loadTags();
     issueService.subscribeToGetAllIssues(onTagsUpdated);
     tagService.subscribeToGetAllTags(onTagsUpdated);
+    loadTags();
     return () => {
       issueService.unsubscribeFromGetAllIssues(onTagsUpdated);
       tagService.unsubscribeFromGetAllTags(onTagsUpdated);
