@@ -91,7 +91,11 @@ export class UserService extends WebSocketEnabledService<User> {
   }
 
   private async notifyCallbacks(): Promise<void> {
-    this.getAllUsers();
+    this.usersCache = null;
+    const data = await this.getAllUsers();
+    for (const callback of this.callbacks) {
+      callback(data);
+    }
   }
 }
 

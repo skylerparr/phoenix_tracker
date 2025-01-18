@@ -72,27 +72,49 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
   React.useEffect(() => {
     tagService.subscribeToGetAllTags(onTagsUpdated);
     userService.subscribeToGetAllUsers(onUsersUpdated);
+    issueAssigneeService.subscribeToGetAllIssueAssignees(onAssigneesUpdated);
 
     fetchData();
     onUsersUpdated();
     return () => {
       tagService.unsubscribeFromGetAllTags(onTagsUpdated);
       userService.unsubscribeFromGetAllUsers(onUsersUpdated);
+      issueAssigneeService.unsubscribeFromGetAllIssueAssignees(
+        onAssigneesUpdated,
+      );
     };
   }, [issue]);
 
-  const onUsersUpdated = async () => {
-    const users = await userService.getAllUsers();
-    const assignees = await issueAssigneeService.getIssueAssigneesByIssueId(
-      issue.id,
-    );
-
-    const issueUsersFilter = users.filter((user) =>
-      assignees.some((assignee) => assignee.userId === user.id),
-    );
-    setIssueUsers(issueUsersFilter);
+  const onAssigneesUpdated = async () => {
+    try {
+      const assignees = await issueAssigneeService.getIssueAssigneesByIssueId(
+        issue.id,
+      );
+      const users = await userService.getAllUsers();
+      const issueUsersFilter = users.filter((user) =>
+        assignees.some((assignee) => assignee.userId === user.id),
+      );
+      setIssueUsers(issueUsersFilter);
+    } catch (error) {
+      console.error("Error updating assignees:", error);
+    }
   };
 
+  const onUsersUpdated = async () => {
+    try {
+      const users = await userService.getAllUsers();
+      const assignees = await issueAssigneeService.getIssueAssigneesByIssueId(
+        issue.id,
+      );
+
+      const issueUsersFilter = users.filter((user) =>
+        assignees.some((assignee) => assignee.userId === user.id),
+      );
+      setIssueUsers(issueUsersFilter);
+    } catch (error) {
+      console.error("Error updating users:", error);
+    }
+  };
   const fetchData = async () => {
     const associatedTags = await issueTagService.getTagsForIssue(issue);
     setTags(associatedTags);

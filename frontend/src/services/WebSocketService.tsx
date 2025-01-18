@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "../config/ApiConfig";
 import { Issue } from "../models/Issue";
+import { IssueAssignee } from "../models/IssueAssignee";
 import { Tag } from "../models/Tag";
 import { User } from "../models/User";
 import { sessionStorage } from "../store/Session";
@@ -13,6 +14,9 @@ export const TAG_DELETED = "tag_deleted";
 export const USER_CREATED = "user_created";
 export const USER_UPDATED = "user_updated";
 export const USER_DELETED = "user_deleted";
+export const ISSUE_ASSIGNEE_CREATED = "issue_assignee_created";
+export const ISSUE_ASSIGNEE_UPDATED = "issue_assignee_updated";
+export const ISSUE_ASSIGNEE_DELETED = "issue_assignee_deleted";
 
 export class WebsocketService {
   private static socket: WebSocket;
@@ -203,5 +207,53 @@ export class WebsocketService {
     callback: (data: { id: number }) => void,
   ) {
     this.handleEventSubscription(callback, "unsubscribe", USER_DELETED);
+  }
+
+  public static subscribeToIssueAssigneeCreatedEvent(
+    callback: (data: { issueAssignee: IssueAssignee }) => void,
+  ) {
+    this.handleEventSubscription(callback, "subscribe", ISSUE_ASSIGNEE_CREATED);
+  }
+
+  public static unsubscribeToIssueAssigneeCreatedEvent(
+    callback: (data: { issueAssignee: IssueAssignee }) => void,
+  ) {
+    this.handleEventSubscription(
+      callback,
+      "unsubscribe",
+      ISSUE_ASSIGNEE_CREATED,
+    );
+  }
+
+  public static subscribeToIssueAssigneeUpdatedEvent(
+    callback: (data: { issueAssignee: IssueAssignee }) => void,
+  ) {
+    this.handleEventSubscription(callback, "subscribe", ISSUE_ASSIGNEE_UPDATED);
+  }
+
+  public static unsubscribeToIssueAssigneeUpdatedEvent(
+    callback: (data: { issueAssignee: IssueAssignee }) => void,
+  ) {
+    this.handleEventSubscription(
+      callback,
+      "unsubscribe",
+      ISSUE_ASSIGNEE_UPDATED,
+    );
+  }
+
+  public static subscribeToIssueAssigneeDeletedEvent(
+    callback: (data: { id: number }) => void,
+  ) {
+    this.handleEventSubscription(callback, "subscribe", ISSUE_ASSIGNEE_DELETED);
+  }
+
+  public static unsubscribeToIssueAssigneeDeletedEvent(
+    callback: (data: { id: number }) => void,
+  ) {
+    this.handleEventSubscription(
+      callback,
+      "unsubscribe",
+      ISSUE_ASSIGNEE_DELETED,
+    );
   }
 }

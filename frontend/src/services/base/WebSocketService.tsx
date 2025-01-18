@@ -10,8 +10,10 @@ type WebSocketEventType =
   | "TagDeletedEvent"
   | "UserCreatedEvent"
   | "UserUpdatedEvent"
-  | "UserDeletedEvent";
-
+  | "UserDeletedEvent"
+  | "IssueAssigneeCreatedEvent"
+  | "IssueAssigneeUpdatedEvent"
+  | "IssueAssigneeDeletedEvent";
 type WebSocketServiceType = {
   [K in
     | `subscribeTo${WebSocketEventType}`
