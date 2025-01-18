@@ -173,9 +173,6 @@ async fn update_issue(
     let project_id = app_state.project.clone().unwrap().id;
 
     let issue_crud = IssueCrud::new(app_state);
-    debug!("=====================================================================================================================================================");
-    debug!("Updating issue {:?}", id);
-    debug!("payload: {:?}", payload);
 
     match issue_crud
         .update(

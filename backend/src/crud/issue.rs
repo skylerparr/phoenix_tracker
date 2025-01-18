@@ -258,36 +258,26 @@ impl IssueCrud {
     ) -> Result<issue::Model, DbErr> {
         let txn = self.app_state.db.begin().await?;
 
-        debug!("points: {:?}", points);
         let issue = issue::Entity::find_by_id(id)
             .one(&txn)
             .await?
             .ok_or(DbErr::Custom("Issue not found".to_owned()))?;
 
-        debug!("Setting current_version");
         let current_version = issue.lock_version;
-        debug!("Converting issue to ActiveModel");
         let mut issue: issue::ActiveModel = issue.into();
 
-        debug!("Checking title");
         if let Some(title) = title {
-            debug!("Setting title: {:?}", title);
             issue.title = Set(title);
         }
 
-        debug!("Checking description");
         if let Some(description) = description {
-            debug!("Setting description: {:?}", description);
             issue.description = Set(Some(description));
         }
 
-        debug!("Checking priority");
         if let Some(priority) = priority {
-            debug!("Setting priority: {:?}", priority);
             issue.priority = Set(priority);
         }
 
-        debug!("points: {:?}", points);
         match points {
             Some(Some(p)) => issue.points = Set(Some(p)),
             Some(None) => issue.points = Set(None),
