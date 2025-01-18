@@ -197,7 +197,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     setIssue(serverUpdatedIssue);
   };
 
-  const handlePointsChange = async (points: number) => {
+  const handlePointsChange = async (points: number | null) => {
     const serverUpdatedIssue = await issueService.updateIssue(issue.id, {
       points,
     });
@@ -601,26 +601,33 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <ThemeProvider theme={lightTheme}>
-                {issue.points !== null && (
-                  <Select
-                    size="small"
-                    value={issue.points}
-                    onChange={(e: SelectChangeEvent<number>) =>
-                      handlePointsChange(Number(e.target.value))
-                    }
-                    sx={{
-                      minWidth: 120,
-                      backgroundColor: "#f6f6f6",
-                    }}
-                  >
-                    {POINTS.map((point) => (
-                      <MenuItem key={point} value={point}>
-                        {point} Points
-                      </MenuItem>
-                    ))}
-                  </Select>
-                )}
-              </ThemeProvider>
+                <Select
+                  size="small"
+                  value={issue.points ?? "unestimated"}
+                  onChange={(e: SelectChangeEvent<number | "unestimated">) =>
+                    handlePointsChange(
+                      e.target.value === "unestimated"
+                        ? null
+                        : Number(e.target.value),
+                    )
+                  }
+                  sx={{
+                    minWidth: 120,
+                    backgroundColor: "#f6f6f6",
+                  }}
+                >
+                  <MenuItem value="unestimated">
+                    <Typography sx={{ fontStyle: "italic" }}>
+                      Unestimated
+                    </Typography>
+                  </MenuItem>
+                  {POINTS.map((point) => (
+                    <MenuItem key={point} value={point}>
+                      {point} Points
+                    </MenuItem>
+                  ))}
+                </Select>
+              </ThemeProvider>{" "}
             </Box>
           </Stack>
         </Box>

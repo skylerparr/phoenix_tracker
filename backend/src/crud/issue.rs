@@ -248,7 +248,7 @@ impl IssueCrud {
         title: Option<String>,
         description: Option<String>,
         priority: Option<i32>,
-        points: Option<i32>,
+        points: Option<Option<i32>>,
         status: Option<i32>,
         is_icebox: Option<bool>,
         work_type: Option<i32>,
@@ -258,29 +258,39 @@ impl IssueCrud {
     ) -> Result<issue::Model, DbErr> {
         let txn = self.app_state.db.begin().await?;
 
+        debug!("points: {:?}", points);
         let issue = issue::Entity::find_by_id(id)
             .one(&txn)
             .await?
             .ok_or(DbErr::Custom("Issue not found".to_owned()))?;
 
+        debug!("Setting current_version");
         let current_version = issue.lock_version;
+        debug!("Converting issue to ActiveModel");
         let mut issue: issue::ActiveModel = issue.into();
 
+        debug!("Checking title");
         if let Some(title) = title {
+            debug!("Setting title: {:?}", title);
             issue.title = Set(title);
         }
 
+        debug!("Checking description");
         if let Some(description) = description {
+            debug!("Setting description: {:?}", description);
             issue.description = Set(Some(description));
         }
 
+        debug!("Checking priority");
         if let Some(priority) = priority {
+            debug!("Setting priority: {:?}", priority);
             issue.priority = Set(priority);
         }
-
-        if let Some(points) = points {
-            issue.points = Set(Some(points));
-        }
+        debug!("points: {:?}", points);
+        match points {
+            Some(points_value) => issue.points = Set(points_value),
+            None => issue.points = Set(None),
+        };
 
         if let Some(status) = status {
             issue.status = Set(status);
@@ -306,6 +316,7 @@ impl IssueCrud {
         issue.project_id = Set(project_id);
         issue.lock_version = Set(current_version + 1);
 
+        debug!("Updating issue {:?}", issue);
         let mut result = issue.clone().update(&txn).await?;
         if result.lock_version != current_version + 1 {
             txn.rollback().await?;

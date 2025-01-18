@@ -33,7 +33,7 @@ pub struct UpdateIssueRequest {
     title: Option<String>,
     description: Option<String>,
     priority: Option<i32>,
-    points: Option<i32>,
+    points: Option<Option<i32>>,
     status: Option<i32>,
     is_icebox: Option<bool>,
     work_type: Option<i32>,
@@ -164,6 +164,10 @@ async fn update_issue(
     let project_id = app_state.project.clone().unwrap().id;
 
     let issue_crud = IssueCrud::new(app_state);
+    debug!("=====================================================================================================================================================");
+    debug!("Updating issue {:?}", id);
+    debug!("Points: {:?}", payload.points);
+
     match issue_crud
         .update(
             id,
