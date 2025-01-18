@@ -2,6 +2,7 @@ pub mod blocker;
 pub mod comment;
 pub mod event_broadcaster;
 pub mod history;
+pub mod import_export;
 pub mod issue;
 pub mod issue_assignee;
 pub mod issue_tag;

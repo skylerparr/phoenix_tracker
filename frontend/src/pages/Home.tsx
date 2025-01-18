@@ -11,6 +11,7 @@ import {
   ArrowBack as ArrowBackIcon,
   Sell,
   Close,
+  ImportExport as ImportExportIcon,
 } from "@mui/icons-material";
 import CreateIssue from "../components/CreateIssue";
 import Backlog from "../components/Backlog";
@@ -21,6 +22,7 @@ import SearchComponent from "../components/SearchComponent";
 import AcceptedIssuesComponent from "../components/AcceptedIssuesComponent";
 import IceboxIssuesComponent from "../components/IceboxIssuesComponent";
 import ManageTagsComponent from "../components/ManageTagsComponent";
+import ImportExportComponent from "../components/ImportExportComponent";
 const toolbarButtons = [
   {
     tooltip: "Create Task",

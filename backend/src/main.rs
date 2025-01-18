@@ -15,7 +15,8 @@ use axum::{
     Router,
 };
 use endpoints::{
-    auth::auth_routes, blocker::blocker_routes, comment::comment_routes, issue::issue_routes,
+    auth::auth_routes, blocker::blocker_routes, comment::comment_routes,
+    import_export::import_export_routes, issue::issue_routes,
     issue_assignee::issue_assignee_routes, issue_tag::issue_tag_routes, owner::owner_routes,
     project::project_routes, tag::tag_routes, task::task_routes, user::user_routes,
 };
@@ -158,6 +159,7 @@ fn main() {
             .merge(issue_assignee_routes())
             .merge(task_routes())
             .merge(blocker_routes())
+            .merge(import_export_routes())
             .route("/ws", get(websocket::ws_handler))
             .route("/", get(|| async { "Tracker Root" }))
             .layer(middleware::from_fn(logging_middleware))
