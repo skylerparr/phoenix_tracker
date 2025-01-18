@@ -171,6 +171,10 @@ export class IssueService extends BaseService<Issue> {
     if (!response.ok) throw new Error("Failed to fetch weekly points average");
     return response.json();
   }
+
+  async getIssuesByUser(userId: number): Promise<Issue[]> {
+    return this.get<Issue[]>(`/user/${userId}`);
+  }
 }
 
 export const issueService = new IssueService();

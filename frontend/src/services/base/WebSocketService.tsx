@@ -7,7 +7,10 @@ type WebSocketEventType =
   | "IssueDeletedEvent"
   | "TagCreatedEvent"
   | "TagUpdatedEvent"
-  | "TagDeletedEvent";
+  | "TagDeletedEvent"
+  | "UserCreatedEvent"
+  | "UserUpdatedEvent"
+  | "UserDeletedEvent";
 
 type WebSocketServiceType = {
   [K in

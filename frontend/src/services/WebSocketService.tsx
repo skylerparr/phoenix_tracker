@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "../config/ApiConfig";
 import { Issue } from "../models/Issue";
-import { IssueTag } from "../models/IssueTag";
 import { Tag } from "../models/Tag";
+import { User } from "../models/User";
 import { sessionStorage } from "../store/Session";
 
 export const ISSUE_CREATED = "issue_created";
@@ -10,6 +10,9 @@ export const ISSUE_DELETED = "issue_deleted";
 export const TAG_CREATED = "tag_created";
 export const TAG_UPDATED = "tag_updated";
 export const TAG_DELETED = "tag_deleted";
+export const USER_CREATED = "user_created";
+export const USER_UPDATED = "user_updated";
+export const USER_DELETED = "user_deleted";
 
 export class WebsocketService {
   private static socket: WebSocket;
@@ -130,7 +133,6 @@ export class WebsocketService {
   ) {
     this.handleEventSubscription(callback, "unsubscribe", ISSUE_DELETED);
   }
-
   public static subscribeToTagCreatedEvent(
     callback: (data: { tag: Tag }) => void,
   ) {
@@ -165,5 +167,41 @@ export class WebsocketService {
     callback: (data: { id: number }) => void,
   ) {
     this.handleEventSubscription(callback, "unsubscribe", TAG_DELETED);
+  }
+
+  public static subscribeToUserCreatedEvent(
+    callback: (data: { user: User }) => void,
+  ) {
+    this.handleEventSubscription(callback, "subscribe", USER_CREATED);
+  }
+
+  public static unsubscribeToUserCreatedEvent(
+    callback: (data: { user: User }) => void,
+  ) {
+    this.handleEventSubscription(callback, "unsubscribe", USER_CREATED);
+  }
+
+  public static subscribeToUserUpdatedEvent(
+    callback: (data: { user: User }) => void,
+  ) {
+    this.handleEventSubscription(callback, "subscribe", USER_UPDATED);
+  }
+
+  public static unsubscribeToUserUpdatedEvent(
+    callback: (data: { user: User }) => void,
+  ) {
+    this.handleEventSubscription(callback, "unsubscribe", USER_UPDATED);
+  }
+
+  public static subscribeToUserDeletedEvent(
+    callback: (data: { id: number }) => void,
+  ) {
+    this.handleEventSubscription(callback, "subscribe", USER_DELETED);
+  }
+
+  public static unsubscribeToUserDeletedEvent(
+    callback: (data: { id: number }) => void,
+  ) {
+    this.handleEventSubscription(callback, "unsubscribe", USER_DELETED);
   }
 }

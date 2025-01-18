@@ -91,8 +91,7 @@ export class TagService extends WebSocketEnabledService<Tag> {
   }
 
   private async notifyCallbacks(): Promise<void> {
-    this.tagsCache = await this.get<Tag[]>();
-    this.callbacks.forEach((callback) => callback(this.tagsCache!));
+    this.getAllTags();
   }
 }
 

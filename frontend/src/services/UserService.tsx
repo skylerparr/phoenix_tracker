@@ -1,6 +1,5 @@
-import { API_BASE_URL } from "../config/ApiConfig";
+import { WebSocketEnabledService } from "./base/WebSocketService";
 import { User } from "../models/User";
-import { sessionStorage } from "../store/Session";
 
 interface CreateUserRequest {
   name: string;
@@ -12,82 +11,87 @@ interface UpdateUserRequest {
   email?: string;
 }
 
-export class UserService {
-  private baseUrl = `${API_BASE_URL}/users`;
+export class UserService extends WebSocketEnabledService<User> {
+  private usersCache: User[] | null = null;
+  private getAllPromisesCache: ((value: User[]) => void)[] = [];
+  private loading: boolean = false;
+
+  constructor() {
+    super("/users");
+  }
+
+  createInstance(data: any): User {
+    return new User(data);
+  }
 
   async createUser(request: CreateUserRequest): Promise<User> {
-    const response = await fetch(this.baseUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
-      body: JSON.stringify(request),
-    });
-    if (!response.ok) throw new Error("Failed to create user");
-    const data = await response.json();
-    return new User(data);
+    return this.post<User>("", request);
   }
 
   async getAllUsers(): Promise<User[]> {
+    if (this.usersCache) return this.usersCache;
+    if (this.loading) {
+      return new Promise<User[]>((resolve) => {
+        this.getAllPromisesCache.push(resolve);
+      });
+    }
+
+    this.loading = true;
     const response = await fetch(this.baseUrl, {
-      headers: {
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
+      headers: this.getHeaders(),
     });
+
     if (!response.ok) throw new Error("Failed to fetch users");
     const data = await response.json();
-    return data.map((item: any) => new User(item));
+    this.usersCache = data.map((item: any) => this.createInstance(item));
+
+    while (this.getAllPromisesCache.length > 0) {
+      const resolve = this.getAllPromisesCache.pop();
+      if (resolve) {
+        resolve(this.usersCache!);
+      }
+    }
+
+    this.loading = false;
+    return this.usersCache!;
   }
 
   async getUser(id: number): Promise<User> {
-    const response = await fetch(`${this.baseUrl}/${id}`, {
-      headers: {
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
-    });
-    if (!response.ok) throw new Error("Failed to fetch user");
-    const data = await response.json();
-    return new User(data);
+    return this.get<User>(`/${id}`);
   }
 
-  async getUserByEmail(email: string): Promise<User | null> {
-    const response = await fetch(
-      `${this.baseUrl}/by-email?email=${encodeURIComponent(email)}`,
-      {
-        headers: {
-          Authorization: `${sessionStorage.getSession().user?.token}`,
-        },
-      },
-    );
-    if (response.status === 404) return null;
-    if (!response.ok) throw new Error("Failed to fetch user by email");
-    const data = await response.json();
-    return data ? new User(data) : null;
+  async getUserByEmail(email: string): Promise<User> {
+    return this.get<User>(`/by-email?email=${encodeURIComponent(email)}`);
   }
 
   async updateUser(id: number, request: UpdateUserRequest): Promise<User> {
-    const response = await fetch(`${this.baseUrl}/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
-      body: JSON.stringify(request),
-    });
-    if (!response.ok) throw new Error("Failed to update user");
-    const data = await response.json();
-    return new User(data);
+    return this.put<User>(`/${id}`, request);
   }
 
   async deleteUser(id: number): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `${sessionStorage.getSession().user?.token}`,
-      },
-    });
-    if (!response.ok) throw new Error("Failed to delete user");
+    return this.delete(`/${id}`);
+  }
+
+  subscribeToGetAllUsers(callback: (users: User[]) => void): void {
+    this.subscribe(callback, this.notifyCallbacks.bind(this));
+    this.setupWebSocketSubscription(this.notifyCallbacks.bind(this), [
+      "UserCreatedEvent",
+      "UserUpdatedEvent",
+      "UserDeletedEvent",
+    ]);
+  }
+
+  unsubscribeFromGetAllUsers(callback: (users: User[]) => void): void {
+    this.unsubscribe(callback);
+    this.cleanupWebSocketSubscription(this.notifyCallbacks.bind(this), [
+      "UserCreatedEvent",
+      "UserUpdatedEvent",
+      "UserDeletedEvent",
+    ]);
+  }
+
+  private async notifyCallbacks(): Promise<void> {
+    this.getAllUsers();
   }
 }
 

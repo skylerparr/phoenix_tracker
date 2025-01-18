@@ -6,9 +6,11 @@ import { IssueDetail } from "./IssueDetail";
 import IssueList from "./IssueList";
 import { useIssueFilter } from "../hooks/useIssueFilter";
 import AcceptedIssuesToggle from "./AcceptedIssuesToggle";
+import { useSearchParams } from "../hooks/useSearchParams";
 
 export const PARAM_ID = "id";
 export const PARAM_TAG = "tagId";
+export const PARAM_USER_ID = "userId";
 
 const SearchComponent = () => {
   const {
@@ -20,38 +22,28 @@ const SearchComponent = () => {
     handleIssuesChanged,
   } = useIssueFilter();
 
+  const searchParams = useSearchParams();
+
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
     const id = searchParams.get(PARAM_ID);
     const tagId = searchParams.get(PARAM_TAG);
+    const userId = searchParams.get(PARAM_USER_ID);
 
     if (id) {
       fetchIssueById(parseInt(id));
     } else if (tagId) {
       fetchIssuesByTag(parseInt(tagId));
+    } else if (userId) {
+      fetchIssuesByUser(parseInt(userId));
     }
 
-    const handleUrlChange = () => {
-      const newSearchParams = new URLSearchParams(window.location.search);
-      const newId = newSearchParams.get(PARAM_ID);
-      const newTagId = newSearchParams.get(PARAM_TAG);
-
-      if (newId) {
-        fetchIssueById(parseInt(newId));
-      } else if (newTagId) {
-        fetchIssuesByTag(parseInt(newTagId));
-      }
-    };
-
-    window.addEventListener("urlchange", handleUrlChange);
     WebsocketService.unsubscribeToIssueUpdatedEvent(handleIssueUpdated);
     WebsocketService.subscribeToIssueUpdatedEvent(handleIssueUpdated);
 
     return () => {
-      window.removeEventListener("urlchange", handleUrlChange);
       WebsocketService.unsubscribeToIssueUpdatedEvent(handleIssueUpdated);
     };
-  }, []);
+  }, [searchParams]);
 
   const fetchIssueById = async (id: number) => {
     const fetchedIssue = await issueService.getIssue(id);
@@ -65,15 +57,23 @@ const SearchComponent = () => {
     handleIssuesChanged(fetchedIssues);
   };
 
+  const fetchIssuesByUser = async (userId: number) => {
+    const fetchedIssues = await issueService.getIssuesByUser(userId);
+    handleIssuesChanged(fetchedIssues);
+  };
+
   const handleIssueUpdated = () => {
     const newSearchParams = new URLSearchParams(window.location.search);
     const id = newSearchParams.get(PARAM_ID);
     const tagId = newSearchParams.get(PARAM_TAG);
+    const userId = newSearchParams.get(PARAM_USER_ID);
 
     if (id) {
       fetchIssueById(parseInt(id));
     } else if (tagId) {
       fetchIssuesByTag(parseInt(tagId));
+    } else if (userId) {
+      fetchIssuesByUser(parseInt(userId));
     }
   };
 

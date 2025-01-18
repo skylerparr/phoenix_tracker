@@ -1,6 +1,6 @@
 import React from "react";
 import { Issue } from "../models/Issue";
-import { Box, Typography, Stack, Button } from "@mui/material";
+import { Box, Typography, Stack, Button, Link } from "@mui/material";
 import { PointsIcon } from "./PointsIcon";
 import WorkTypeIcon from "./WorkTypeIcons";
 import StatusButton from "./StatusButton";
@@ -11,9 +11,12 @@ import {
 } from "../services/StatusService";
 import { IssueDetail } from "./IssueDetail";
 import { issueTagService } from "../services/IssueTagService";
+import { userService } from "../services/UserService";
+import { issueAssigneeService } from "../services/IssueAssigneeService";
 import { tagService } from "../services/TagService";
 import { Tag } from "../models/Tag";
-import { PARAM_TAG } from "./SearchComponent";
+import { User } from "../models/User";
+import { PARAM_TAG, PARAM_USER_ID } from "./SearchComponent";
 
 interface IssueComponentProps {
   issue: Issue;
@@ -40,28 +43,55 @@ export const getBackgroundColor = (issue: Issue | undefined) => {
   }
 };
 
-export const searchTagsForIssue = (tagId: number) => {
+const updateUrlWithParam = (param: string, value: string) => {
   const url = new URL(window.location.href);
-  url.searchParams.set(PARAM_TAG, tagId.toString());
+  url.searchParams.forEach((_, key) => {
+    url.searchParams.delete(key);
+  });
+  url.searchParams.set(param, value);
   window.history.pushState({}, "", url);
+};
+
+export const searchTagsForIssue = (tagId: number) => {
+  updateUrlWithParam(PARAM_TAG, tagId.toString());
   window.dispatchEvent(new Event("urlchange"));
 };
 
+const userClickHandler = (user: User) => {
+  updateUrlWithParam(PARAM_USER_ID, user.id.toString());
+  window.dispatchEvent(new PopStateEvent("popstate"));
+};
 export const IssueComponent: React.FC<IssueComponentProps> = ({
   issue,
   expanded,
   onToggleExpanded,
 }) => {
   const [tags, setTags] = React.useState<Tag[]>([]);
+  const [issueUsers, setIssueUsers] = React.useState<User[]>([]);
 
   React.useEffect(() => {
     tagService.subscribeToGetAllTags(onTagsUpdated);
+    userService.subscribeToGetAllUsers(onUsersUpdated);
 
     fetchData();
+    onUsersUpdated();
     return () => {
       tagService.unsubscribeFromGetAllTags(onTagsUpdated);
+      userService.unsubscribeFromGetAllUsers(onUsersUpdated);
     };
   }, [issue]);
+
+  const onUsersUpdated = async () => {
+    const users = await userService.getAllUsers();
+    const assignees = await issueAssigneeService.getIssueAssigneesByIssueId(
+      issue.id,
+    );
+
+    const issueUsersFilter = users.filter((user) =>
+      assignees.some((assignee) => assignee.userId === user.id),
+    );
+    setIssueUsers(issueUsersFilter);
+  };
 
   const fetchData = async () => {
     const associatedTags = await issueTagService.getTagsForIssue(issue);
@@ -101,7 +131,40 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
                 }}
               >
                 {issue.title}
-              </Typography>
+                <Typography component="span" sx={{ ml: 1 }}>
+                  {issueUsers.length > 0 && (
+                    <>
+                      (
+                      {issueUsers.map((user, index) => (
+                        <>
+                          {index > 0 && ", "}
+                          <Link
+                            key={user.id}
+                            component="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              userClickHandler(user);
+                            }}
+                            sx={{
+                              textDecoration: "underline",
+                              color: "blue",
+                              "&:hover": {
+                                textDecoration: "none",
+                              },
+                            }}
+                          >
+                            {user.name
+                              .split(" ")
+                              .map((word) => word[0])
+                              .join("")}
+                          </Link>
+                        </>
+                      ))}
+                      )
+                    </>
+                  )}
+                </Typography>{" "}
+              </Typography>{" "}
               <Stack direction="row" spacing={1}>
                 {tags.map((tag: Tag) => (
                   <Button

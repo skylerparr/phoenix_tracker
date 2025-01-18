@@ -64,6 +64,22 @@ pub fn issue_routes() -> Router<AppState> {
             "/issues/weekly-points-average",
             get(get_weekly_points_average),
         )
+        .route("/issues/user/:id", get(get_issues_by_user))
+}
+
+#[axum::debug_handler]
+async fn get_issues_by_user(
+    Extension(app_state): Extension<AppState>,
+    Path(user_id): Path<i32>,
+) -> impl IntoResponse {
+    let issue_crud = IssueCrud::new(app_state);
+    match issue_crud.find_all_by_user_id(user_id).await {
+        Ok(issues) => Ok(Json(issues)),
+        Err(e) => {
+            info!("Error getting issues for user {}: {:?}", user_id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
 #[axum::debug_handler]
 pub async fn create_issue(
