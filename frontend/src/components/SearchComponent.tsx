@@ -88,6 +88,9 @@ const SearchComponent = () => {
     );
   }
 
+  const nonIceboxIssues = issues.filter((issue) => !issue.isIcebox);
+  const iceboxIssues = issues.filter((issue) => issue.isIcebox);
+
   return (
     <Box>
       {issues.length > 0 ? (
@@ -110,7 +113,12 @@ const SearchComponent = () => {
             enableGrouping={false}
           />
           <IssueList
-            issues={issues}
+            issues={nonIceboxIssues}
+            enableDragDrop={false}
+            enableGrouping={false}
+          />
+          <IssueList
+            issues={iceboxIssues}
             enableDragDrop={false}
             enableGrouping={false}
           />

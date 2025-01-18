@@ -59,9 +59,11 @@ const MyIssuesComponent: React.FC = () => {
     setAcceptedIssues(sortedAccepted);
     setInprogressIssues(sortedInProgressWithDate);
 
-    const sortedPrioritizable = prioritizable.sort(
-      (a, b) => (a.priority ?? -1) - (b.priority ?? -1),
-    );
+    const sortedPrioritizable = prioritizable.sort((a, b) => {
+      if (a.isIcebox && !b.isIcebox) return 1;
+      if (!a.isIcebox && b.isIcebox) return -1;
+      return (a.priority ?? -1) - (b.priority ?? -1);
+    });
 
     setIssues(sortedPrioritizable);
   };
