@@ -27,17 +27,26 @@ pub struct CreateIssueRequest {
     target_release_at: Option<DateTimeWithTimeZone>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateIssueRequest {
-    title: Option<String>,
-    description: Option<String>,
-    priority: Option<i32>,
-    points: Option<Option<i32>>,
-    status: Option<i32>,
-    is_icebox: Option<bool>,
-    work_type: Option<i32>,
-    target_release_at: Option<DateTimeWithTimeZone>,
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub priority: Option<i32>,
+
+    #[serde(default, with = "::serde_with::rust::double_option")]
+    pub points: Option<Option<i32>>,
+    #[serde(default)]
+    pub status: Option<i32>,
+    #[serde(default)]
+    pub is_icebox: Option<bool>,
+    #[serde(default)]
+    pub work_type: Option<i32>,
+    #[serde(default)]
+    pub target_release_at: Option<DateTimeWithTimeZone>,
 }
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -166,7 +175,7 @@ async fn update_issue(
     let issue_crud = IssueCrud::new(app_state);
     debug!("=====================================================================================================================================================");
     debug!("Updating issue {:?}", id);
-    debug!("Points: {:?}", payload.points);
+    debug!("payload: {:?}", payload);
 
     match issue_crud
         .update(

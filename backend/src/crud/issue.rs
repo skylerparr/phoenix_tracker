@@ -286,11 +286,13 @@ impl IssueCrud {
             debug!("Setting priority: {:?}", priority);
             issue.priority = Set(priority);
         }
+
         debug!("points: {:?}", points);
         match points {
-            Some(points_value) => issue.points = Set(points_value),
-            None => issue.points = Set(None),
-        };
+            Some(Some(p)) => issue.points = Set(Some(p)),
+            Some(None) => issue.points = Set(None),
+            None => {}
+        }
 
         if let Some(status) = status {
             issue.status = Set(status);
