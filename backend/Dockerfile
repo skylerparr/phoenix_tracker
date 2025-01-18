@@ -1,14 +1,23 @@
-FROM rust:1.70 as builder
+FROM rust:1.81.0 as builder
 
 WORKDIR /usr/src/app
 COPY . .
 
-RUN cargo build --release
+RUN cargo update --aggressive && \
+    rm -f Cargo.lock && \
+    cargo generate-lockfile && \
+    RUSTFLAGS="-C opt-level=3" cargo build --release
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
+
+RUN apt-get update && \
+    apt-get install -y openssl libssl3 ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/local/bin
 
-COPY --from=builder /usr/src/app/target/release/rust-app ./rust-app
+COPY --from=builder /usr/src/app/target/release/tracker ./tracker
 
-CMD ["./rust-app"]
+CMD ["./tracker"]
+
+
