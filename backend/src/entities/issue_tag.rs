@@ -8,8 +8,9 @@ pub struct Model {
     pub issue_id: i32,
     #[sea_orm(primary_key)]
     pub tag_id: i32,
+    pub created_at: DateTime,
+    pub updated_at: DateTime,
 }
-
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(

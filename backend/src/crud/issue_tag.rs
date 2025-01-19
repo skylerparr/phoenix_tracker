@@ -54,6 +54,7 @@ impl IssueTagCrud {
     pub async fn find_by_issue_id(&self, issue_id: i32) -> Result<Vec<issue_tag::Model>, DbErr> {
         issue_tag::Entity::find()
             .filter(issue_tag::Column::IssueId.eq(issue_id))
+            .order_by_asc(issue_tag::Column::CreatedAt)
             .all(&self.app_state.db)
             .await
     }

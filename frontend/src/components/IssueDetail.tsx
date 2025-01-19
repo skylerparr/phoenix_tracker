@@ -163,15 +163,10 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   const handleTagsUpdate = async () => {
     const loadTags = await tagService.getAllTags();
     setAllTags(loadTags);
-    console.log(loadTags);
     setAvailableTags(loadTags.map((tag) => tag.name));
     const associatedTags = await issueTagService.getTagsForIssue(originalIssue);
 
     const associatedTagNames = associatedTags
-      .sort(
-        (a, b) =>
-          new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
-      )
       .map((tag) => tag.name);
     setSelectedTags(associatedTagNames);
   };
