@@ -1,12 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Typography,
-  TextField,
-  IconButton,
-  Divider,
-  Tooltip,
-} from "@mui/material";
+import { Box, Typography, TextField, Divider, Tooltip } from "@mui/material";
 import { tagService } from "../services/TagService";
 import { Tag } from "../models/Tag";
 import { issueService } from "../services/IssueService";
@@ -19,14 +12,26 @@ import {
 } from "../services/StatusService";
 import { PROGRESS_COLORS } from "../constants";
 
-const getStatusPercentage = (
+const calculatePointsAndStories = (
   issues: Issue[],
   predicate: (issue: Issue) => boolean,
-): number => {
-  if (!issues?.length) return 0;
-  return (issues.filter(predicate).length / issues.length) * 100;
-};
+) => {
+  const filteredIssues = issues.filter(predicate);
+  const totalPoints = issues.reduce(
+    (sum, issue) => sum + (issue.points || 0),
+    0,
+  );
+  const filteredPoints = filteredIssues.reduce(
+    (sum, issue) => sum + (issue.points || 0),
+    0,
+  );
 
+  return {
+    points: filteredPoints,
+    stories: filteredIssues.length,
+    percentage: totalPoints ? (filteredPoints / totalPoints) * 100 : 0,
+  };
+};
 const tooltipContent = (issues: Issue[]) => (
   <Box sx={{ p: 1 }}>
     {[
@@ -56,17 +61,19 @@ const tooltipContent = (issues: Issue[]) => (
         color: PROGRESS_COLORS.BACKLOG,
       },
     ].map(({ label, predicate, color }) => {
-      const percentage = getStatusPercentage(issues, predicate);
+      const { points, stories, percentage } = calculatePointsAndStories(
+        issues,
+        predicate,
+      );
       if (percentage === 0) return null;
       return (
         <Typography key={label} sx={{ color: color }}>
-          {label}: {percentage.toFixed(1)}%
+          {label}: {percentage.toFixed(1)}% ({points} pts, {stories} stories)
         </Typography>
       );
     })}
   </Box>
 );
-
 const EpicsComponent: React.FC = () => {
   const [epics, setEpics] = useState<Tag[]>([]);
   const [filteredEpics, setFilteredEpics] = useState<Tag[]>([]);
@@ -126,6 +133,40 @@ const EpicsComponent: React.FC = () => {
     setFilteredEpics(filtered);
   }, [searchTerm, epics]);
 
+  const calculateWidth = (
+    epic: Tag,
+    predicate: (issue: Issue) => boolean,
+    issuesMap: Map<Tag, Issue[]>,
+  ): string => {
+    const issues = issuesMap.get(epic);
+    if (!issues?.length) return "0%";
+
+    const totalPoints = issues.reduce(
+      (sum, issue) => sum + (issue.points || 0),
+      0,
+    );
+    const filteredPoints = issues
+      .filter(predicate)
+      .reduce((sum, issue) => sum + (issue.points || 0), 0);
+
+    return `${(filteredPoints / totalPoints) * 100}%`;
+  };
+
+  const getStatusPercentage = (
+    issues: Issue[],
+    predicate: (issue: Issue) => boolean,
+  ): number => {
+    if (!issues?.length) return 0;
+    const totalPoints = issues.reduce(
+      (sum, issue) => sum + (issue.points || 0),
+      0,
+    );
+    const filteredPoints = issues
+      .filter(predicate)
+      .reduce((sum, issue) => sum + (issue.points || 0), 0);
+    return (filteredPoints / totalPoints) * 100;
+  };
+
   return (
     <Box sx={{ width: "100%", backgroundColor: "#f5f5f5" }}>
       <TextField
@@ -161,7 +202,11 @@ const EpicsComponent: React.FC = () => {
                 <Box sx={{ display: "flex", width: "100%" }}>
                   <Box
                     sx={{
-                      width: `${((issuesMap.get(epic)?.filter((issue: any) => issue.status === STATUS_IN_PROGRESS).length || 0) / issuesMap.get(epic)!.length) * 100}%`,
+                      width: calculateWidth(
+                        epic,
+                        (issue) => issue.status === STATUS_IN_PROGRESS,
+                        issuesMap,
+                      ),
                       bgcolor: PROGRESS_COLORS.IN_PROGRESS,
                       height: "8px",
                       borderRadius: "4px 0 0 4px",
@@ -169,28 +214,44 @@ const EpicsComponent: React.FC = () => {
                   />
                   <Box
                     sx={{
-                      width: `${((issuesMap.get(epic)?.filter((issue: any) => issue.status === STATUS_COMPLETED).length || 0) / issuesMap.get(epic)!.length) * 100}%`,
+                      width: calculateWidth(
+                        epic,
+                        (issue) => issue.status === STATUS_COMPLETED,
+                        issuesMap,
+                      ),
                       bgcolor: PROGRESS_COLORS.COMPLETED,
                       height: "8px",
                     }}
                   />
                   <Box
                     sx={{
-                      width: `${((issuesMap.get(epic)?.filter((issue: any) => issue.status === STATUS_ACCEPTED).length || 0) / issuesMap.get(epic)!.length) * 100}%`,
+                      width: calculateWidth(
+                        epic,
+                        (issue) => issue.status === STATUS_ACCEPTED,
+                        issuesMap,
+                      ),
                       bgcolor: PROGRESS_COLORS.ACCEPTED,
                       height: "8px",
                     }}
                   />
                   <Box
                     sx={{
-                      width: `${((issuesMap.get(epic)?.filter((issue: any) => issue.isIcebox).length || 0) / issuesMap.get(epic)!.length) * 100}%`,
+                      width: calculateWidth(
+                        epic,
+                        (issue) => issue.isIcebox,
+                        issuesMap,
+                      ),
                       bgcolor: PROGRESS_COLORS.ICEBOX,
                       height: "8px",
                     }}
                   />
                   <Box
                     sx={{
-                      width: `${((issuesMap.get(epic)?.filter((issue: any) => !issue.isIcebox && !issue.status).length || 0) / issuesMap.get(epic)!.length) * 100}%`,
+                      width: calculateWidth(
+                        epic,
+                        (issue) => !issue.isIcebox && !issue.status,
+                        issuesMap,
+                      ),
                       bgcolor: PROGRESS_COLORS.BACKLOG,
                       height: "8px",
                       borderRadius: "0 4px 4px 0",
