@@ -4,11 +4,13 @@ import { Box } from "@mui/material";
 interface AcceptedIssuesToggleProps {
   acceptedIssuesCount: number;
   onToggle: () => void;
+  enabled: boolean;
 }
 
 const AcceptedIssuesToggle: React.FC<AcceptedIssuesToggleProps> = ({
   acceptedIssuesCount,
   onToggle,
+  enabled,
 }) => {
   if (acceptedIssuesCount === 0) return null;
 
@@ -26,10 +28,15 @@ const AcceptedIssuesToggle: React.FC<AcceptedIssuesToggleProps> = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        "&:hover": {
+          bgcolor: "#a8c1a0",
+        },
       }}
       onClick={onToggle}
     >
-      Show {acceptedIssuesCount} Accepted Issues
+      {enabled
+        ? `Hide ${acceptedIssuesCount} Accepted Issues`
+        : `Show ${acceptedIssuesCount} Accepted Issues`}
     </Box>
   );
 };

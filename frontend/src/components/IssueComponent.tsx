@@ -43,6 +43,24 @@ export const getBackgroundColor = (issue: Issue | undefined) => {
   }
 };
 
+export const getHoverBackgroundColor = (issue: Issue | undefined) => {
+  if (!issue) {
+    return "#e0e0e0";
+  }
+  if (issue.isIcebox) {
+    return "#c9dff0";
+  }
+  switch (issue.status) {
+    case STATUS_IN_PROGRESS:
+      return "#FFFF99";
+    case STATUS_COMPLETED:
+      return "#FFFF99";
+    case STATUS_ACCEPTED:
+      return "#a8c594";
+    default:
+      return "#e0e0e0";
+  }
+};
 const updateUrlWithParam = (param: string, value: string) => {
   const url = new URL(window.location.href);
   url.searchParams.forEach((_, key) => {
@@ -137,6 +155,11 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
             width: "100%",
             bgcolor: getBackgroundColor(issue),
             padding: "5px",
+            "&:hover": {
+              bgcolor: getHoverBackgroundColor(issue),
+              transition: "background-color 0.2s ease",
+              cursor: "pointer",
+            },
           }}
           onClick={onToggleExpanded}
         >

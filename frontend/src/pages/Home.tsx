@@ -11,6 +11,7 @@ import {
   ArrowBack as ArrowBackIcon,
   Sell,
   Close,
+  Stars,
 } from "@mui/icons-material";
 import CreateIssue from "../components/CreateIssue";
 import Backlog from "../components/Backlog";
@@ -21,6 +22,7 @@ import SearchComponent from "../components/SearchComponent";
 import AcceptedIssuesComponent from "../components/AcceptedIssuesComponent";
 import IceboxIssuesComponent from "../components/IceboxIssuesComponent";
 import ManageTagsComponent from "../components/ManageTagsComponent";
+import EpicsComponent from "../components/EpicsComponent";
 
 const toolbarButtons = [
   {
@@ -64,6 +66,12 @@ const toolbarButtons = [
     icon: <SearchIcon />,
     id: "search",
     component: SearchComponent,
+  },
+  {
+    tooltip: "Epics",
+    icon: <Stars />,
+    id: "epics",
+    component: EpicsComponent,
   },
 ];
 const Home = () => {

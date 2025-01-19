@@ -96,15 +96,27 @@ const SearchComponent = () => {
       {issues.length > 0 ? (
         <>
           {expandedAcceptedIssues ? (
-            <IssueList
-              issues={acceptedIssues}
-              enableDragDrop={false}
-              enableGrouping={false}
-            />
+            <>
+              <AcceptedIssuesToggle
+                acceptedIssuesCount={acceptedIssues.length}
+                onToggle={() =>
+                  setExpandedAcceptedIssues(!expandedAcceptedIssues)
+                }
+                enabled={expandedAcceptedIssues}
+              />
+              <IssueList
+                issues={acceptedIssues}
+                enableDragDrop={false}
+                enableGrouping={false}
+              />
+            </>
           ) : (
             <AcceptedIssuesToggle
               acceptedIssuesCount={acceptedIssues.length}
-              onToggle={() => setExpandedAcceptedIssues(true)}
+              onToggle={() =>
+                setExpandedAcceptedIssues(!expandedAcceptedIssues)
+              }
+              enabled={expandedAcceptedIssues}
             />
           )}
           <IssueList
