@@ -10,11 +10,17 @@ import {
   STATUS_ACCEPTED,
   STATUS_REJECTED,
 } from "../services/StatusService";
-import { Issue, POINTS } from "../models/Issue";
+import {
+  Issue,
+  POINTS,
+  WORK_TYPE_CHORE,
+  WORK_TYPE_BUG,
+  WORK_TYPE_FEATURE,
+  WORK_TYPE_RELEASE,
+} from "../models/Issue";
 
 interface StatusButtonProps {
-  issueId: number;
-  status: number | null;
+  issue: Issue;
 }
 
 const StyledButton = styled(Button)(({ theme }) => ({
@@ -23,11 +29,17 @@ const StyledButton = styled(Button)(({ theme }) => ({
   fontWeight: 500,
 }));
 
-const StatusButton: React.FC<StatusButtonProps> = ({ issueId, status }) => {
+const StatusButton: React.FC<StatusButtonProps> = ({ issue }) => {
+  const isChore = issue.workType === WORK_TYPE_CHORE;
+  const showPoints =
+    issue.workType === WORK_TYPE_FEATURE && issue.points === null;
+  const isChoreOrRelease = isChore || issue.workType === WORK_TYPE_RELEASE;
+
   const handleOnEstimated = (points: number) => {
-    issueService.updateIssue(issueId, { points });
+    issueService.updateIssue(issue.id, { points });
   };
-  if (status === null) {
+
+  if (showPoints) {
     return (
       <Box sx={{ whiteSpace: "nowrap" }}>
         {POINTS.map((points) => (
@@ -42,15 +54,7 @@ const StatusButton: React.FC<StatusButtonProps> = ({ issueId, status }) => {
     );
   }
 
-  const statusMap: Map<
-    number,
-    {
-      status: string;
-      color: string;
-      textColor: string;
-      nextStatusHandler: () => Promise<Issue>;
-    }[]
-  > = new Map([
+  const baseStatusMap = new Map([
     [
       STATUS_UNSTARTED,
       [
@@ -58,7 +62,7 @@ const StatusButton: React.FC<StatusButtonProps> = ({ issueId, status }) => {
           status: "Start",
           color: "#ABABAB",
           textColor: "#000000",
-          nextStatusHandler: () => issueService.startIssue(issueId),
+          nextStatusHandler: () => issueService.startIssue(issue.id),
         },
       ],
     ],
@@ -69,70 +73,58 @@ const StatusButton: React.FC<StatusButtonProps> = ({ issueId, status }) => {
           status: "Finish",
           color: "#000080",
           textColor: "#ffffff",
-          nextStatusHandler: () => issueService.finishIssue(issueId),
-        },
-      ],
-    ],
-    [
-      STATUS_COMPLETED,
-      [
-        {
-          status: "Accept",
-          color: "#718548",
-          textColor: "#ffffff",
-          nextStatusHandler: () => issueService.acceptIssue(issueId),
-        },
-        {
-          status: "Reject",
-          color: "#a71f39",
-          textColor: "#ffffff",
-          nextStatusHandler: () => issueService.rejectIssue(issueId),
-        },
-      ],
-    ],
-    [
-      STATUS_REJECTED,
-      [
-        {
-          status: "Restart",
-          color: "#ABABAB",
-          textColor: "#990000",
-          nextStatusHandler: () => issueService.startIssue(issueId),
+          nextStatusHandler: () =>
+            isChoreOrRelease
+              ? issueService.acceptIssue(issue.id)
+              : issueService.finishIssue(issue.id),
         },
       ],
     ],
     [STATUS_ACCEPTED, []],
   ]);
 
+  if (!isChoreOrRelease) {
+    // Add completed/rejected states only for non-chore/non-release items
+    baseStatusMap
+      .set(STATUS_COMPLETED, [
+        {
+          status: "Accept",
+          color: "#718548",
+          textColor: "#ffffff",
+          nextStatusHandler: () => issueService.acceptIssue(issue.id),
+        },
+        {
+          status: "Reject",
+          color: "#a71f39",
+          textColor: "#ffffff",
+          nextStatusHandler: () => issueService.rejectIssue(issue.id),
+        },
+      ])
+      .set(STATUS_REJECTED, [
+        {
+          status: "Restart",
+          color: "#ABABAB",
+          textColor: "#990000",
+          nextStatusHandler: () => issueService.startIssue(issue.id),
+        },
+      ]);
+  }
+
   return (
     <Box sx={{ display: "flex", flexDirection: "row", gap: 0.2 }}>
-      {statusMap
-        .get(status)
-        ?.map(
-          ({
-            status: buttonText,
-            color,
-            textColor,
-            nextStatusHandler,
-          }: {
-            status: string;
-            color: string;
-            textColor: string;
-            nextStatusHandler: () => Promise<Issue>;
-          }) => (
-            <StyledButton
-              key={buttonText}
-              variant="contained"
-              style={{ backgroundColor: color, color: textColor }}
-              disableElevation
-              onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
-                nextStatusHandler()
-              }
-            >
-              {buttonText}
-            </StyledButton>
-          ),
-        )}
+      {baseStatusMap
+        .get(issue.status !== null ? issue.status : STATUS_UNSTARTED)
+        ?.map(({ status: buttonText, color, textColor, nextStatusHandler }) => (
+          <StyledButton
+            key={buttonText}
+            variant="contained"
+            style={{ backgroundColor: color, color: textColor }}
+            disableElevation
+            onClick={() => nextStatusHandler()}
+          >
+            {buttonText}
+          </StyledButton>
+        ))}
     </Box>
   );
 };

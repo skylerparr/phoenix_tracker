@@ -24,7 +24,12 @@ import {
   AcUnit,
 } from "@mui/icons-material";
 import { formatDistanceToNow } from "date-fns";
-import { Issue, POINTS } from "../models/Issue";
+import {
+  Issue,
+  POINTS,
+  WORK_TYPE_FEATURE,
+  WORK_TYPE_CHORE,
+} from "../models/Issue";
 import { issueService } from "../services/IssueService";
 import { workTypes } from "./WorkTypeButtons";
 import WorkTypeIcon from "./WorkTypeIcons";
@@ -478,7 +483,6 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             e.stopPropagation();
             handleDeleteIssue();
           }}
-          disabled={issue.status === STATUS_ACCEPTED}
         >
           <Delete sx={{ fontSize: "14px" }} />
         </IconButton>{" "}
@@ -578,60 +582,63 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
                     </MenuItem>
                   ))}
                 </Select>
-                <StatusButton
-                  status={issue.points === null ? null : issue.status}
-                  issueId={issue.id}
-                />
+                <StatusButton issue={issue} />
               </ThemeProvider>
             </Box>{" "}
           </Stack>
         </Box>
 
-        <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>
-          <Stack direction="row" spacing={2} alignItems="center" sx={{ p: 1 }}>
-            <Typography
-              sx={{
-                width: 120,
-                color: "#666",
-                borderRight: "1px solid #ddd",
-                pr: 2,
-              }}
+        {issue.workType === WORK_TYPE_FEATURE && (
+          <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+              sx={{ p: 1 }}
             >
-              POINTS
-            </Typography>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <ThemeProvider theme={lightTheme}>
-                <Select
-                  size="small"
-                  value={issue.points ?? "unestimated"}
-                  onChange={(e: SelectChangeEvent<number | "unestimated">) =>
-                    handlePointsChange(
-                      e.target.value === "unestimated"
-                        ? null
-                        : Number(e.target.value),
-                    )
-                  }
-                  sx={{
-                    minWidth: 120,
-                    backgroundColor: "#f6f6f6",
-                  }}
-                >
-                  <MenuItem value="unestimated">
-                    <Typography sx={{ fontStyle: "italic" }}>
-                      Unestimated
-                    </Typography>
-                  </MenuItem>
-                  {POINTS.map((point) => (
-                    <MenuItem key={point} value={point}>
-                      {point} Points
+              <Typography
+                sx={{
+                  width: 120,
+                  color: "#666",
+                  borderRight: "1px solid #ddd",
+                  pr: 2,
+                }}
+              >
+                POINTS
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <ThemeProvider theme={lightTheme}>
+                  <Select
+                    size="small"
+                    value={issue.points ?? "unestimated"}
+                    onChange={(e: SelectChangeEvent<number | "unestimated">) =>
+                      handlePointsChange(
+                        e.target.value === "unestimated"
+                          ? null
+                          : Number(e.target.value),
+                      )
+                    }
+                    sx={{
+                      minWidth: 120,
+                      backgroundColor: "#f6f6f6",
+                    }}
+                  >
+                    <MenuItem value="unestimated">
+                      <Typography sx={{ fontStyle: "italic" }}>
+                        Unestimated
+                      </Typography>
                     </MenuItem>
-                  ))}
-                </Select>
-              </ThemeProvider>{" "}
-            </Box>
-          </Stack>
-        </Box>
-
+                    {POINTS.map((point) => (
+                      <MenuItem key={point} value={point}>
+                        {point} Points
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </ThemeProvider>{" "}
+              </Box>
+            </Stack>
+          </Box>
+        )}
         <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>
           <Stack direction="row" spacing={2} alignItems="center" sx={{ p: 1 }}>
             <Typography

@@ -34,7 +34,7 @@ export const useIssueFilter = () => {
 
     const sortedAccepted = accepted.sort(
       (a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        new Date(b.acceptedAt!).getTime() - new Date(a.acceptedAt!).getTime(),
     );
     const sortedInProgressWithDate = sortedInProgress.sort(
       (a, b) =>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Issue } from "../models/Issue";
+import { Issue, WORK_TYPE_FEATURE, WORK_TYPE_CHORE } from "../models/Issue";
 import { Box, Typography, Stack, Button, Link } from "@mui/material";
 import { PointsIcon } from "./PointsIcon";
 import WorkTypeIcon from "./WorkTypeIcons";
@@ -172,7 +172,11 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
               <Typography
                 sx={{
                   color: "black",
-                  fontStyle: issue.points === null ? "italic" : "normal",
+                  fontStyle:
+                    issue.points === null &&
+                    issue.workType === WORK_TYPE_FEATURE
+                      ? "italic"
+                      : "normal",
                 }}
               >
                 {issue.title}
@@ -181,10 +185,9 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
                     <>
                       (
                       {issueUsers.map((user, index) => (
-                        <>
+                        <React.Fragment key={user.id}>
                           {index > 0 && ", "}
                           <Link
-                            key={user.id}
                             component="button"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -203,7 +206,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
                               .map((word) => word[0])
                               .join("")}
                           </Link>
-                        </>
+                        </React.Fragment>
                       ))}
                       )
                     </>
@@ -220,7 +223,11 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
                       color: tag.isEpic ? "#673ab7" : "green",
                       minWidth: "auto",
                       textTransform: "none",
-                      fontStyle: issue.points === null ? "italic" : "normal",
+                      fontStyle:
+                        issue.points === null &&
+                        issue.workType === WORK_TYPE_FEATURE
+                          ? "italic"
+                          : "normal",
                       padding: 0,
                     }}
                     onClick={(e: React.MouseEvent) => {
@@ -234,10 +241,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
               </Stack>
             </Box>
             <Box onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-              <StatusButton
-                status={issue.points === null ? null : issue.status}
-                issueId={issue.id}
-              />
+              <StatusButton issue={issue} />
             </Box>
           </Stack>
         </Box>

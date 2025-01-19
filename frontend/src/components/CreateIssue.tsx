@@ -7,7 +7,7 @@ import PointsButton from "./PointsButtons";
 import WorkTypeButtons from "./WorkTypeButtons";
 import { tagService } from "../services/TagService";
 import { issueTagService } from "../services/IssueTagService";
-import { POINTS } from "../models/Issue";
+import { POINTS, WORK_TYPE_FEATURE } from "../models/Issue";
 import IssueAutoCompleteComponent from "./IssueAutoCompleteComponent";
 import { userService } from "../services/UserService";
 import { issueAssigneeService } from "../services/IssueAssigneeService";
@@ -152,18 +152,20 @@ const CreateIssue: React.FC = () => {
           }
         />
       </Box>
-      <Box sx={{ display: "flex", gap: 0, alignItems: "center" }}>
-        {POINTS.map((points) => (
-          <PointsButton
-            key={points}
-            points={points}
-            isSelected={selectedPoints === points}
-            onPointsSelect={(points: number) =>
-              setSelectedPoints(points === selectedPoints ? null : points)
-            }
-          />
-        ))}
-      </Box>
+      {selectedType === WORK_TYPE_FEATURE && (
+        <Box sx={{ display: "flex", gap: 0, alignItems: "center" }}>
+          {POINTS.map((points) => (
+            <PointsButton
+              key={points}
+              points={points}
+              isSelected={selectedPoints === points}
+              onPointsSelect={(points: number) =>
+                setSelectedPoints(points === selectedPoints ? null : points)
+              }
+            />
+          ))}
+        </Box>
+      )}
       {[
         {
           id: "1",
