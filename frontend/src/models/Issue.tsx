@@ -10,6 +10,7 @@ export class Issue {
   projectId: number;
   createdById: number;
   issueTagIds: number[];
+  targetReleaseAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   acceptedAt: Date | null;
@@ -27,6 +28,9 @@ export class Issue {
     this.projectId = data.project_id;
     this.createdById = data.created_by_id;
     this.issueTagIds = data.issue_tag_ids;
+    this.targetReleaseAt = data.target_release_at
+      ? new Date(data.target_release_at)
+      : null;
     this.createdAt = new Date(data.created_at);
     this.updatedAt = new Date(data.updated_at);
     this.acceptedAt = data.accepted_at ? new Date(data.accepted_at) : null;

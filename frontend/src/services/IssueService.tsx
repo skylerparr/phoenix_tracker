@@ -10,7 +10,7 @@ interface CreateIssueRequest {
   status: number;
   isIcebox: boolean;
   workType: number;
-  targetReleaseAt?: string;
+  targetReleaseAt?: Date | null;
 }
 
 interface UpdateIssueRequest {
@@ -21,7 +21,7 @@ interface UpdateIssueRequest {
   status?: number;
   isIcebox?: boolean;
   workType?: number;
-  targetReleaseAt?: string;
+  targetReleaseAt?: Date | null;
 }
 
 export class IssueService extends BaseService<Issue> {

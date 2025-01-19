@@ -55,6 +55,10 @@ import { taskService } from "../services/TaskService";
 import { Blocker } from "../models/Blocker";
 import { blockerService } from "../services/BlockerService";
 import { getBackgroundColor } from "./IssueComponent";
+import { DatePicker } from "@mui/x-date-pickers";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs, { Dayjs } from "dayjs";
 
 const lightTheme = createTheme({
   palette: {
@@ -90,6 +94,9 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   >([]);
   const [blockers, setBlockers] = useState<Blocker[]>([]);
   const [blocker, setBlocker] = useState<boolean>(false);
+  const [targetReleaseDate, setTargetReleaseDate] = useState<Dayjs | null>(
+    null,
+  );
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -287,6 +294,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     await issueService.updateIssue(issue.id, {
       title: issue.title,
       description: issue.description,
+      targetReleaseAt: issue.targetReleaseAt,
     });
     closeHandler();
   };
@@ -544,7 +552,6 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             </Box>{" "}
           </Stack>
         </Box>
-
         <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>
           <Stack direction="row" spacing={2} alignItems="center" sx={{ p: 1 }}>
             <Typography
@@ -583,7 +590,6 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             </Box>{" "}
           </Stack>
         </Box>
-
         {issue.workType === WORK_TYPE_FEATURE && (
           <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>
             <Stack
@@ -635,6 +641,60 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             </Stack>
           </Box>
         )}
+        {issue.workType === WORK_TYPE_RELEASE && (
+          <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+              sx={{ p: 1 }}
+            >
+              <Typography
+                sx={{
+                  width: 120,
+                  color: "#666",
+                  borderRight: "1px solid #ddd",
+                  pr: 2,
+                }}
+              >
+                Release Date
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="Target Release Date"
+                    value={dayjs(issue.targetReleaseAt)}
+                    onChange={(newValue: Dayjs | null) => {
+                      setIssue({
+                        ...issue,
+                        targetReleaseAt: newValue?.toDate() ?? null,
+                      });
+                    }}
+                    slotProps={{
+                      textField: {
+                        sx: {
+                          backgroundColor: "#f6f6f6",
+                          "& .MuiInputBase-root": {
+                            color: "#4a4a4a",
+                          },
+                          "& .MuiInputLabel-root": {
+                            color: "#4a4a4a",
+                          },
+                          "& .MuiSvgIcon-root": {
+                            color: "#4a4a4a",
+                          },
+                        },
+                      },
+                    }}
+                    sx={{
+                      width: "100%",
+                    }}
+                  />
+                </LocalizationProvider>
+              </Box>
+            </Stack>
+          </Box>
+        )}{" "}
         <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>
           <Stack direction="row" spacing={2} alignItems="center" sx={{ p: 1 }}>
             <Typography
@@ -654,7 +714,6 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             </Box>
           </Stack>
         </Box>
-
         {issue.workType !== WORK_TYPE_RELEASE && (
           <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>
             <Stack

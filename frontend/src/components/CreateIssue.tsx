@@ -7,11 +7,15 @@ import PointsButton from "./PointsButtons";
 import WorkTypeButtons from "./WorkTypeButtons";
 import { tagService } from "../services/TagService";
 import { issueTagService } from "../services/IssueTagService";
-import { POINTS, WORK_TYPE_FEATURE } from "../models/Issue";
+import { POINTS, WORK_TYPE_FEATURE, WORK_TYPE_RELEASE } from "../models/Issue";
 import IssueAutoCompleteComponent from "./IssueAutoCompleteComponent";
 import { userService } from "../services/UserService";
 import { issueAssigneeService } from "../services/IssueAssigneeService";
 import { Tag } from "../models/Tag";
+import { DatePicker } from "@mui/x-date-pickers";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { Dayjs } from "dayjs";
 
 const CreateIssue: React.FC = () => {
   const [selectedType, setSelectedType] = useState<number | null>(null);
@@ -26,6 +30,9 @@ const CreateIssue: React.FC = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [targetReleaseDate, setTargetReleaseDate] = useState<Dayjs | null>(
+    null,
+  );
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -64,6 +71,10 @@ const CreateIssue: React.FC = () => {
         status: STATUS_UNSTARTED,
         isIcebox: false,
         workType: selectedType!,
+        targetReleaseAt:
+          selectedType === WORK_TYPE_RELEASE
+            ? targetReleaseDate?.toDate()
+            : null,
       });
 
       const selectedTagIds = selectedTags
@@ -187,31 +198,63 @@ const CreateIssue: React.FC = () => {
           placeholder: "Add labels...",
           getChipColor: getChipColor,
         },
-      ].map(
-        ({
-          id,
-          options,
-          value,
-          onChange,
-          inputValue,
-          onInputChange,
-          onCreateNew,
-          placeholder,
-          getChipColor,
-        }) => (
-          <IssueAutoCompleteComponent
-            key={id}
-            options={options}
-            value={value}
-            onChange={onChange}
-            inputValue={inputValue}
-            onInputChange={onInputChange}
-            placeholder={placeholder}
-            handleCreateNew={onCreateNew}
-            getChipColor={getChipColor}
+      ]
+        .filter(
+          (item) => !(item.id === "1" && selectedType === WORK_TYPE_RELEASE),
+        )
+        .map(
+          ({
+            id,
+            options,
+            value,
+            onChange,
+            inputValue,
+            onInputChange,
+            onCreateNew,
+            placeholder,
+            getChipColor,
+          }) => (
+            <IssueAutoCompleteComponent
+              key={id}
+              options={options}
+              value={value}
+              onChange={onChange}
+              inputValue={inputValue}
+              onInputChange={onInputChange}
+              placeholder={placeholder}
+              handleCreateNew={onCreateNew}
+              getChipColor={getChipColor}
+            />
+          ),
+        )}
+      {selectedType === WORK_TYPE_RELEASE && (
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            label="Target Release Date"
+            value={targetReleaseDate}
+            onChange={(newValue) => setTargetReleaseDate(newValue)}
+            slotProps={{
+              textField: {
+                sx: {
+                  backgroundColor: "#f6f6f6",
+                  "& .MuiInputBase-root": {
+                    color: "#4a4a4a",
+                  },
+                  "& .MuiInputLabel-root": {
+                    color: "#4a4a4a",
+                  },
+                  "& .MuiSvgIcon-root": {
+                    color: "#4a4a4a",
+                  },
+                },
+              },
+            }}
+            sx={{
+              width: "100%",
+            }}
           />
-        ),
-      )}{" "}
+        </LocalizationProvider>
+      )}
       <TextField
         fullWidth
         placeholder="Description"
