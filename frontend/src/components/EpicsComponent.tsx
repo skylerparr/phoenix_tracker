@@ -11,7 +11,7 @@ import {
   STATUS_IN_PROGRESS,
 } from "../services/StatusService";
 import { PROGRESS_COLORS } from "../constants";
-
+import { searchTagsForIssue } from "./IssueComponent";
 const calculatePointsAndStories = (
   issues: Issue[],
   predicate: (issue: Issue) => boolean,
@@ -271,9 +271,11 @@ const EpicsComponent: React.FC = () => {
             >
               <Stars sx={{ mr: 1, color: "#673ab7" }} />
               <Typography
+                onClick={() => searchTagsForIssue(epic.id)}
                 sx={{
                   color: "#673ab7",
                   fontWeight: issuesMap.get(epic)?.length ? "bold" : "normal",
+                  flexGrow: 1,
                   cursor: "pointer",
                   "&:hover": {
                     textDecoration: "underline",
