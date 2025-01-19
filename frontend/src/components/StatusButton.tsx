@@ -31,6 +31,7 @@ const StyledButton = styled(Button)(({ theme }) => ({
 
 const StatusButton: React.FC<StatusButtonProps> = ({ issue }) => {
   const isChore = issue.workType === WORK_TYPE_CHORE;
+  const isRelease = issue.workType === WORK_TYPE_RELEASE;
   const showPoints =
     issue.workType === WORK_TYPE_FEATURE && issue.points === null;
   const isChoreOrRelease = isChore || issue.workType === WORK_TYPE_RELEASE;
@@ -54,17 +55,33 @@ const StatusButton: React.FC<StatusButtonProps> = ({ issue }) => {
     );
   }
 
-  const baseStatusMap = new Map([
+  interface StatusButtonState {
+    status: string;
+    color: string;
+    textColor: string;
+    nextStatusHandler: () => Promise<Issue>;
+  }
+
+  const baseStatusMap = new Map<number, StatusButtonState[]>([
     [
       STATUS_UNSTARTED,
-      [
-        {
-          status: "Start",
-          color: "#ABABAB",
-          textColor: "#000000",
-          nextStatusHandler: () => issueService.startIssue(issue.id),
-        },
-      ],
+      isRelease
+        ? [
+            {
+              status: "Finish",
+              color: "#000080",
+              textColor: "#ffffff",
+              nextStatusHandler: () => issueService.acceptIssue(issue.id),
+            },
+          ]
+        : [
+            {
+              status: "Start",
+              color: "#ABABAB",
+              textColor: "#000000",
+              nextStatusHandler: () => issueService.startIssue(issue.id),
+            },
+          ],
     ],
     [
       STATUS_IN_PROGRESS,
@@ -82,9 +99,7 @@ const StatusButton: React.FC<StatusButtonProps> = ({ issue }) => {
     ],
     [STATUS_ACCEPTED, []],
   ]);
-
-  if (!isChoreOrRelease) {
-    // Add completed/rejected states only for non-chore/non-release items
+  if (!isChore) {
     baseStatusMap
       .set(STATUS_COMPLETED, [
         {

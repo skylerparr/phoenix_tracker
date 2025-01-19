@@ -1,5 +1,5 @@
 import React from "react";
-import { Issue, WORK_TYPE_FEATURE, WORK_TYPE_CHORE } from "../models/Issue";
+import { Issue, WORK_TYPE_FEATURE, WORK_TYPE_RELEASE } from "../models/Issue";
 import { Box, Typography, Stack, Button, Link } from "@mui/material";
 import { PointsIcon } from "./PointsIcon";
 import WorkTypeIcon from "./WorkTypeIcons";
@@ -31,6 +31,9 @@ export const getBackgroundColor = (issue: Issue | undefined) => {
   if (issue.isIcebox) {
     return "#e4eff6";
   }
+  if (issue.workType === WORK_TYPE_RELEASE) {
+    return "#437aa2";
+  }
   switch (issue.status) {
     case STATUS_IN_PROGRESS:
       return "#FFFFE0";
@@ -49,6 +52,9 @@ export const getHoverBackgroundColor = (issue: Issue | undefined) => {
   }
   if (issue.isIcebox) {
     return "#c9dff0";
+  }
+  if (issue.workType === WORK_TYPE_RELEASE) {
+    return "#326491";
   }
   switch (issue.status) {
     case STATUS_IN_PROGRESS:
@@ -141,7 +147,6 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
   const onTagsUpdated = () => {
     fetchData();
   };
-
   return (
     <Box>
       {expanded ? (
@@ -150,7 +155,6 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
         <Box
           className="issue-container"
           sx={{
-            border: "1px solid #ddd",
             borderRadius: 1,
             width: "100%",
             bgcolor: getBackgroundColor(issue),
@@ -171,7 +175,8 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
             <Box sx={{ flexGrow: 1 }}>
               <Typography
                 sx={{
-                  color: "black",
+                  color:
+                    issue.workType === WORK_TYPE_RELEASE ? "white" : "black",
                   fontStyle:
                     issue.points === null &&
                     issue.workType === WORK_TYPE_FEATURE
@@ -180,39 +185,38 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
                 }}
               >
                 {issue.title}
-                <Typography component="span" sx={{ ml: 1 }}>
-                  {issueUsers.length > 0 && (
-                    <>
-                      (
-                      {issueUsers.map((user, index) => (
-                        <React.Fragment key={user.id}>
-                          {index > 0 && ", "}
-                          <Link
-                            component="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              userClickHandler(user);
-                            }}
-                            sx={{
-                              textDecoration: "underline",
-                              color: "blue",
-                              "&:hover": {
-                                textDecoration: "none",
-                              },
-                            }}
-                          >
-                            {user.name
-                              .split(" ")
-                              .map((word) => word[0])
-                              .join("")}
-                          </Link>
-                        </React.Fragment>
-                      ))}
-                      )
-                    </>
-                  )}
-                </Typography>{" "}
-              </Typography>{" "}
+                {issueUsers.length > 0 && (
+                  <Typography component="span" sx={{ ml: 1, color: "blue" }}>
+                    (
+                    {issueUsers.map((user: any, index: number) => (
+                      <React.Fragment key={user.id}>
+                        {index > 0 && ", "}
+                        <Link
+                          component="button"
+                          onClick={(e: React.MouseEvent) => {
+                            e.stopPropagation();
+                            userClickHandler(user);
+                          }}
+                          sx={{
+                            textDecoration: "underline",
+                            color: "blue",
+                            "&:hover": {
+                              textDecoration: "none",
+                            },
+                          }}
+                        >
+                          {user.name
+                            .split(" ")
+                            .map((word: string) => word[0])
+                            .join("")}
+                        </Link>
+                      </React.Fragment>
+                    ))}
+                    )
+                  </Typography>
+                )}
+              </Typography>
+
               <Stack direction="row" spacing={1}>
                 {tags.map((tag: Tag) => (
                   <Button
@@ -220,7 +224,12 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
                     variant="text"
                     size="small"
                     sx={{
-                      color: tag.isEpic ? "#673ab7" : "green",
+                      color:
+                        issue.workType === WORK_TYPE_RELEASE
+                          ? "#edda87"
+                          : tag.isEpic
+                            ? "#673ab7"
+                            : "green",
                       minWidth: "auto",
                       textTransform: "none",
                       fontStyle:

@@ -117,7 +117,8 @@ impl IssueCrud {
 
         let now = chrono::Utc::now();
         let days_from_monday = now.weekday().num_days_from_monday();
-        let mut current_monday = now.date_naive() - chrono::Duration::days(days_from_monday as i64);
+        let this_monday = now.date_naive() - chrono::Duration::days(days_from_monday as i64);
+        let mut current_monday = this_monday;
 
         let mut current_week_points = 0;
 
@@ -125,12 +126,8 @@ impl IssueCrud {
             let issue_points = issue.points.unwrap_or(0);
 
             if issue.status != STATUS_UNSTARTED && issue.status != STATUS_REJECTED {
-                if chrono::Utc::now().weekday() == chrono::Weekday::Sun {
-                    current_monday = current_monday - chrono::Duration::days(7);
-                }
-
                 issue.scheduled_at = Some(
-                    current_monday
+                    this_monday
                         .and_time(chrono::NaiveTime::default())
                         .and_utc()
                         .into(),
@@ -154,7 +151,6 @@ impl IssueCrud {
 
         Ok(scheduled_issues)
     }
-
     pub async fn find_all_accepted(&self, project_id: i32) -> Result<Vec<issue::Model>, DbErr> {
         let mut issues = issue::Entity::find()
             .filter(issue::Column::ProjectId.eq(project_id))

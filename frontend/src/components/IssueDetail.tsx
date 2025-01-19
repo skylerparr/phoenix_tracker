@@ -28,7 +28,7 @@ import {
   Issue,
   POINTS,
   WORK_TYPE_FEATURE,
-  WORK_TYPE_CHORE,
+  WORK_TYPE_RELEASE,
 } from "../models/Issue";
 import { issueService } from "../services/IssueService";
 import { workTypes } from "./WorkTypeButtons";
@@ -166,8 +166,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     setAvailableTags(loadTags.map((tag) => tag.name));
     const associatedTags = await issueTagService.getTagsForIssue(originalIssue);
 
-    const associatedTagNames = associatedTags
-      .map((tag) => tag.name);
+    const associatedTagNames = associatedTags.map((tag) => tag.name);
     setSelectedTags(associatedTagNames);
   };
 
@@ -560,23 +559,25 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <ThemeProvider theme={lightTheme}>
-                <Select
-                  size="small"
-                  value={issue.status}
-                  onChange={(e: SelectChangeEvent<number>) =>
-                    handleStatusChange(Number(e.target.value))
-                  }
-                  sx={{
-                    minWidth: 120,
-                    backgroundColor: "#f6f6f6",
-                  }}
-                >
-                  {getStatusArray().map((status: Status) => (
-                    <MenuItem key={status.id} value={status.id}>
-                      {status.name}
-                    </MenuItem>
-                  ))}
-                </Select>
+                {issue.workType !== WORK_TYPE_RELEASE && (
+                  <Select
+                    size="small"
+                    value={issue.status}
+                    onChange={(e: SelectChangeEvent<number>) =>
+                      handleStatusChange(Number(e.target.value))
+                    }
+                    sx={{
+                      minWidth: 120,
+                      backgroundColor: "#f6f6f6",
+                    }}
+                  >
+                    {getStatusArray().map((status: Status) => (
+                      <MenuItem key={status.id} value={status.id}>
+                        {status.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                )}
                 <StatusButton issue={issue} />
               </ThemeProvider>
             </Box>{" "}
@@ -654,38 +655,44 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
           </Stack>
         </Box>
 
-        <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>
-          <Stack direction="row" spacing={2} alignItems="center" sx={{ p: 1 }}>
-            <Typography
-              sx={{
-                width: 120,
-                color: "#666",
-                borderRight: "1px solid #ddd",
-                pr: 2,
-              }}
+        {issue.workType !== WORK_TYPE_RELEASE && (
+          <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+              sx={{ p: 1 }}
             >
-              OWNERS
-            </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                width: "100%",
-              }}
-            >
-              <IssueAutoCompleteComponent
-                options={users.map((user: { name: string }) => user.name)}
-                value={selectedUsers}
-                onChange={handleSetUsers}
-                inputValue={userInputValue}
-                onInputChange={setUserTagInputValue}
-                placeholder="Add owners..."
-              />
-            </Box>{" "}
-          </Stack>
-        </Box>
-
+              <Typography
+                sx={{
+                  width: 120,
+                  color: "#666",
+                  borderRight: "1px solid #ddd",
+                  pr: 2,
+                }}
+              >
+                OWNERS
+              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  width: "100%",
+                }}
+              >
+                <IssueAutoCompleteComponent
+                  options={users.map((user: { name: string }) => user.name)}
+                  value={selectedUsers}
+                  onChange={handleSetUsers}
+                  inputValue={userInputValue}
+                  onInputChange={setUserTagInputValue}
+                  placeholder="Add owners..."
+                />
+              </Box>{" "}
+            </Stack>
+          </Box>
+        )}
         <Box sx={{ border: "1px solid #ddd", borderRadius: "4px", p: 1 }}>
           <Stack spacing={1}>
             <Typography variant="caption" sx={{ color: "#666" }}>
