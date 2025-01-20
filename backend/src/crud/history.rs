@@ -34,6 +34,7 @@ impl HistoryCrud {
     pub async fn find_by_issue_id(&self, issue_id: i32) -> Result<Vec<history::Model>, DbErr> {
         history::Entity::find()
             .filter(history::Column::IssueId.eq(issue_id))
+            .order_by_desc(history::Column::CreatedAt)
             .all(&self.db)
             .await
     }

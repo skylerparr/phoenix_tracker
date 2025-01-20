@@ -54,11 +54,12 @@ import { Task } from "../models/Task";
 import { taskService } from "../services/TaskService";
 import { Blocker } from "../models/Blocker";
 import { blockerService } from "../services/BlockerService";
-import { getBackgroundColor } from "./IssueComponent";
+import { getBackgroundColor, updateUrlWithParam } from "./IssueComponent";
 import { DatePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
+import { PARAM_HISTORY_ISSUE_ID } from "./SearchComponent";
 
 const lightTheme = createTheme({
   palette: {
@@ -94,9 +95,6 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   >([]);
   const [blockers, setBlockers] = useState<Blocker[]>([]);
   const [blocker, setBlocker] = useState<boolean>(false);
-  const [targetReleaseDate, setTargetReleaseDate] = useState<Dayjs | null>(
-    null,
-  );
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -364,6 +362,11 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     return tag?.isEpic ? "#673ab7" : "#2e7d32";
   };
 
+  const handleHistory = () => {
+    updateUrlWithParam(PARAM_HISTORY_ISSUE_ID, issue.id.toString());
+    window.dispatchEvent(new Event("urlchange"));
+  };
+
   return (
     <Stack
       spacing={2}
@@ -465,6 +468,10 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             borderRadius: "0px",
           }}
           title="See history of this issue"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleHistory();
+          }}
         >
           <AccessTime sx={{ fontSize: "14px" }} />
         </IconButton>{" "}

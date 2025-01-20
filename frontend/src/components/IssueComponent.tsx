@@ -67,7 +67,7 @@ export const getHoverBackgroundColor = (issue: Issue | undefined) => {
       return "#e0e0e0";
   }
 };
-const updateUrlWithParam = (param: string, value: string) => {
+export const updateUrlWithParam = (param: string, value: string) => {
   const url = new URL(window.location.href);
   url.searchParams.forEach((_, key) => {
     url.searchParams.delete(key);

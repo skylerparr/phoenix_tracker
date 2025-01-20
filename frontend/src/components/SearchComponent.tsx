@@ -11,6 +11,7 @@ import { useSearchParams } from "../hooks/useSearchParams";
 export const PARAM_ID = "id";
 export const PARAM_TAG = "tagId";
 export const PARAM_USER_ID = "userId";
+export const PARAM_HISTORY_ISSUE_ID = "historyIssueId";
 
 const SearchComponent = () => {
   const {

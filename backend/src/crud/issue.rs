@@ -282,31 +282,7 @@ impl IssueCrud {
         let current_user_id = &self.app_state.user.clone().unwrap().id;
         let history_crud = HistoryCrud::new(self.app_state.db.clone());
 
-        if let Some(new_title) = title.clone() {
-            if new_title != issue.title {
-                history_records.push(format!(
-                    "changed title from '{}' to '{}'",
-                    issue.title, new_title
-                ));
-            }
-        }
-
-        if let Some(new_desc) = description.clone() {
-            let old_desc = issue.description.clone().unwrap_or_default();
-            history_records.push(format!(
-                "updated description from '{}' to '{}'",
-                old_desc, new_desc
-            ));
-        }
-
-        if let Some(new_priority) = priority {
-            if new_priority != issue.priority {
-                history_records.push(format!(
-                    "changed priority from {} to {}",
-                    issue.priority, new_priority
-                ));
-            }
-        }
+        if let Some(new_priority) = priority {}
 
         if let Some(new_points) = points {
             let old_points = issue
@@ -323,37 +299,67 @@ impl IssueCrud {
         }
 
         if let Some(new_status) = status {
-            if new_status != issue.status {
-                history_records.push(format!(
-                    "changed status from '{}' to '{}'",
-                    STATUS_MAP.get(&issue.status).unwrap_or(&"unknown"),
-                    STATUS_MAP.get(&new_status).unwrap_or(&"unknown")
-                ));
-            }
+            history_records.push(format!(
+                "changed status from '{}' to '{}'",
+                STATUS_MAP.get(&issue.status).unwrap_or(&"unknown"),
+                STATUS_MAP.get(&new_status).unwrap_or(&"unknown")
+            ));
         }
+
         if let Some(new_work_type) = work_type {
-            if new_work_type != issue.work_type {
-                history_records.push(format!(
-                    "changed type from '{}' to '{}', points will are set to `Unestimated`.",
-                    WORK_TYPE_MAP.get(&issue.work_type).unwrap_or(&"unknown"),
-                    WORK_TYPE_MAP.get(&new_work_type).unwrap_or(&"unknown")
-                ));
-            }
+            history_records.push(format!(
+                "changed type from '{}' to '{}', points will are set to `Unestimated`.",
+                WORK_TYPE_MAP.get(&issue.work_type).unwrap_or(&"unknown"),
+                WORK_TYPE_MAP.get(&new_work_type).unwrap_or(&"unknown")
+            ));
+        }
+
+        if let Some(new_target_release) = target_release_at {
+            history_records.push(format!(
+                "set target release date to '{}'",
+                new_target_release
+            ));
+        }
+
+        if let Some(new_is_icebox) = is_icebox {
+            history_records.push(format!("changed icebox status to '{}'", new_is_icebox));
+        }
+
+        if let Some(new_accepted_at) = accepted_at {
+            history_records.push(format!("set accepted date to '{}'", new_accepted_at));
         }
 
         let current_version = issue.lock_version;
         let mut issue: issue::ActiveModel = issue.into();
 
         if let Some(title) = title {
-            issue.title = Set(title);
+            let old_title = issue.title.clone().unwrap();
+            if old_title != title {
+                issue.title = Set(title.clone());
+                history_records.push(format!("changed title from '{}' to '{}'", old_title, title));
+            }
         }
 
-        if let Some(description) = description {
-            issue.description = Set(Some(description));
+        if let Some(value) = description {
+            let old_description = issue.description.clone().unwrap().unwrap_or_default();
+            if old_description != value {
+                issue.description = Set(Some(value.clone()));
+                history_records.push(format!(
+                    "updated description from '{}' to '{}'",
+                    old_description, value
+                ));
+            }
         }
 
         if let Some(priority) = priority {
-            issue.priority = Set(priority);
+            let old_priority = issue.priority.clone().unwrap();
+            if old_priority != priority {
+                issue.priority = Set(priority);
+                history_records.push(format!(
+                    "changed priority from '{}' to '{}'",
+                    old_priority, priority
+                ));
+            }
         }
 
         match points {
@@ -372,15 +378,18 @@ impl IssueCrud {
             }
             issue.work_type = Set(work_type);
         }
+
         if let Some(target_release_at) = target_release_at {
             issue.target_release_at = Set(Some(target_release_at));
         }
+
         if let Some(is_icebox) = is_icebox {
             issue.is_icebox = Set(is_icebox);
             if is_icebox {
                 issue.status = Set(STATUS_UNSTARTED);
             }
         }
+
         if let Some(accepted_at) = accepted_at {
             issue.accepted_at = Set(Some(accepted_at));
         }
