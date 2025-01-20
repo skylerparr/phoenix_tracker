@@ -31,14 +31,6 @@ impl HistoryCrud {
         history.insert(&self.db).await
     }
 
-    pub async fn find_by_id(&self, id: i32) -> Result<Option<history::Model>, DbErr> {
-        history::Entity::find_by_id(id).one(&self.db).await
-    }
-
-    pub async fn find_all(&self) -> Result<Vec<history::Model>, DbErr> {
-        history::Entity::find().all(&self.db).await
-    }
-
     pub async fn find_by_issue_id(&self, issue_id: i32) -> Result<Vec<history::Model>, DbErr> {
         history::Entity::find()
             .filter(history::Column::IssueId.eq(issue_id))

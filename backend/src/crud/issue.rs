@@ -2,10 +2,13 @@ use crate::crud::blocker::BlockerCrud;
 use crate::crud::comment::CommentCrud;
 use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::{ISSUE_CREATED, ISSUE_DELETED, ISSUE_UPDATED};
+use crate::crud::history::HistoryCrud;
 use crate::crud::issue_assignee::IssueAssigneeCrud;
 use crate::crud::issue_tag::IssueTagCrud;
+use crate::crud::status::STATUS_MAP;
 use crate::crud::status::{STATUS_ACCEPTED, STATUS_REJECTED, STATUS_UNSTARTED};
 use crate::crud::task::TaskCrud;
+use crate::crud::work_type::{WORK_TYPE_FEATURE, WORK_TYPE_MAP};
 use crate::entities::issue;
 use crate::entities::issue_assignee;
 use crate::entities::issue_tag;
@@ -39,8 +42,8 @@ impl IssueCrud {
         created_by_id: i32,
     ) -> Result<issue::Model, DbErr> {
         let issue = issue::ActiveModel {
-            title: Set(title),
-            description: Set(Some(description.unwrap_or_default())),
+            title: Set(title.clone()), // Clone title before moving
+            description: Set(Some(description.clone().unwrap_or_default())),
             priority: Set(priority),
             points: Set(points.unwrap_or_default()),
             status: Set(status),
@@ -52,9 +55,25 @@ impl IssueCrud {
             ..Default::default()
         };
         let mut issue = issue.insert(&self.app_state.db).await?;
+
+        let work_type_name = WORK_TYPE_MAP.get(&work_type).unwrap_or(&"Unknown");
+        let history_record = format!(
+            "created new {} with title: {}, description: {}, points: {:?}",
+            work_type_name,
+            title.clone(),
+            description.as_ref().map_or_else(String::new, |d| d.clone()),
+            points.unwrap_or_default()
+        );
+        let history_crud = HistoryCrud::new(self.app_state.db.clone());
+        history_crud
+            .create(created_by_id, Some(issue.id), None, None, history_record)
+            .await?;
+
         self.populate_issue_tags(&mut issue).await?;
+
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
         broadcaster.broadcast_event(project_id, ISSUE_CREATED, serde_json::json!(issue));
+
         Ok(issue)
     }
 
@@ -259,6 +278,69 @@ impl IssueCrud {
             .await?
             .ok_or(DbErr::Custom("Issue not found".to_owned()))?;
 
+        let mut history_records = Vec::new();
+        let current_user_id = &self.app_state.user.clone().unwrap().id;
+        let history_crud = HistoryCrud::new(self.app_state.db.clone());
+
+        if let Some(new_title) = title.clone() {
+            if new_title != issue.title {
+                history_records.push(format!(
+                    "changed title from '{}' to '{}'",
+                    issue.title, new_title
+                ));
+            }
+        }
+
+        if let Some(new_desc) = description.clone() {
+            let old_desc = issue.description.clone().unwrap_or_default();
+            history_records.push(format!(
+                "updated description from '{}' to '{}'",
+                old_desc, new_desc
+            ));
+        }
+
+        if let Some(new_priority) = priority {
+            if new_priority != issue.priority {
+                history_records.push(format!(
+                    "changed priority from {} to {}",
+                    issue.priority, new_priority
+                ));
+            }
+        }
+
+        if let Some(new_points) = points {
+            let old_points = issue
+                .points
+                .map(|p| p.to_string())
+                .unwrap_or("none".to_string());
+            let new_points_str = new_points
+                .map(|p| p.to_string())
+                .unwrap_or("none".to_string());
+            history_records.push(format!(
+                "updated points from {} to {}",
+                old_points, new_points_str
+            ));
+        }
+
+        if let Some(new_status) = status {
+            if new_status != issue.status {
+                history_records.push(format!(
+                    "changed status from '{}' to '{}'",
+                    STATUS_MAP.get(&issue.status).unwrap_or(&"unknown"),
+                    STATUS_MAP.get(&new_status).unwrap_or(&"unknown")
+                ));
+            }
+        }
+        if let Some(new_work_type) = work_type {
+            if new_work_type != issue.work_type {
+                history_records.push(format!(
+                    "changed type from '{}' to '{}', points will are set to `Unestimated`.",
+                    WORK_TYPE_MAP.get(&issue.work_type).unwrap_or(&"unknown"),
+                    WORK_TYPE_MAP.get(&new_work_type).unwrap_or(&"unknown")
+                ));
+            }
+        }
+
         let current_version = issue.lock_version;
         let mut issue: issue::ActiveModel = issue.into();
 
@@ -285,9 +367,11 @@ impl IssueCrud {
         }
 
         if let Some(work_type) = work_type {
+            if work_type != WORK_TYPE_FEATURE {
+                issue.points = Set(None);
+            }
             issue.work_type = Set(work_type);
         }
-
         if let Some(target_release_at) = target_release_at {
             issue.target_release_at = Set(Some(target_release_at));
         }
@@ -321,6 +405,12 @@ impl IssueCrud {
                 .await?;
         }
 
+        // After the update succeeds, record all history items
+        for record in history_records {
+            history_crud
+                .create(*current_user_id, Some(id), None, None, record)
+                .await?;
+        }
         self.populate_issue_tags(&mut result).await?;
         let project_id = &self.app_state.project.clone().unwrap().id;
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
@@ -329,6 +419,9 @@ impl IssueCrud {
         Ok(result)
     }
     pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {
+        let history_crud = HistoryCrud::new(self.app_state.db.clone());
+        history_crud.delete_by_issue_id(id).await?;
+
         let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
         issue_assignee_crud.delete_all_by_issue_id(id).await?;
 
@@ -340,7 +433,6 @@ impl IssueCrud {
 
         let task_crud = TaskCrud::new(self.app_state.clone());
         task_crud.delete_all_by_issue_id(id).await?;
-
         let blocker_crud = BlockerCrud::new(self.app_state.clone());
         blocker_crud.delete_all_by_issue_id(id).await?;
 
@@ -361,6 +453,8 @@ impl IssueCrud {
     ) -> Result<Vec<issue::Model>, DbErr> {
         let mut updated_issues = Vec::new();
         let txn = self.app_state.db.begin().await?;
+        let history_crud = HistoryCrud::new(self.app_state.db.clone());
+        let current_user_id = &self.app_state.user.clone().unwrap().id;
 
         for (issue_id, new_priority) in issue_priorities {
             let issue = issue::Entity::find_by_id(issue_id)
@@ -369,12 +463,21 @@ impl IssueCrud {
                 .ok_or(DbErr::Custom("Issue not found".to_owned()))?;
 
             let current_version = issue.lock_version;
+            let old_priority = issue.priority;
             let mut issue: issue::ActiveModel = issue.into();
 
             issue.priority = Set(new_priority);
             issue.lock_version = Set(current_version + 1);
 
             let updated_issue = issue.update(&txn).await?;
+
+            // Add history record for priority update
+            let history_record =
+                format!("Updated priority from {} to {}", old_priority, new_priority);
+            history_crud
+                .create(*current_user_id, Some(issue_id), None, None, history_record)
+                .await?;
+
             updated_issues.push(updated_issue);
         }
 
@@ -390,7 +493,6 @@ impl IssueCrud {
 
         Ok(updated_issues)
     }
-
     pub async fn calculate_weekly_points_average(&self, project_id: i32) -> Result<f64, DbErr> {
         let now = chrono::Utc::now().date_naive();
         let mut total_points = 0;
@@ -427,30 +529,5 @@ impl IssueCrud {
         };
 
         Ok(average)
-    }
-    pub async fn get_backlog(&self, project_id: i32) -> Result<Vec<issue::Model>, DbErr> {
-        let issues = issue::Entity::find()
-            .filter(issue::Column::ProjectId.eq(project_id))
-            .filter(issue::Column::Status.ne(STATUS_ACCEPTED))
-            .order_by(issue::Column::Priority, Order::Asc)
-            .all(&self.app_state.db)
-            .await?;
-
-        Ok(issues)
-    }
-
-    pub async fn get_accepted_issues(&self, project_id: i32) -> Result<Vec<issue::Model>, DbErr> {
-        let now = chrono::Utc::now().date_naive();
-        let days_from_monday = now.weekday().num_days_from_monday();
-        let monday = now - chrono::Duration::days(days_from_monday as i64);
-
-        let issues = issue::Entity::find()
-            .filter(issue::Column::ProjectId.eq(project_id))
-            .filter(issue::Column::UpdatedAt.gte(monday))
-            .filter(issue::Column::Status.eq(STATUS_ACCEPTED))
-            .all(&self.app_state.db)
-            .await?;
-
-        Ok(issues)
     }
 }

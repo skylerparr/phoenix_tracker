@@ -1,5 +1,6 @@
 use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::ISSUE_UPDATED;
+use crate::crud::history::HistoryCrud;
 use crate::{entities::comment, AppState};
 use sea_orm::*;
 use tracing::debug;
@@ -25,13 +26,26 @@ impl CommentCrud {
             issue_id, user_id, content
         );
         let comment = comment::ActiveModel {
-            content: Set(content),
+            content: Set(content.clone()),
             issue_id: Set(issue_id),
             user_id: Set(user_id),
             ..Default::default()
         };
-
         let result = comment.insert(&self.app_state.db).await?;
+        let comment_id = result.id.clone();
+        debug!("comment created with id {}", comment_id);
+
+        // Add history entry
+        let history_crud = HistoryCrud::new(self.app_state.db.clone());
+        history_crud
+            .create(
+                user_id,
+                Some(issue_id),
+                Some(comment_id),
+                None,
+                format!("created comment: {}", content),
+            )
+            .await?;
 
         let project_id = &self.app_state.project.clone().unwrap().id;
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());

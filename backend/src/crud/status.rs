@@ -13,7 +13,7 @@ pub const STATUS_REJECTED: i32 = 3;
 pub const STATUS_ACCEPTED: i32 = 4;
 
 lazy_static! {
-    static ref STATUS_MAP: HashMap<i32, &'static str> = {
+    pub static ref STATUS_MAP: HashMap<i32, &'static str> = {
         let mut map = HashMap::new();
         map.insert(STATUS_UNSTARTED, "Unstarted");
         map.insert(STATUS_IN_PROGRESS, "In Progress");
