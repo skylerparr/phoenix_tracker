@@ -93,7 +93,7 @@ async fn auth_middleware(
                     let user_settings_crud = UserSettingCrud::new(app_state.db.clone());
                     if let Ok(user_settings) = user_settings_crud.find_by_user_id(user.id).await {
                         if let Some(project_id) = user_settings.project_id {
-                            let project_crud = ProjectCrud::new(app_state.db.clone());
+                            let project_crud = ProjectCrud::new(app_state.clone());
                             if let Ok(Some(project)) = project_crud.find_by_id(project_id).await {
                                 req.extensions_mut().get_mut::<AppState>().unwrap().project =
                                     Some(project.clone());

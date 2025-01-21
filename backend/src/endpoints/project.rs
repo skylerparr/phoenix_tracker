@@ -46,7 +46,7 @@ async fn create_project(
     match user {
         Some(user) => {
             let owner_crud = OwnerCrud::new(app_state.db.clone());
-            let project_crud = ProjectCrud::new(app_state.db.clone());
+            let project_crud = ProjectCrud::new(app_state.clone());
             let project_user_crud = ProjectUserCrud::new(app_state.clone());
             match owner_crud.create(Some(user.id)).await {
                 Ok(owner) => match project_crud.create(payload.name, owner.id).await {
@@ -73,7 +73,7 @@ async fn create_project(
 }
 #[axum::debug_handler]
 async fn get_all_projects(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
-    let project_crud = ProjectCrud::new(app_state.db);
+    let project_crud = ProjectCrud::new(app_state.clone());
     match project_crud.find_all().await {
         Ok(projects) => Ok(Json(projects)),
         Err(e) => {
@@ -88,7 +88,7 @@ async fn get_project(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
-    let project_crud = ProjectCrud::new(app_state.db);
+    let project_crud = ProjectCrud::new(app_state.clone());
     match project_crud.find_by_id(id).await {
         Ok(Some(project)) => Ok(Json(project)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
@@ -105,7 +105,7 @@ async fn get_all_projects_by_user_id(
     let user = app_state.user.clone();
     match user {
         Some(user) => {
-            let project_crud = ProjectCrud::new(app_state.db);
+            let project_crud = ProjectCrud::new(app_state.clone());
             match project_crud.find_all_projects_by_user_id(user.id).await {
                 Ok(projects) => Ok(Json(projects)),
                 Err(e) => {
@@ -123,7 +123,7 @@ async fn update_project(
     Path(id): Path<i32>,
     Json(payload): Json<UpdateProjectRequest>,
 ) -> impl IntoResponse {
-    let project_crud = ProjectCrud::new(app_state.db);
+    let project_crud = ProjectCrud::new(app_state.clone());
     match project_crud
         .update(id, payload.name, payload.owner_id)
         .await
@@ -145,7 +145,7 @@ async fn delete_project(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> StatusCode {
-    let project_crud = ProjectCrud::new(app_state.db);
+    let project_crud = ProjectCrud::new(app_state.clone());
     match project_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {
@@ -165,7 +165,7 @@ async fn select_project(
     match user {
         Some(user) => {
             debug!("User found: {:?}", user);
-            let project_crud = ProjectCrud::new(app_state.db.clone());
+            let project_crud = ProjectCrud::new(app_state.clone());
             debug!("Creating ProjectCrud instance");
             match project_crud.find_by_id(id).await {
                 Ok(project) => {

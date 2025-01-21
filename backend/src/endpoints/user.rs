@@ -28,6 +28,12 @@ pub struct UpdateUserRequest {
     email: Option<String>,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InviteUserRequest {
+    email: String,
+}
+
 pub fn user_routes() -> Router<AppState> {
     Router::new()
         .route("/users", post(create_user))
@@ -36,8 +42,73 @@ pub fn user_routes() -> Router<AppState> {
         .route("/users/:id", put(update_user))
         .route("/users/:id", delete(delete_user))
         .route("/users/by-email", get(get_user_by_email))
+        .route("/users/invite", post(invite_user))
+        .route("/users/:id/remove", delete(remove_user))
 }
 
+#[axum::debug_handler]
+async fn remove_user(
+    Extension(app_state): Extension<AppState>,
+    Path(user_id): Path<i32>,
+) -> impl IntoResponse {
+    let current_user = app_state.user.clone().unwrap();
+    let project_id = app_state.project.clone().unwrap().id;
+
+    let project_user_crud = ProjectUserCrud::new(app_state.clone());
+
+    match project_user_crud
+        .is_project_owner(current_user.id, project_id)
+        .await
+    {
+        Ok(true) => match project_user_crud.delete(project_id, user_id).await {
+            Ok(_) => StatusCode::NO_CONTENT,
+            Err(e) => {
+                info!("Error removing user {}: {:?}", user_id, e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+        },
+        Ok(false) => StatusCode::FORBIDDEN,
+        Err(e) => {
+            info!("Error checking project owner: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    }
+}
+#[axum::debug_handler]
+async fn invite_user(
+    Extension(app_state): Extension<AppState>,
+    Json(payload): Json<InviteUserRequest>,
+) -> impl IntoResponse {
+    let user_crud = UserCrud::new(app_state.db.clone());
+    let current_user = app_state.user.clone().unwrap();
+    let project_id = app_state.project.clone().unwrap().id;
+    let project_user_crud = ProjectUserCrud::new(app_state.clone());
+
+    match project_user_crud
+        .is_project_owner(current_user.id, project_id)
+        .await
+    {
+        Ok(true) => match user_crud.find_by_email(payload.email).await {
+            Ok(Some(user)) => match project_user_crud.create(project_id, user.id).await {
+                Ok(project_user) => Ok(Json(project_user)),
+                Err(e) => {
+                    info!("Error creating project user association: {:?}", e);
+                    Err(StatusCode::INTERNAL_SERVER_ERROR)
+                }
+            },
+            Ok(None) => Err(StatusCode::NOT_FOUND),
+            Err(e) => {
+                info!("Error finding user by email: {:?}", e);
+                Err(StatusCode::INTERNAL_SERVER_ERROR)
+            }
+        },
+        Ok(false) => Err(StatusCode::FORBIDDEN),
+        Err(e) => {
+            info!("Error checking project owner: {:?}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
 #[axum::debug_handler]
 async fn create_user(
     Extension(app_state): Extension<AppState>,

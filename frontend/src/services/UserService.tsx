@@ -72,6 +72,13 @@ export class UserService extends WebSocketEnabledService<User> {
     return this.delete(`/${id}`);
   }
 
+  async inviteUser(email: string): Promise<User> {
+    return this.post<User>("/invite", { email });
+  }
+  async removeUser(id: number): Promise<void> {
+    return this.delete(`/${id}/remove`);
+  }
+
   subscribeToGetAllUsers(callback: (users: User[]) => void): void {
     this.subscribe(callback, this.notifyCallbacks.bind(this));
     this.setupWebSocketSubscription(this.notifyCallbacks.bind(this), [

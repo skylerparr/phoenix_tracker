@@ -50,9 +50,10 @@ pub async fn ws_handler(
     match token {
         Some(token) => {
             debug!("token = {}", token);
-            let token_crud = TokenCrud::new(state.db.clone());
+                    let project_crud = ProjectCrud::new(state.clone());
             let now = chrono::Utc::now();
             let rx = state.tx.subscribe();
+            let token_crud = TokenCrud::new(state.db.clone());
 
             match token_crud
                 .find_valid_token(token.to_string(), now.into())
@@ -103,7 +104,7 @@ pub async fn handle_socket(
                                         SocketCommand::Subscribe { .. } => {
                                             if let Ok(user_setting) = user_setting_crud.find_by_user_id(user_id).await {
                                                 if let Some(project_id) = user_setting.project_id {
-                                                    let project_crud = ProjectCrud::new(state.db.clone());
+                                                    let project_crud = ProjectCrud::new(state.clone());
                                                     if let Ok(project_users) = project_crud.find_users_by_project_id(project_id).await {
                                                         if project_users.iter().any(|pu| pu.user_id == user_id) {
                                                             let mut ws_state = web_socket_state.lock().await;
@@ -152,3 +153,4 @@ pub async fn handle_socket(
         }
     }
 }
+

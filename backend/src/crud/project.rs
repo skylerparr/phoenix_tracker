@@ -1,15 +1,20 @@
+use crate::crud::issue::IssueCrud;
+use crate::entities::issue;
 use crate::entities::project;
 use crate::entities::project_user;
+use crate::AppState;
+use tokio::sync::broadcast::Sender;
 use sea_orm::*;
+use std::sync::Arc;
 use tracing::debug;
-
+#[derive(Clone)]
 pub struct ProjectCrud {
-    db: DatabaseConnection,
+    state: AppState,
 }
 
 impl ProjectCrud {
-    pub fn new(db: DatabaseConnection) -> Self {
-        Self { db }
+    pub fn new(state: AppState) -> Self {
+        Self { state }
     }
 
     pub async fn create(&self, name: String, owner_id: i32) -> Result<project::Model, DbErr> {
@@ -19,15 +24,15 @@ impl ProjectCrud {
             ..Default::default()
         };
 
-        project.insert(&self.db).await
+        project.insert(&self.state.db).await
     }
 
     pub async fn find_by_id(&self, id: i32) -> Result<Option<project::Model>, DbErr> {
-        project::Entity::find_by_id(id).one(&self.db).await
+        project::Entity::find_by_id(id).one(&self.state.db).await
     }
 
     pub async fn find_all(&self) -> Result<Vec<project::Model>, DbErr> {
-        project::Entity::find().all(&self.db).await
+        project::Entity::find().all(&self.state.db).await
     }
 
     pub async fn find_all_projects_by_user_id(
@@ -47,9 +52,9 @@ impl ProjectCrud {
         );
         debug!(
             "Generated query: {:?}",
-            query.build(self.db.get_database_backend())
+            query.build(self.state.db.get_database_backend())
         );
-        match query.all(&self.db).await {
+        match query.all(&self.state.db).await {
             Ok(data) => {
                 debug!(
                     "Query result IDs: {:?}",
@@ -71,7 +76,7 @@ impl ProjectCrud {
         owner_id: Option<i32>,
     ) -> Result<project::Model, DbErr> {
         let project = project::Entity::find_by_id(id)
-            .one(&self.db)
+            .one(&self.state.db)
             .await?
             .ok_or(DbErr::Custom("Project not found".to_owned()))?;
 
@@ -85,11 +90,11 @@ impl ProjectCrud {
             project.owner_id = Set(owner_id);
         }
 
-        project.update(&self.db).await
+        project.update(&self.state.db).await
     }
 
     pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {
-        project::Entity::delete_by_id(id).exec(&self.db).await
+        project::Entity::delete_by_id(id).exec(&self.state.db).await
     }
 
     pub async fn find_users_by_project_id(
@@ -101,14 +106,34 @@ impl ProjectCrud {
             project_user::Entity::find().filter(project_user::Column::ProjectId.eq(project_id));
         debug!(
             "Generated query: {:?}",
-            query.build(self.db.get_database_backend())
+            query.build(self.state.db.get_database_backend())
         );
-        match query.all(&self.db).await {
+        match query.all(&self.state.db).await {
             Ok(data) => Ok(data),
             Err(e) => {
                 debug!("Query error: {:?}", e);
                 Err(e)
             }
         }
+    }
+
+    pub async fn delete_cascade(&self, id: i32) -> Result<DeleteResult, DbErr> {
+        let issues = issue::Entity::find()
+            .filter(issue::Column::ProjectId.eq(id))
+            .all(&self.state.db)
+            .await?;
+
+        let issue_crud = IssueCrud::new(self.state.clone());
+
+        for issue in issues {
+            issue_crud.delete(issue.id).await?;
+        }
+
+        project_user::Entity::delete_many()
+            .filter(project_user::Column::ProjectId.eq(id))
+            .exec(&self.state.db)
+            .await?;
+
+        project::Entity::delete_by_id(id).exec(&self.state.db).await
     }
 }

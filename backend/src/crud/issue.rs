@@ -493,7 +493,7 @@ impl IssueCrud {
 
         Ok(updated_issues)
     }
-    
+
     pub async fn calculate_weekly_points_average(&self, project_id: i32) -> Result<f64, DbErr> {
         let now = chrono::Utc::now().date_naive();
         let mut total_points = 0;
