@@ -375,16 +375,20 @@ impl IssueCrud {
 
         // Icebox status update
         if let Some(new_is_icebox) = is_icebox {
-            if new_is_icebox {
-                history_records.push("moved to icebox.".to_string());
-            } else {
-                history_records.push("moved to backlog.".to_string());
-            }
-            issue.is_icebox = Set(new_is_icebox);
-            if new_is_icebox {
-                issue.status = Set(STATUS_UNSTARTED);
+            let old_is_icebox = issue.is_icebox.clone().unwrap();
+            if old_is_icebox != new_is_icebox {
+                if new_is_icebox {
+                    history_records.push("moved to icebox.".to_string());
+                } else {
+                    history_records.push("moved to backlog.".to_string());
+                }
+                issue.is_icebox = Set(new_is_icebox);
+                if new_is_icebox {
+                    issue.status = Set(STATUS_UNSTARTED);
+                }
             }
         }
+              
 
         // Accepted date update
         if let Some(new_accepted_at) = accepted_at {
