@@ -1,5 +1,7 @@
 use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::ISSUE_UPDATED;
+use crate::crud::history::HistoryCrud;
+use crate::crud::issue::IssueCrud;
 use crate::entities::blocker;
 use crate::AppState;
 use sea_orm::*;
@@ -19,6 +21,33 @@ impl BlockerCrud {
         if let Some(model) = model {
             return Ok(model);
         }
+
+        let issue_crud = IssueCrud::new(self.app_state.clone());
+        let blocker_issue = issue_crud.find_by_id(blocker_id).await?.unwrap();
+        let blocked_issue = issue_crud.find_by_id(blocked_id).await?.unwrap();
+
+        let history_crud = HistoryCrud::new(self.app_state.db.clone());
+        let current_user_id = &self.app_state.user.clone().unwrap().id;
+
+        history_crud
+            .create(
+                *current_user_id,
+                Some(blocker_id),
+                None,
+                None,
+                format!("blocking issue '{}'", blocked_issue.title),
+            )
+            .await?;
+        history_crud
+            .create(
+                *current_user_id,
+                Some(blocked_id),
+                None,
+                None,
+                format!("blocked by issue '{}'", blocker_issue.title),
+            )
+            .await?;
+
         let blocker = blocker::ActiveModel {
             blocker_id: Set(blocker_id),
             blocked_id: Set(blocked_id),
@@ -64,6 +93,32 @@ impl BlockerCrud {
     }
 
     pub async fn delete(&self, blocker_id: i32, blocked_id: i32) -> Result<DeleteResult, DbErr> {
+        let issue_crud = IssueCrud::new(self.app_state.clone());
+        let blocker_issue = issue_crud.find_by_id(blocker_id).await?.unwrap();
+        let blocked_issue = issue_crud.find_by_id(blocked_id).await?.unwrap();
+
+        let history_crud = HistoryCrud::new(self.app_state.db.clone());
+        let current_user_id = &self.app_state.user.clone().unwrap().id;
+
+        history_crud
+            .create(
+                *current_user_id,
+                Some(blocker_id),
+                None,
+                None,
+                format!("no longer blocking issue '{}'", blocked_issue.title),
+            )
+            .await?;
+        history_crud
+            .create(
+                *current_user_id,
+                Some(blocked_id),
+                None,
+                None,
+                format!("no longer blocked by issue '{}'", blocker_issue.title),
+            )
+            .await?;
+
         let result = blocker::Entity::delete_many()
             .filter(blocker::Column::BlockerId.eq(blocker_id))
             .filter(blocker::Column::BlockedId.eq(blocked_id))

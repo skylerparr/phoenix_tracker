@@ -1,13 +1,7 @@
 use crate::crud::history::HistoryCrud;
 use crate::AppState;
 use axum::Extension;
-use axum::{
-    extract::Path,
-    http::StatusCode,
-    response::IntoResponse,
-    routing::{get, post},
-    Json, Router,
-};
+use axum::{extract::Path, http::StatusCode, response::IntoResponse, routing::get, Json, Router};
 use serde::Deserialize;
 use tracing::debug;
 

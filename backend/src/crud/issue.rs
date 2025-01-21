@@ -16,7 +16,6 @@ use crate::AppState;
 use chrono::Datelike;
 use sea_orm::entity::prelude::*;
 use sea_orm::*;
-use tracing::{debug, error};
 
 #[derive(Clone)]
 pub struct IssueCrud {
@@ -272,7 +271,6 @@ impl IssueCrud {
         accepted_at: Option<DateTimeWithTimeZone>,
     ) -> Result<issue::Model, DbErr> {
         let txn = self.app_state.db.begin().await?;
-
         let issue = issue::Entity::find_by_id(id)
             .one(&txn)
             .await?
@@ -281,12 +279,15 @@ impl IssueCrud {
         let mut history_records = Vec::new();
         let current_user_id = &self.app_state.user.clone().unwrap().id;
         let history_crud = HistoryCrud::new(self.app_state.db.clone());
+        let current_version = issue.lock_version;
+        let mut issue: issue::ActiveModel = issue.into();
 
-        if let Some(new_priority) = priority {}
-
+        // Points update
         if let Some(new_points) = points {
             let old_points = issue
                 .points
+                .clone()
+                .unwrap()
                 .map(|p| p.to_string())
                 .unwrap_or("none".to_string());
             let new_points_str = new_points
@@ -296,109 +297,105 @@ impl IssueCrud {
                 "updated points from {} to {}",
                 old_points, new_points_str
             ));
+            match new_points {
+                Some(p) => issue.points = Set(Some(p)),
+                None => issue.points = Set(None),
+            }
         }
 
+        // Status update
         if let Some(new_status) = status {
+            let old_status = issue.status.clone().unwrap();
             history_records.push(format!(
                 "changed status from '{}' to '{}'",
-                STATUS_MAP.get(&issue.status).unwrap_or(&"unknown"),
+                STATUS_MAP.get(&old_status).unwrap_or(&"unknown"),
                 STATUS_MAP.get(&new_status).unwrap_or(&"unknown")
             ));
+            issue.status = Set(new_status);
         }
 
+        // Work type update
         if let Some(new_work_type) = work_type {
+            let old_work_type = issue.work_type.clone().unwrap();
             history_records.push(format!(
                 "changed type from '{}' to '{}', points will are set to `Unestimated`.",
-                WORK_TYPE_MAP.get(&issue.work_type).unwrap_or(&"unknown"),
+                WORK_TYPE_MAP.get(&old_work_type).unwrap_or(&"unknown"),
                 WORK_TYPE_MAP.get(&new_work_type).unwrap_or(&"unknown")
             ));
+            issue.work_type = Set(new_work_type);
+            if new_work_type != WORK_TYPE_FEATURE {
+                issue.points = Set(None);
+            }
         }
 
+        // Title update
+        if let Some(new_title) = title {
+            let old_title = issue.title.clone().unwrap();
+            if old_title != new_title {
+                history_records.push(format!(
+                    "changed title from '{}' to '{}'",
+                    old_title, new_title
+                ));
+                issue.title = Set(new_title);
+            }
+        }
+
+        // Description update
+        if let Some(new_description) = description {
+            let old_description = issue.description.clone().unwrap().unwrap_or_default();
+            if old_description != new_description {
+                history_records.push(format!(
+                    "updated description from '{}' to '{}'",
+                    old_description, new_description
+                ));
+                issue.description = Set(Some(new_description));
+            }
+        }
+
+        // Priority update
+        if let Some(new_priority) = priority {
+            let old_priority = issue.priority.clone().unwrap();
+            if old_priority != new_priority {
+                history_records.push(format!(
+                    "changed priority from '{}' to '{}'",
+                    old_priority, new_priority
+                ));
+                issue.priority = Set(new_priority);
+            }
+        }
+
+        // Target release date update
         if let Some(new_target_release) = target_release_at {
             history_records.push(format!(
                 "set target release date to '{}'",
                 new_target_release
             ));
+            issue.target_release_at = Set(Some(new_target_release));
         }
 
+        // Icebox status update
         if let Some(new_is_icebox) = is_icebox {
-            history_records.push(format!("changed icebox status to '{}'", new_is_icebox));
-        }
-
-        if let Some(new_accepted_at) = accepted_at {
-            history_records.push(format!("set accepted date to '{}'", new_accepted_at));
-        }
-
-        let current_version = issue.lock_version;
-        let mut issue: issue::ActiveModel = issue.into();
-
-        if let Some(title) = title {
-            let old_title = issue.title.clone().unwrap();
-            if old_title != title {
-                issue.title = Set(title.clone());
-                history_records.push(format!("changed title from '{}' to '{}'", old_title, title));
+            if new_is_icebox {
+                history_records.push("moved to icebox.".to_string());
+            } else {
+                history_records.push("moved to backlog.".to_string());
             }
-        }
-
-        if let Some(value) = description {
-            let old_description = issue.description.clone().unwrap().unwrap_or_default();
-            if old_description != value {
-                issue.description = Set(Some(value.clone()));
-                history_records.push(format!(
-                    "updated description from '{}' to '{}'",
-                    old_description, value
-                ));
-            }
-        }
-
-        if let Some(priority) = priority {
-            let old_priority = issue.priority.clone().unwrap();
-            if old_priority != priority {
-                issue.priority = Set(priority);
-                history_records.push(format!(
-                    "changed priority from '{}' to '{}'",
-                    old_priority, priority
-                ));
-            }
-        }
-
-        match points {
-            Some(Some(p)) => issue.points = Set(Some(p)),
-            Some(None) => issue.points = Set(None),
-            None => {}
-        }
-
-        if let Some(status) = status {
-            issue.status = Set(status);
-        }
-
-        if let Some(work_type) = work_type {
-            if work_type != WORK_TYPE_FEATURE {
-                issue.points = Set(None);
-            }
-            issue.work_type = Set(work_type);
-        }
-
-        if let Some(target_release_at) = target_release_at {
-            issue.target_release_at = Set(Some(target_release_at));
-        }
-
-        if let Some(is_icebox) = is_icebox {
-            issue.is_icebox = Set(is_icebox);
-            if is_icebox {
+            issue.is_icebox = Set(new_is_icebox);
+            if new_is_icebox {
                 issue.status = Set(STATUS_UNSTARTED);
             }
         }
 
-        if let Some(accepted_at) = accepted_at {
-            issue.accepted_at = Set(Some(accepted_at));
+        // Accepted date update
+        if let Some(new_accepted_at) = accepted_at {
+            history_records.push(format!("accepted on '{}'", new_accepted_at));
+            issue.accepted_at = Set(Some(new_accepted_at));
         }
 
         issue.project_id = Set(project_id);
         issue.lock_version = Set(current_version + 1);
 
-        debug!("Updating issue {:?}", issue);
-        let mut result = issue.clone().update(&txn).await?;
+        let mut result = issue.update(&txn).await?;
         if result.lock_version != current_version + 1 {
             txn.rollback().await?;
             return Err(DbErr::Custom("Optimistic lock error".to_owned()));
@@ -406,20 +403,13 @@ impl IssueCrud {
 
         txn.commit().await?;
 
-        if let Some(status) = status {
-            let current_user_id = &self.app_state.user.clone().unwrap().id;
-            let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
-            issue_assignee_crud
-                .create(issue.id.clone().unwrap(), *current_user_id)
-                .await?;
-        }
-
-        // After the update succeeds, record all history items
+        // Record history items
         for record in history_records {
             history_crud
                 .create(*current_user_id, Some(id), None, None, record)
                 .await?;
         }
+
         self.populate_issue_tags(&mut result).await?;
         let project_id = &self.app_state.project.clone().unwrap().id;
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
@@ -427,6 +417,7 @@ impl IssueCrud {
 
         Ok(result)
     }
+
     pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {
         let history_crud = HistoryCrud::new(self.app_state.db.clone());
         history_crud.delete_by_issue_id(id).await?;
