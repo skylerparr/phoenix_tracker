@@ -388,7 +388,6 @@ impl IssueCrud {
                 }
             }
         }
-              
 
         // Accepted date update
         if let Some(new_accepted_at) = accepted_at {
