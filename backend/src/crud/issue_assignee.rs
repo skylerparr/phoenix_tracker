@@ -1,5 +1,7 @@
 use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::ISSUE_UPDATED;
+use crate::crud::history::HistoryCrud;
+use crate::crud::user::UserCrud;
 use crate::entities::issue_assignee;
 use crate::AppState;
 use sea_orm::*;
@@ -24,6 +26,22 @@ impl IssueAssigneeCrud {
                 return Ok(model);
             }
             _ => {
+                let user_crud = UserCrud::new(self.app_state.db.clone());
+                let user = user_crud.find_by_id(user_id).await?.unwrap();
+
+                let history_crud = HistoryCrud::new(self.app_state.db.clone());
+                let current_user_id = &self.app_state.user.clone().unwrap().id;
+
+                history_crud
+                    .create(
+                        *current_user_id,
+                        Some(issue_id),
+                        None,
+                        None,
+                        format!("assigned to user '{}'", user.name),
+                    )
+                    .await?;
+
                 let issue_assignee = issue_assignee::ActiveModel {
                     issue_id: Set(issue_id),
                     user_id: Set(user_id),
@@ -75,6 +93,22 @@ impl IssueAssigneeCrud {
     }
 
     pub async fn delete(&self, issue_id: i32, user_id: i32) -> Result<DeleteResult, DbErr> {
+        let user_crud = UserCrud::new(self.app_state.db.clone());
+        let user = user_crud.find_by_id(user_id).await?.unwrap();
+
+        let history_crud = HistoryCrud::new(self.app_state.db.clone());
+        let current_user_id = &self.app_state.user.clone().unwrap().id;
+
+        history_crud
+            .create(
+                *current_user_id,
+                Some(issue_id),
+                None,
+                None,
+                format!("unassigned from user '{}'", user.name),
+            )
+            .await?;
+
         let result = issue_assignee::Entity::delete_many()
             .filter(issue_assignee::Column::IssueId.eq(issue_id))
             .filter(issue_assignee::Column::UserId.eq(user_id))
