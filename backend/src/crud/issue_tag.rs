@@ -1,10 +1,11 @@
+use super::event_broadcaster::TAG_DELETED;
 use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::ISSUE_UPDATED;
+use crate::crud::history::HistoryCrud;
+use crate::crud::tag::TagCrud;
 use crate::entities::issue_tag;
 use crate::AppState;
 use sea_orm::*;
-
-use super::event_broadcaster::TAG_DELETED;
 
 #[derive(Clone)]
 pub struct IssueTagCrud {
@@ -20,6 +21,23 @@ impl IssueTagCrud {
         if let Some(model) = model {
             return Ok(model);
         }
+
+        let tag_crud = TagCrud::new(self.app_state.clone());
+        let tag = tag_crud.find_by_id(tag_id).await?.unwrap();
+
+        let history_crud = HistoryCrud::new(self.app_state.db.clone());
+        let current_user_id = &self.app_state.user.clone().unwrap().id;
+
+        history_crud
+            .create(
+                *current_user_id,
+                Some(issue_id),
+                None,
+                None,
+                format!("added label '{}'", tag.name),
+            )
+            .await?;
+
         let issue_tag = issue_tag::ActiveModel {
             issue_id: Set(issue_id),
             tag_id: Set(tag_id),
@@ -67,6 +85,22 @@ impl IssueTagCrud {
     }
 
     pub async fn delete(&self, issue_id: i32, tag_id: i32) -> Result<DeleteResult, DbErr> {
+        let tag_crud = TagCrud::new(self.app_state.clone());
+        let tag = tag_crud.find_by_id(tag_id).await?.unwrap();
+
+        let history_crud = HistoryCrud::new(self.app_state.db.clone());
+        let current_user_id = &self.app_state.user.clone().unwrap().id;
+
+        history_crud
+            .create(
+                *current_user_id,
+                Some(issue_id),
+                None,
+                None,
+                format!("removed label '{}'", tag.name),
+            )
+            .await?;
+
         let result = issue_tag::Entity::delete_many()
             .filter(issue_tag::Column::IssueId.eq(issue_id))
             .filter(issue_tag::Column::TagId.eq(tag_id))
@@ -92,6 +126,25 @@ impl IssueTagCrud {
     }
 
     pub async fn delete_by_tag_id(&self, tag_id: i32) -> Result<DeleteResult, DbErr> {
+        let tag_crud = TagCrud::new(self.app_state.clone());
+        let tag = tag_crud.find_by_id(tag_id).await?.unwrap();
+
+        let issues = self.find_by_tag_id(tag_id).await?;
+        let history_crud = HistoryCrud::new(self.app_state.db.clone());
+        let current_user_id = &self.app_state.user.clone().unwrap().id;
+
+        for issue in issues {
+            history_crud
+                .create(
+                    *current_user_id,
+                    Some(issue.issue_id),
+                    None,
+                    None,
+                    format!("label '{}' was deleted", tag.name),
+                )
+                .await?;
+        }
+
         let result = issue_tag::Entity::delete_many()
             .filter(issue_tag::Column::TagId.eq(tag_id))
             .exec(&self.app_state.db)
