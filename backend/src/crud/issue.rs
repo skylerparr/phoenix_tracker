@@ -455,13 +455,12 @@ impl IssueCrud {
         issue_priorities: Vec<(i32, i32)>,
     ) -> Result<Vec<issue::Model>, DbErr> {
         let mut updated_issues = Vec::new();
-        let txn = self.app_state.db.begin().await?;
         let history_crud = HistoryCrud::new(self.app_state.db.clone());
         let current_user_id = &self.app_state.user.clone().unwrap().id;
 
         for (issue_id, new_priority) in issue_priorities {
             let issue = issue::Entity::find_by_id(issue_id)
-                .one(&txn)
+                .one(&self.app_state.db)
                 .await?
                 .ok_or(DbErr::Custom("Issue not found".to_owned()))?;
 
@@ -472,7 +471,7 @@ impl IssueCrud {
             issue.priority = Set(new_priority);
             issue.lock_version = Set(current_version + 1);
 
-            let updated_issue = issue.update(&txn).await?;
+            let updated_issue = issue.update(&self.app_state.db).await?;
 
             // Add history record for priority update
             let history_record =
@@ -484,8 +483,6 @@ impl IssueCrud {
             updated_issues.push(updated_issue);
         }
 
-        txn.commit().await?;
-
         let project_id = &self.app_state.project.clone().unwrap().id;
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
         broadcaster.broadcast_event(
@@ -496,6 +493,7 @@ impl IssueCrud {
 
         Ok(updated_issues)
     }
+    
     pub async fn calculate_weekly_points_average(&self, project_id: i32) -> Result<f64, DbErr> {
         let now = chrono::Utc::now().date_naive();
         let mut total_points = 0;

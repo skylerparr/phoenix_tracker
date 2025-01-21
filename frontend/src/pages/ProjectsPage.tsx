@@ -48,7 +48,7 @@ const ProjectsPage: React.FC = () => {
   const handleProjectClick = async (project: Project) => {
     await projectService.selectProject(project.id);
     sessionStorage.setProject(project);
-    navigate("/home");
+    window.location.href = "/home";
   };
 
   return (

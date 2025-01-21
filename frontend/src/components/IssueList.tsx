@@ -3,6 +3,7 @@ import { Box } from "@mui/material";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Issue } from "../models/Issue";
 import { IssueComponent } from "./IssueComponent";
+import IssueGroup from "./IssueGroup";
 
 interface IssueListProps {
   issues: Issue[];
@@ -38,16 +39,67 @@ const IssueList: React.FC<IssueListProps> = ({
   const handleDragEnd = (result: any) => {
     if (!result.destination || !onDragEnd) return;
 
-    const items = Array.from(issues);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+    const allIssues = Array.from(issues);
+    const groupedIssues = groupIssuesByWeek(allIssues);
 
-    const updates: [number, number][] = items.map((issue, index) => [
-      issue.id,
-      (index + 1) * 5,
-    ]);
-    setIssues(items);
+    const sourceWeek = parseInt(result.source.droppableId.split("-")[1]);
+    const targetWeek = parseInt(result.destination.droppableId.split("-")[1]);
+
+    const sourceGroup =
+      groupedIssues.find(([week]) => week === sourceWeek)?.[1] || [];
+    const targetGroup =
+      groupedIssues.find(([week]) => week === targetWeek)?.[1] || [];
+
+    const [movedItem] = sourceGroup.splice(result.source.index, 1);
+
+    const baseDate = new Date(issues[0].scheduledAt!);
+    const newScheduledDate = new Date(baseDate);
+    newScheduledDate.setDate(baseDate.getDate() + targetWeek * 7);
+    movedItem.scheduledAt = newScheduledDate;
+
+    targetGroup.splice(result.destination.index, 0, movedItem);
+
+    const flattenedIssues = groupedIssues.flatMap(([_, issues]) => issues);
+    const updatedIssues = flattenedIssues.map((issue, index) => ({
+      ...issue,
+      priority: (index + 1) * 10,
+    }));
+
+    const updates: [number, number][] = updatedIssues
+      .map((issue) => [issue.id, issue.priority])
+      .filter((update): update is [number, number] => update[1] !== null);
+
+    setIssues(updatedIssues);
     onDragEnd(updates);
+  };
+
+  const getWeekNumber = (date: Date): number => {
+    const baseDate = new Date(issues[0].scheduledAt!);
+    baseDate.setHours(0, 0, 0, 0);
+    const targetDate = new Date(date);
+    targetDate.setHours(0, 0, 0, 0);
+    const diff = targetDate.getTime() - baseDate.getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24 * 7));
+  };
+  const groupIssuesByWeek = (issues: Issue[]) => {
+    if (!issues.length) return [];
+
+    const groupedIssues = new Map<number, Issue[]>();
+
+    issues.forEach((issue) => {
+      if (issue.scheduledAt) {
+        const weekNum = getWeekNumber(new Date(issue.scheduledAt));
+        if (!groupedIssues.has(weekNum)) {
+          groupedIssues.set(weekNum, []);
+        }
+        groupedIssues.get(weekNum)?.push(issue);
+      }
+    });
+
+    const result = Array.from(groupedIssues.entries()).sort(
+      ([weekA], [weekB]) => weekA - weekB,
+    );
+    return result;
   };
 
   const renderIssues = () => {
@@ -62,36 +114,47 @@ const IssueList: React.FC<IssueListProps> = ({
       ));
     }
 
+    return renderGroupedIssues();
+  };
+
+  const renderGroupedIssues = () => {
+    const groupedIssues = groupIssuesByWeek(issues);
+
     return (
       <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="issues" direction="vertical">
-          {(provided) => (
-            <Box {...provided.droppableProps} ref={provided.innerRef}>
-              {issues.map((issue: Issue, index: number) => (
-                <Draggable
-                  key={issue.id}
-                  draggableId={issue.id.toString()}
-                  index={index}
-                >
-                  {(provided) => (
-                    <Box
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
+        {groupedIssues.map(([weekNum, weekIssues]) => (
+          <Box key={weekNum}>
+            <Droppable droppableId={`week-${weekNum}`} direction="vertical">
+              {(provided) => (
+                <Box {...provided.droppableProps} ref={provided.innerRef}>
+                  {weekIssues.map((issue: Issue, index: number) => (
+                    <Draggable
+                      key={issue.id}
+                      draggableId={issue.id.toString()}
+                      index={index}
                     >
-                      <IssueComponent
-                        issue={issue}
-                        expanded={expandedIssueIds.has(issue.id)}
-                        onToggleExpanded={() => handleExpandIssue(issue.id)}
-                      />
-                    </Box>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
-            </Box>
-          )}
-        </Droppable>
+                      {(provided) => (
+                        <Box
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                        >
+                          <IssueComponent
+                            issue={issue}
+                            expanded={expandedIssueIds.has(issue.id)}
+                            onToggleExpanded={() => handleExpandIssue(issue.id)}
+                          />
+                        </Box>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </Box>
+              )}
+            </Droppable>
+            <IssueGroup weeksFromNow={weekNum} issues={weekIssues} />
+          </Box>
+        ))}
       </DragDropContext>
     );
   };
