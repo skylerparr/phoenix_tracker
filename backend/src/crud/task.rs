@@ -1,5 +1,6 @@
 use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::ISSUE_UPDATED;
+use crate::crud::history::HistoryCrud;
 use crate::{entities::task, AppState};
 use sea_orm::*;
 use tracing::debug;
@@ -21,15 +22,28 @@ impl TaskCrud {
         completed: bool,
         percent: f32,
     ) -> Result<task::Model, DbErr> {
-        let txn = self.app_state.db.begin().await?;
+        // Add history record
+        let history_crud = HistoryCrud::new(self.app_state.db.clone());
+        let current_user_id = &self.app_state.user.clone().unwrap().id;
+
+        history_crud
+            .create(
+                *current_user_id,
+                Some(issue_id),
+                None,
+                None,
+                "created task".to_string(),
+            )
+            .await?;
 
         debug!("Creating task for issue {}, title {}", issue_id, title);
+        let txn = self.app_state.db.begin().await?;
         let task = task::ActiveModel {
             title: Set(title),
             issue_id: Set(issue_id),
             completed: Set(completed),
             percent: Set(percent),
-            lock_version: Set(0), // Initialize lock version
+            lock_version: Set(0),
             ..Default::default()
         };
 
@@ -46,6 +60,7 @@ impl TaskCrud {
         txn.commit().await?;
         return Ok(result);
     }
+
     pub async fn find_by_id(&self, id: i32) -> Result<Option<task::Model>, DbErr> {
         task::Entity::find_by_id(id).one(&self.app_state.db).await
     }
@@ -64,15 +79,51 @@ impl TaskCrud {
         completed: Option<bool>,
         percent: Option<f32>,
     ) -> Result<task::Model, DbErr> {
-        let txn = self.app_state.db.begin().await?;
-
         let task = task::Entity::find_by_id(id)
-            .one(&txn)
+            .one(&self.app_state.db)
             .await?
             .ok_or(DbErr::Custom("Cannot find task.".to_owned()))?;
 
+        // Add history record
+        let history_crud = HistoryCrud::new(self.app_state.db.clone());
+        let current_user_id = &self.app_state.user.clone().unwrap().id;
+
+        let mut changes = Vec::new();
+        if let Some(title) = &title {
+            if title != &task.title {
+                changes.push(format!("title to '{}'", title));
+            }
+        }
+        if let Some(completed) = completed {
+            if completed != task.completed {
+                if completed {
+                    changes.push("completed".to_string());
+                } else {
+                    changes.push("uncompleted".to_string());
+                }
+            }
+        }
+        if let Some(percent) = percent {
+            if percent != task.percent {
+                changes.push(format!("percent to {}", percent));
+            }
+        }
+
+        if !changes.is_empty() {
+            history_crud
+                .create(
+                    *current_user_id,
+                    Some(task.issue_id),
+                    None,
+                    None,
+                    format!("updated task '{}': {}", task.title, changes.join(", ")),
+                )
+                .await?;
+        }
+
         let current_version = task.lock_version;
 
+        let txn = self.app_state.db.begin().await?;
         let mut task: task::ActiveModel = task.into();
         if let Some(title) = title {
             task.title = Set(title);
@@ -108,6 +159,20 @@ impl TaskCrud {
             .one(&self.app_state.db)
             .await?
             .ok_or(DbErr::Custom("Cannot find task.".to_owned()))?;
+
+        // Add history record
+        let history_crud = HistoryCrud::new(self.app_state.db.clone());
+        let current_user_id = &self.app_state.user.clone().unwrap().id;
+
+        history_crud
+            .create(
+                *current_user_id,
+                Some(task.issue_id),
+                None,
+                None,
+                format!("deleted task '{}'", task.title),
+            )
+            .await?;
 
         let result = task::Entity::delete_by_id(id)
             .exec(&self.app_state.db)

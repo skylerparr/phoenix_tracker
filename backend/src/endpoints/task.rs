@@ -42,6 +42,7 @@ async fn create_task(
     Extension(app_state): Extension<AppState>,
     Json(payload): Json<CreateTaskRequest>,
 ) -> impl IntoResponse {
+    debug!("Creating task");
     let task_crud = TaskCrud::new(app_state);
     match task_crud
         .create(
