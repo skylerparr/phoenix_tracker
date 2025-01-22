@@ -84,7 +84,7 @@ async fn auth_middleware(
         {
             Ok(Some(token_model)) => {
                 debug!("Valid token found, proceeding with request");
-                let user_crud = UserCrud::new(app_state.db.clone());
+                let user_crud = UserCrud::new(app_state.clone());
                 if let Ok(Some(user)) = user_crud.find_by_id(token_model.user_id).await {
                     debug!("Found user id: {:?}", user.id);
                     req.extensions_mut().insert(app_state.clone());

@@ -74,12 +74,13 @@ async fn remove_user(
         }
     }
 }
+
 #[axum::debug_handler]
 async fn invite_user(
     Extension(app_state): Extension<AppState>,
     Json(payload): Json<InviteUserRequest>,
 ) -> impl IntoResponse {
-    let user_crud = UserCrud::new(app_state.db.clone());
+    let user_crud = UserCrud::new(app_state.clone());
     let current_user = app_state.user.clone().unwrap();
     let project_id = app_state.project.clone().unwrap().id;
     let project_user_crud = ProjectUserCrud::new(app_state.clone());
@@ -109,12 +110,13 @@ async fn invite_user(
         }
     }
 }
+
 #[axum::debug_handler]
 async fn create_user(
     Extension(app_state): Extension<AppState>,
     Json(payload): Json<CreateUserRequest>,
 ) -> impl IntoResponse {
-    let user_crud = UserCrud::new(app_state.db);
+    let user_crud = UserCrud::new(app_state);
     match user_crud.create(payload.name, payload.email).await {
         Ok(user) => Ok(Json(user)),
         Err(e) => {
@@ -123,6 +125,7 @@ async fn create_user(
         }
     }
 }
+
 #[axum::debug_handler]
 async fn get_all_users(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
     let project_id = app_state.project.clone().unwrap().id;
@@ -136,8 +139,8 @@ async fn get_all_users(Extension(app_state): Extension<AppState>) -> impl IntoRe
                 .iter()
                 .map(|project_user| project_user.user_id)
                 .collect::<Vec<_>>();
-            let user_crud = UserCrud::new(app_state.db);
-            match user_crud.find_all(user_ids).await {
+            let user_crud = UserCrud::new(app_state);
+            match user_crud.find_all(project_id, user_ids).await {
                 Ok(users) => Ok(Json(users)),
                 Err(e) => {
                     info!("Error getting all users: {:?}", e);
@@ -157,7 +160,7 @@ async fn get_user(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
-    let user_crud = UserCrud::new(app_state.db);
+    let user_crud = UserCrud::new(app_state);
     match user_crud.find_by_id(id).await {
         Ok(Some(user)) => Ok(Json(user)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
@@ -178,7 +181,7 @@ async fn get_user_by_email(
         None => return Err(StatusCode::BAD_REQUEST),
     };
 
-    let user_crud = UserCrud::new(app_state.db);
+    let user_crud = UserCrud::new(app_state);
     match user_crud.find_by_email(email.to_string()).await {
         Ok(Some(user)) => Ok(Json(user)),
         Ok(None) => Err(StatusCode::NOT_FOUND),
@@ -195,7 +198,7 @@ async fn update_user(
     Path(id): Path<i32>,
     Json(payload): Json<UpdateUserRequest>,
 ) -> impl IntoResponse {
-    let user_crud = UserCrud::new(app_state.db);
+    let user_crud = UserCrud::new(app_state);
     match user_crud.update(id, payload.name, payload.email).await {
         Ok(user) => Ok(Json(user)),
         Err(e) => {
@@ -211,7 +214,7 @@ async fn update_user(
 
 #[axum::debug_handler]
 async fn delete_user(Extension(app_state): Extension<AppState>, Path(id): Path<i32>) -> StatusCode {
-    let user_crud = UserCrud::new(app_state.db);
+    let user_crud = UserCrud::new(app_state);
     match user_crud.delete(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {

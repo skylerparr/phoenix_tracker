@@ -10,6 +10,8 @@ pub struct Model {
     pub email: String,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
+    #[sea_orm(ignore)]
+    pub is_project_owner: bool,
 }
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {}

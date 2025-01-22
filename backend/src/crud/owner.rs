@@ -1,4 +1,3 @@
-use crate::crud::user::UserCrud;
 use crate::entities::owner;
 use sea_orm::*;
 

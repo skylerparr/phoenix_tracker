@@ -39,7 +39,7 @@ async fn login(
     State(app_state): State<AppState>,
     Json(payload): Json<LoginRequest>,
 ) -> impl IntoResponse {
-    let user_crud = UserCrud::new(app_state.db.clone());
+    let user_crud = UserCrud::new(app_state.clone());
 
     let user = match user_crud.find_by_email(payload.email).await {
         Ok(Some(user)) => user,
@@ -54,7 +54,7 @@ async fn register(
     State(app_state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
 ) -> impl IntoResponse {
-    let user_crud = UserCrud::new(app_state.db.clone());
+    let user_crud = UserCrud::new(app_state.clone());
 
     let user = match user_crud.create(payload.name, payload.email).await {
         Ok(user) => user,

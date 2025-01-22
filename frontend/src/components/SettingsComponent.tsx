@@ -19,6 +19,7 @@ import { projectService } from "../services/ProjectService";
 const SettingsComponent: React.FC = () => {
   const [email, setEmail] = useState<string>("");
   const [users, setUsers] = useState<User[]>([]);
+  const [projectOwnerUser, setProjectOwnerUser] = useState<User | null>(null);
 
   useEffect(() => {
     loadUsers();
@@ -31,6 +32,12 @@ const SettingsComponent: React.FC = () => {
       (user) => user.id !== currentUserId,
     );
     setUsers(filteredUsers);
+    const currentUser = loadedUsers.find(
+      (user) => user.id === sessionStorage.getSession().user?.id,
+    );
+    if (currentUser?.isProjectOwner) {
+      setProjectOwnerUser(currentUser);
+    }
   };
 
   const handleInvite = async () => {
@@ -64,7 +71,6 @@ const SettingsComponent: React.FC = () => {
     <Box
       sx={{
         padding: 3,
-        maxWidth: 600,
         margin: "0 auto",
         backgroundColor: "#dfdfdf",
         height: "100%",
@@ -121,9 +127,14 @@ const SettingsComponent: React.FC = () => {
           <ListItem
             key={user.id}
             secondaryAction={
-              <IconButton edge="end" onClick={() => handleRemoveUser(user.id)}>
-                <DeleteIcon sx={{ color: "black" }} />
-              </IconButton>
+              !user.isProjectOwner && (
+                <IconButton
+                  edge="end"
+                  onClick={() => handleRemoveUser(user.id)}
+                >
+                  <DeleteIcon sx={{ color: "black" }} />
+                </IconButton>
+              )
             }
           >
             <ListItemText
@@ -138,20 +149,39 @@ const SettingsComponent: React.FC = () => {
         ))}
       </List>
       <Divider sx={{ borderColor: "#424242", my: 3 }} />
-      <Box sx={{ display: "flex", justifyContent: "center" }}>
+      <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
         <Button
           variant="contained"
-          onClick={handleDelete}
+          onClick={() => (window.location.href = "/logout")}
           sx={{
-            bgcolor: "#a71f39",
+            bgcolor: "#666666",
             "&:hover": {
-              bgcolor: "#8a1930",
+              bgcolor: "#444444",
             },
           }}
         >
-          <Typography sx={{ color: "white" }}>Delete Project</Typography>
+          <Typography sx={{ color: "white" }}>Logout</Typography>
         </Button>
       </Box>
+      {projectOwnerUser && (
+        <>
+          <Divider sx={{ borderColor: "#424242", my: 3 }} />
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
+            <Button
+              variant="contained"
+              onClick={handleDelete}
+              sx={{
+                bgcolor: "#a71f39",
+                "&:hover": {
+                  bgcolor: "#8a1930",
+                },
+              }}
+            >
+              <Typography sx={{ color: "white" }}>Delete Project</Typography>
+            </Button>
+          </Box>
+        </>
+      )}
     </Box>
   );
 };

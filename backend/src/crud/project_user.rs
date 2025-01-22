@@ -1,3 +1,5 @@
+use crate::crud::owner::OwnerCrud;
+use crate::entities::project;
 use crate::entities::project_user;
 use crate::AppState;
 use sea_orm::*;
@@ -35,6 +37,10 @@ impl ProjectUserCrud {
     }
 
     pub async fn delete(&self, project_id: i32, user_id: i32) -> Result<DeleteResult, DbErr> {
+        if self.is_project_owner(user_id, project_id).await? {
+            return Ok(DeleteResult { rows_affected: 0 });
+        }
+
         project_user::Entity::delete_many()
             .filter(project_user::Column::ProjectId.eq(project_id))
             .filter(project_user::Column::UserId.eq(user_id))
@@ -43,7 +49,16 @@ impl ProjectUserCrud {
     }
 
     pub async fn is_project_owner(&self, user_id: i32, project_id: i32) -> Result<bool, DbErr> {
-        let project = self.state.project.clone().unwrap();
-        Ok(project.owner_id == user_id && project.id == project_id)
+        let project = project::Entity::find_by_id(project_id)
+            .one(&self.state.db)
+            .await?
+            .ok_or(DbErr::Custom("Project not found".to_owned()))?;
+        let owner_crud = OwnerCrud::new(self.state.db.clone());
+        let owner = owner_crud.find_by_id(project.owner_id).await?;
+        if let Some(owner) = owner {
+            Ok(owner.user_id == Some(user_id))
+        } else {
+            Ok(false)
+        }
     }
 }

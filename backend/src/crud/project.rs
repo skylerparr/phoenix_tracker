@@ -6,11 +6,8 @@ use crate::entities::project;
 use crate::entities::project_user;
 use crate::AppState;
 use sea_orm::*;
-use std::sync::Arc;
-use tokio::sync::broadcast::Sender;
 use tracing::debug;
 
-use super::user;
 #[derive(Clone)]
 pub struct ProjectCrud {
     state: AppState,
@@ -123,41 +120,32 @@ impl ProjectCrud {
             return Err(DbErr::Custom("Project not found".to_owned()));
         }
 
-        debug!("Finding issues for project with ID: {}", id);
+        let user_id = self.state.user.clone().unwrap().id;
+        let user_setting_crud = UserSettingCrud::new(self.state.db.clone());
+        user_setting_crud.update(user_id, None).await?;
+
         let issues = issue::Entity::find()
             .filter(issue::Column::ProjectId.eq(id))
             .all(&self.state.db)
             .await?;
-        debug!("Issues found: {:?}", issues);
 
         let issue_crud = IssueCrud::new(self.state.clone());
-        debug!("Created IssueCrud instance");
 
         for issue in issues {
-            debug!("Deleting issue with ID: {}", issue.id);
             issue_crud.delete(issue.id).await?;
         }
 
-        debug!("Deleting project users for project ID: {}", id);
         project_user::Entity::delete_many()
             .filter(project_user::Column::ProjectId.eq(id))
             .exec(&self.state.db)
             .await?;
-        debug!("Deleted project users");
-        let user_id = self.state.user.clone().unwrap().id;
-        debug!("User ID retrieved: {}", user_id);
-        let user_setting_crud = UserSettingCrud::new(self.state.db.clone());
-        user_setting_crud.update(user_id, None).await?;
-        debug!("Updated user settings for user ID: {}", user_id);
 
-        debug!("Deleting project with ID: {}", id);
         project::Entity::delete_by_id(id)
             .exec(&self.state.db)
             .await?;
 
         let owner_id = project.unwrap().owner_id.clone();
         let owner_crud = OwnerCrud::new(self.state.db.clone());
-        debug!("Created OwnerCrud instance");
         owner_crud.delete(owner_id).await
     }
 }

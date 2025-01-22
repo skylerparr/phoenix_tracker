@@ -26,7 +26,7 @@ impl IssueAssigneeCrud {
                 return Ok(model);
             }
             _ => {
-                let user_crud = UserCrud::new(self.app_state.db.clone());
+                let user_crud = UserCrud::new(self.app_state.clone());
                 let user = user_crud.find_by_id(user_id).await?.unwrap();
 
                 let history_crud = HistoryCrud::new(self.app_state.db.clone());
@@ -93,7 +93,7 @@ impl IssueAssigneeCrud {
     }
 
     pub async fn delete(&self, issue_id: i32, user_id: i32) -> Result<DeleteResult, DbErr> {
-        let user_crud = UserCrud::new(self.app_state.db.clone());
+        let user_crud = UserCrud::new(self.app_state.clone());
         let user = user_crud.find_by_id(user_id).await?.unwrap();
 
         let history_crud = HistoryCrud::new(self.app_state.db.clone());

@@ -304,6 +304,7 @@ impl IssueCrud {
         }
 
         // Status update
+        let mut status_changed = false;
         if let Some(new_status) = status {
             let old_status = issue.status.clone().unwrap();
             history_records.push(format!(
@@ -312,6 +313,7 @@ impl IssueCrud {
                 STATUS_MAP.get(&new_status).unwrap_or(&"unknown")
             ));
             issue.status = Set(new_status);
+            status_changed = true;
         }
 
         // Work type update
@@ -397,7 +399,6 @@ impl IssueCrud {
 
         issue.project_id = Set(project_id);
         issue.lock_version = Set(current_version + 1);
-
         let mut result = issue.update(&txn).await?;
         if result.lock_version != current_version + 1 {
             txn.rollback().await?;
@@ -405,6 +406,9 @@ impl IssueCrud {
         }
 
         txn.commit().await?;
+
+        let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
+        issue_assignee_crud.create(id, *current_user_id).await?;
 
         // Record history items
         for record in history_records {
