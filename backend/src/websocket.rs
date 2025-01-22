@@ -18,6 +18,7 @@ use tokio::sync::broadcast;
 use tokio::sync::Mutex;
 use tracing::debug;
 
+#[allow(dead_code)]
 struct WebSocketState {
     subscribed_projects: HashSet<i32>,
     user_id: i32,
@@ -33,6 +34,8 @@ enum SocketCommand {
     Subscribe {},
     Unsubscribe {},
 }
+
+#[allow(dead_code)]
 #[derive(serde::Deserialize, Debug)]
 struct ProjectEvent {
     project_id: i32,
@@ -50,7 +53,6 @@ pub async fn ws_handler(
     match token {
         Some(token) => {
             debug!("token = {}", token);
-            let project_crud = ProjectCrud::new(state.clone());
             let now = chrono::Utc::now();
             let rx = state.tx.subscribe();
             let token_crud = TokenCrud::new(state.db.clone());

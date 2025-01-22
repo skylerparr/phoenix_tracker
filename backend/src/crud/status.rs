@@ -1,10 +1,6 @@
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 
-pub struct Status {
-    pub id: i32,
-    pub name: String,
-}
 
 pub const STATUS_UNSTARTED: i32 = 0;
 pub const STATUS_IN_PROGRESS: i32 = 1;
@@ -22,12 +18,4 @@ lazy_static! {
         map.insert(STATUS_ACCEPTED, "Accepted");
         map
     };
-}
-
-pub fn get_unfinished_statuses() -> Vec<i32> {
-    STATUS_MAP
-        .iter()
-        .filter(|(&id, _)| id != 5)
-        .map(|(&id, _)| id)
-        .collect()
 }

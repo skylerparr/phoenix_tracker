@@ -134,21 +134,7 @@ impl BlockerCrud {
         );
 
         Ok(result)
-    }
-
-    pub async fn delete_all_by_blocker_id(&self, blocker_id: i32) -> Result<DeleteResult, DbErr> {
-        blocker::Entity::delete_many()
-            .filter(blocker::Column::BlockerId.eq(blocker_id))
-            .exec(&self.app_state.db)
-            .await
-    }
-
-    pub async fn delete_all_by_blocked_id(&self, blocked_id: i32) -> Result<DeleteResult, DbErr> {
-        blocker::Entity::delete_many()
-            .filter(blocker::Column::BlockedId.eq(blocked_id))
-            .exec(&self.app_state.db)
-            .await
-    }
+    } 
 
     pub async fn delete_all_by_issue_id(&self, issue_id: i32) -> Result<DeleteResult, DbErr> {
         let result = blocker::Entity::delete_many()

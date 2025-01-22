@@ -39,13 +39,6 @@ impl HistoryCrud {
             .await
     }
 
-    pub async fn find_by_user_id(&self, user_id: i32) -> Result<Vec<history::Model>, DbErr> {
-        history::Entity::find()
-            .filter(history::Column::UserId.eq(user_id))
-            .all(&self.db)
-            .await
-    }
-
     pub async fn delete_by_issue_id(&self, issue_id: i32) -> Result<DeleteResult, DbErr> {
         history::Entity::delete_many()
             .filter(history::Column::IssueId.eq(issue_id))

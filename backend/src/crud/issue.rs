@@ -19,7 +19,7 @@ use sea_orm::*;
 
 #[derive(Clone)]
 pub struct IssueCrud {
-    app_state: AppState,
+    app_state: AppState
 }
 
 impl IssueCrud {

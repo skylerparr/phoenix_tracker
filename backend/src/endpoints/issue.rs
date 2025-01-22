@@ -238,7 +238,7 @@ async fn update_issue_status(app_state: AppState, id: i32, status: i32) -> impl 
     let issue_crud = IssueCrud::new(app_state);
     // whenever the status is updated, the is_icebox flag should be set to false
     let accepted_at = if status == STATUS_ACCEPTED {
-        Some(chrono::Utc::now().with_timezone(&chrono::FixedOffset::east(0)))
+        Some(chrono::Utc::now().with_timezone(&chrono::FixedOffset::east_opt(0).unwrap()))
     } else {
         None
     };
@@ -313,7 +313,10 @@ async fn get_issues_by_tag(
     let issue_crud = IssueCrud::new(app_state);
     match issue_crud.find_all_by_tag_id(tag_id).await {
         Ok(issues) => Ok(Json(issues)),
-        Err(e) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => {
+            info!("Error getting issues by tag {}: {:?}", tag_id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        },
     }
 }
 
@@ -323,10 +326,12 @@ async fn get_all_accepted(Extension(app_state): Extension<AppState>) -> impl Int
     let issue_crud = IssueCrud::new(app_state);
     match issue_crud.find_all_accepted(project_id).await {
         Ok(issues) => Ok(Json(issues)),
-        Err(e) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => {
+            info!("Error getting all accepted issues: {:?}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        },
     }
 }
-
 #[axum::debug_handler]
 async fn get_all_icebox(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
     let project_id = app_state.project.clone().unwrap().id;

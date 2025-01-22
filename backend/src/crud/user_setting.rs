@@ -37,17 +37,6 @@ impl UserSettingCrud {
             None => self.create(user_id, None).await,
         }
     }
-    pub async fn delete(
-        &self,
-        user_id: i32,
-        project_id: Option<i32>,
-    ) -> Result<DeleteResult, DbErr> {
-        user_setting::Entity::delete_many()
-            .filter(user_setting::Column::UserId.eq(user_id))
-            .filter(user_setting::Column::ProjectId.eq(project_id))
-            .exec(&self.db)
-            .await
-    }
 
     pub async fn update(
         &self,
