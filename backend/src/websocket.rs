@@ -50,7 +50,7 @@ pub async fn ws_handler(
     match token {
         Some(token) => {
             debug!("token = {}", token);
-                    let project_crud = ProjectCrud::new(state.clone());
+            let project_crud = ProjectCrud::new(state.clone());
             let now = chrono::Utc::now();
             let rx = state.tx.subscribe();
             let token_crud = TokenCrud::new(state.db.clone());
@@ -153,4 +153,3 @@ pub async fn handle_socket(
         }
     }
 }
-

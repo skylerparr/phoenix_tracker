@@ -10,7 +10,7 @@ impl ProjectUserCrud {
     pub fn new(state: AppState) -> Self {
         Self { state }
     }
-    
+
     pub async fn create(
         &self,
         project_id: i32,

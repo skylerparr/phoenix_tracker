@@ -3,9 +3,9 @@ use crate::entities::issue;
 use crate::entities::project;
 use crate::entities::project_user;
 use crate::AppState;
-use tokio::sync::broadcast::Sender;
 use sea_orm::*;
 use std::sync::Arc;
+use tokio::sync::broadcast::Sender;
 use tracing::debug;
 #[derive(Clone)]
 pub struct ProjectCrud {

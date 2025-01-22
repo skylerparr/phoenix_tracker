@@ -13,6 +13,7 @@ import {
   Close,
   Stars,
   AccessTime,
+  Settings,
 } from "@mui/icons-material";
 import CreateIssue from "../components/CreateIssue";
 import Backlog from "../components/Backlog";
@@ -30,6 +31,7 @@ import IceboxIssuesComponent from "../components/IceboxIssuesComponent";
 import ManageTagsComponent from "../components/ManageTagsComponent";
 import EpicsComponent from "../components/EpicsComponent";
 import HistoryComponent from "../components/HistoryComponent";
+import SettingsComponent from "../components/SettingsComponent";
 
 const toolbarButtons = [
   {
@@ -85,6 +87,12 @@ const toolbarButtons = [
     icon: <AccessTime />,
     id: "history",
     component: HistoryComponent,
+  },
+  {
+    tooltip: "Settings",
+    icon: <Settings />,
+    id: "settings",
+    component: SettingsComponent,
   },
 ];
 const Home = () => {
@@ -333,6 +341,7 @@ const Home = () => {
                   height: 0,
                   flexGrow: 1,
                   overflowY: "auto",
+                  overflowX: "hidden",
                 }}
               >
                 {toolbarButtons.map((button) => {
