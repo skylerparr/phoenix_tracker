@@ -14,6 +14,7 @@ import { userService } from "../services/UserService";
 import { User } from "../models/User";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { sessionStorage } from "../store/Session";
+import { projectService } from "../services/ProjectService";
 
 const SettingsComponent: React.FC = () => {
   const [email, setEmail] = useState<string>("");
@@ -48,6 +49,17 @@ const SettingsComponent: React.FC = () => {
     await userService.removeUser(userId);
     window.location.reload();
   };
+
+  const handleDelete = async () => {
+    const projectId = sessionStorage.getSession().project?.id;
+    if (!projectId) {
+      console.error("Project ID is undefined");
+      return;
+    }
+    await projectService.deleteProject(projectId);
+    window.location.href = "/projects";
+  };
+
   return (
     <Box
       sx={{
@@ -75,7 +87,7 @@ const SettingsComponent: React.FC = () => {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setEmail(e.target.value)
             }
-            onKeyDown={(e) => {
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
               if (e.key === "Enter") {
                 handleInvite();
               }
@@ -85,7 +97,7 @@ const SettingsComponent: React.FC = () => {
               "& .MuiInputBase-input": { color: "black" },
               border: "1px solid black",
             }}
-          />{" "}
+          />
           <Button
             variant="contained"
             onClick={handleInvite}
@@ -124,7 +136,22 @@ const SettingsComponent: React.FC = () => {
             />
           </ListItem>
         ))}
-      </List>{" "}
+      </List>
+      <Divider sx={{ borderColor: "#424242", my: 3 }} />
+      <Box sx={{ display: "flex", justifyContent: "center" }}>
+        <Button
+          variant="contained"
+          onClick={handleDelete}
+          sx={{
+            bgcolor: "#a71f39",
+            "&:hover": {
+              bgcolor: "#8a1930",
+            },
+          }}
+        >
+          <Typography sx={{ color: "white" }}>Delete Project</Typography>
+        </Button>
+      </Box>
     </Box>
   );
 };

@@ -1,4 +1,6 @@
 use crate::crud::issue::IssueCrud;
+use crate::crud::owner::OwnerCrud;
+use crate::crud::user_setting::UserSettingCrud;
 use crate::entities::issue;
 use crate::entities::project;
 use crate::entities::project_user;
@@ -7,6 +9,8 @@ use sea_orm::*;
 use std::sync::Arc;
 use tokio::sync::broadcast::Sender;
 use tracing::debug;
+
+use super::user;
 #[derive(Clone)]
 pub struct ProjectCrud {
     state: AppState,
@@ -93,10 +97,6 @@ impl ProjectCrud {
         project.update(&self.state.db).await
     }
 
-    pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {
-        project::Entity::delete_by_id(id).exec(&self.state.db).await
-    }
-
     pub async fn find_users_by_project_id(
         &self,
         project_id: i32,
@@ -118,22 +118,46 @@ impl ProjectCrud {
     }
 
     pub async fn delete_cascade(&self, id: i32) -> Result<DeleteResult, DbErr> {
+        let project = self.find_by_id(id).await?;
+        if project.is_none() {
+            return Err(DbErr::Custom("Project not found".to_owned()));
+        }
+
+        debug!("Finding issues for project with ID: {}", id);
         let issues = issue::Entity::find()
             .filter(issue::Column::ProjectId.eq(id))
             .all(&self.state.db)
             .await?;
+        debug!("Issues found: {:?}", issues);
 
         let issue_crud = IssueCrud::new(self.state.clone());
+        debug!("Created IssueCrud instance");
 
         for issue in issues {
+            debug!("Deleting issue with ID: {}", issue.id);
             issue_crud.delete(issue.id).await?;
         }
 
+        debug!("Deleting project users for project ID: {}", id);
         project_user::Entity::delete_many()
             .filter(project_user::Column::ProjectId.eq(id))
             .exec(&self.state.db)
             .await?;
+        debug!("Deleted project users");
+        let user_id = self.state.user.clone().unwrap().id;
+        debug!("User ID retrieved: {}", user_id);
+        let user_setting_crud = UserSettingCrud::new(self.state.db.clone());
+        user_setting_crud.update(user_id, None).await?;
+        debug!("Updated user settings for user ID: {}", user_id);
 
-        project::Entity::delete_by_id(id).exec(&self.state.db).await
+        debug!("Deleting project with ID: {}", id);
+        project::Entity::delete_by_id(id)
+            .exec(&self.state.db)
+            .await?;
+
+        let owner_id = project.unwrap().owner_id.clone();
+        let owner_crud = OwnerCrud::new(self.state.db.clone());
+        debug!("Created OwnerCrud instance");
+        owner_crud.delete(owner_id).await
     }
 }

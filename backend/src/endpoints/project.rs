@@ -146,7 +146,7 @@ async fn delete_project(
     Path(id): Path<i32>,
 ) -> StatusCode {
     let project_crud = ProjectCrud::new(app_state.clone());
-    match project_crud.delete(id).await {
+    match project_crud.delete_cascade(id).await {
         Ok(_) => StatusCode::NO_CONTENT,
         Err(e) => {
             debug!("Error deleting project {}: {:?}", id, e);
