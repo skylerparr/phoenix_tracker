@@ -110,14 +110,11 @@ const Home = () => {
     const storedButtons = sessionStorage.getActiveButtons();
     let newButtons = [...storedButtons];
 
-    // Remove search if only history param is present
-    if (hasHistoryParam && !hasSearchParams) {
-      newButtons = newButtons.filter((id) => id !== "search");
+    if (hasHistoryParam) {
+      newButtons = Array.from(new Set([...newButtons, "history"]));
     }
-
-    // Add history tab if needed
-    if (hasHistoryParam && !newButtons.includes("history")) {
-      newButtons.push("history");
+    if (hasSearchParams) {
+      newButtons = Array.from(new Set([...newButtons, "search"]));
     }
 
     return newButtons.sort((a, b) => {
@@ -156,12 +153,7 @@ const Home = () => {
         setActiveButtons((prev) => prev.filter((id) => id !== "history"));
       }
 
-      // Existing logic for opening tabs
-      if (
-        hasSearchParams &&
-        !hasHistoryParam &&
-        !activeButtons.includes("search")
-      ) {
+      if (hasSearchParams && !activeButtons.includes("search")) {
         setActiveButtons((prev) =>
           [...prev, "search"].sort((a, b) => {
             const aIndex = toolbarButtons.findIndex(
@@ -173,7 +165,8 @@ const Home = () => {
             return aIndex - bIndex;
           }),
         );
-      } else if (hasHistoryParam && !activeButtons.includes("history")) {
+      }
+      if (hasHistoryParam && !activeButtons.includes("history")) {
         setActiveButtons((prev) =>
           [...prev, "history"].sort((a, b) => {
             const aIndex = toolbarButtons.findIndex(
@@ -196,37 +189,36 @@ const Home = () => {
       window.removeEventListener("urlchange", handleLocationChange);
     };
   }, [activeButtons]);
+
   useEffect(() => {
     sessionStorage.setActiveButtons(activeButtons);
   }, [activeButtons]);
+
   const handleButtonClick = (buttonId: string) => {
     setActiveButtons((prevButtons: string[]) => {
       const newButtons = prevButtons.includes(buttonId)
         ? prevButtons.filter((id: string) => id !== buttonId)
         : [...prevButtons, buttonId];
+      const clearUrlParams = (paramsToDelete: string[], isHistory = false) => {
+        const currentParams = new URLSearchParams(window.location.search);
+        paramsToDelete.forEach((param) => currentParams.delete(param));
+        const newSearch = currentParams.toString();
+        const newUrl = newSearch
+          ? `${window.location.pathname}?${newSearch}`
+          : window.location.pathname;
+        window.history.pushState({}, "", newUrl);
+        if (!isHistory) {
+          setQueryParams(new Map());
+        }
+      };
 
       // Clear URL params when search tab is closed
       if (buttonId === "search" && prevButtons.includes("search")) {
-        const currentParams = new URLSearchParams(window.location.search);
-        currentParams.delete("id");
-        currentParams.delete("tagId");
-        currentParams.delete("userId");
-        const newSearch = currentParams.toString();
-        const newUrl = newSearch
-          ? `${window.location.pathname}?${newSearch}`
-          : window.location.pathname;
-        window.history.pushState({}, "", newUrl);
-        setQueryParams(new Map());
+        clearUrlParams(["id", "tagId", "userId"]);
       }
       // Clear URL params when history tab is closed
       if (buttonId === "history" && prevButtons.includes("history")) {
-        const currentParams = new URLSearchParams(window.location.search);
-        currentParams.delete("historyIssueId");
-        const newSearch = currentParams.toString();
-        const newUrl = newSearch
-          ? `${window.location.pathname}?${newSearch}`
-          : window.location.pathname;
-        window.history.pushState({}, "", newUrl);
+        clearUrlParams(["historyIssueId"], true);
       }
 
       return newButtons.sort((a: string, b: string) => {

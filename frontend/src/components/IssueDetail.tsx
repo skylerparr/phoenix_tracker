@@ -176,7 +176,12 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   };
 
   const handleDeleteIssue = async () => {
-    await issueService.deleteIssue(issue.id);
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this issue?",
+    );
+    if (confirmed) {
+      await issueService.deleteIssue(issue.id);
+    }
   };
 
   const handleTitleUpdate = async (value: string) => {
@@ -422,10 +427,60 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             borderRadius: "0px",
           }}
           title="Link to this issue"
+          onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+            navigator.clipboard.writeText(
+              `${window.location.origin}/home?id=${issue.id}`,
+            );
+            const tooltip = document.createElement("div");
+            tooltip.textContent = "Issue link copied";
+            tooltip.style.position = "fixed";
+            tooltip.style.padding = "8px";
+            tooltip.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
+            tooltip.style.color = "white";
+            tooltip.style.borderRadius = "4px";
+            tooltip.style.fontSize = "12px";
+            tooltip.style.zIndex = "9999";
+
+            const rect = event.currentTarget.getBoundingClientRect();
+            tooltip.style.left = `${rect.left}px`;
+            tooltip.style.top = `${rect.bottom + 8}px`;
+
+            document.body.appendChild(tooltip);
+
+            setTimeout(() => {
+              tooltip.style.transition = "opacity 0.5s";
+              tooltip.style.opacity = "0";
+              setTimeout(() => document.body.removeChild(tooltip), 500);
+            }, 2500);
+          }}
         >
           <LinkIcon sx={{ fontSize: "14px" }} />
-        </IconButton>{" "}
-        <Box
+        </IconButton>
+        <Button
+          onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+            navigator.clipboard.writeText(`#${issue.id.toString()}`);
+            const tooltip = document.createElement("div");
+            tooltip.textContent = "Issue id copied";
+            tooltip.style.position = "fixed";
+            tooltip.style.padding = "8px";
+            tooltip.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
+            tooltip.style.color = "white";
+            tooltip.style.borderRadius = "4px";
+            tooltip.style.fontSize = "12px";
+            tooltip.style.zIndex = "9999";
+
+            const rect = event.currentTarget.getBoundingClientRect();
+            tooltip.style.left = `${rect.left}px`;
+            tooltip.style.top = `${rect.bottom + 8}px`;
+
+            document.body.appendChild(tooltip);
+
+            setTimeout(() => {
+              tooltip.style.transition = "opacity 0.5s";
+              tooltip.style.opacity = "0";
+              setTimeout(() => document.body.removeChild(tooltip), 500);
+            }, 2500);
+          }}
           sx={{
             width: "18px",
             height: "18px",
@@ -435,12 +490,20 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
+            minWidth: 0,
+            padding: 0,
+            "&:hover": {
+              backgroundColor: "#e0e0e0",
+            },
+            "&:active": {
+              backgroundColor: "#d0d0d0",
+            },
           }}
         >
           <Typography variant="caption" sx={{ fontSize: "12px" }}>
             ID
           </Typography>
-        </Box>
+        </Button>{" "}
         <Typography
           variant="caption"
           sx={{
