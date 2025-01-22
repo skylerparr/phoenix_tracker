@@ -897,6 +897,13 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
       {blockers.map((blocker: Blocker) => (
         <Box
           key={blocker.blockerId}
+          component="button"
+          onClick={(e: React.MouseEvent) => {
+            e.stopPropagation();
+            window.history.pushState({}, "", `/home?id=${blocker.blockerId}`);
+            const navigationEvent = new PopStateEvent("popstate");
+            window.dispatchEvent(navigationEvent);
+          }}
           sx={{
             mt: 1,
             display: "flex",
@@ -904,6 +911,16 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             gap: 1,
             border: "1px solid black",
             p: 1,
+            width: "100%",
+            cursor: "pointer",
+            backgroundColor: "transparent",
+            "&:hover": {
+              opacity: 0.8,
+            },
+            "&:active": {
+              opacity: 0.6,
+            },
+            transition: "opacity 0.2s",
           }}
         >
           <Box
@@ -936,7 +953,10 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
           >
             <IconButton
               size="small"
-              onClick={() => handleDeleteBlocker(blocker.blockerId)}
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                handleDeleteBlocker(blocker.blockerId);
+              }}
             >
               <Delete sx={{ fontSize: 16, color: "grey" }} />
             </IconButton>
