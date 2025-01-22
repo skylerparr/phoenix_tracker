@@ -94,7 +94,11 @@ const SearchComponent = () => {
 
   return (
     <Box>
-      {issues.length > 0 ? (
+      {issues.length !== 0 ||
+      inProgressIssues.length !== 0 ||
+      acceptedIssues.length !== 0 ||
+      nonIceboxIssues.length !== 0 ||
+      iceboxIssues.length !== 0 ? (
         <>
           {expandedAcceptedIssues ? (
             <>
