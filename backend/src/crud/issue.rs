@@ -407,8 +407,10 @@ impl IssueCrud {
 
         txn.commit().await?;
 
-        let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
-        issue_assignee_crud.create(id, *current_user_id).await?;
+        if status_changed {
+            let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
+            issue_assignee_crud.create(id, *current_user_id).await?;
+        }
 
         // Record history items
         for record in history_records {
@@ -418,9 +420,9 @@ impl IssueCrud {
         }
 
         self.populate_issue_tags(&mut result).await?;
-        let project_id = &self.app_state.project.clone().unwrap().id;
+
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
-        broadcaster.broadcast_event(*project_id, ISSUE_UPDATED, serde_json::json!(result));
+        broadcaster.broadcast_event(project_id.clone(), ISSUE_UPDATED, serde_json::json!(result));
 
         Ok(result)
     }
