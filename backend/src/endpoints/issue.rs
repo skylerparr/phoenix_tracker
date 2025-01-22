@@ -81,8 +81,9 @@ async fn get_issues_by_user(
     Extension(app_state): Extension<AppState>,
     Path(user_id): Path<i32>,
 ) -> impl IntoResponse {
+    let project_id = app_state.project.clone().unwrap().id;
     let issue_crud = IssueCrud::new(app_state);
-    match issue_crud.find_all_by_user_id(user_id).await {
+    match issue_crud.find_all_by_user_id(project_id, user_id).await {
         Ok(issues) => Ok(Json(issues)),
         Err(e) => {
             info!("Error getting issues for user {}: {:?}", user_id, e);
@@ -139,8 +140,9 @@ async fn get_all_issues_for_backlog(
 #[axum::debug_handler]
 async fn get_issues_for_me(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
     let user_id = app_state.user.clone().unwrap().id;
+    let project_id = app_state.project.clone().unwrap().id;
     let issue_crud = IssueCrud::new(app_state);
-    match issue_crud.find_all_by_user_id(user_id).await {
+    match issue_crud.find_all_by_user_id(project_id, user_id).await {
         Ok(issues) => Ok(Json(issues)),
         Err(e) => {
             info!("Error getting all issues: {:?}", e);
@@ -316,7 +318,7 @@ async fn get_issues_by_tag(
         Err(e) => {
             info!("Error getting issues by tag {}: {:?}", tag_id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
-        },
+        }
     }
 }
 
@@ -329,7 +331,7 @@ async fn get_all_accepted(Extension(app_state): Extension<AppState>) -> impl Int
         Err(e) => {
             info!("Error getting all accepted issues: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
-        },
+        }
     }
 }
 #[axum::debug_handler]

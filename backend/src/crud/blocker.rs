@@ -134,7 +134,7 @@ impl BlockerCrud {
         );
 
         Ok(result)
-    } 
+    }
 
     pub async fn delete_all_by_issue_id(&self, issue_id: i32) -> Result<DeleteResult, DbErr> {
         let result = blocker::Entity::delete_many()

@@ -81,37 +81,38 @@ const MyIssuesComponent: React.FC = () => {
     <Box className="backlog-container">
       <Box className="backlog-content" sx={{ width: "100%" }}>
         <IssueGroup issues={issues} weeksFromNow={0} />
-        {!expandedAcceptedIssues ? (
-          <Box
-            sx={{
-              border: "1px solid #ddd",
-              borderRadius: 1,
-              width: "100%",
-              bgcolor: "#c6d9b7",
-              padding: "5px",
-              cursor: "pointer",
-              color: "#333333",
-              textAlign: "center",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            onClick={() => setExpandedAcceptedIssues(true)}
-          >
-            Show {acceptedIssues.length} Accepted Issues
-          </Box>
-        ) : (
-          <>
-            {acceptedIssues.map((issue: Issue) => (
-              <IssueComponent
-                key={issue.id}
-                issue={issue}
-                expanded={expandedIssueIds.has(issue.id)}
-                onToggleExpanded={() => handleExpandIssue(issue.id)}
-              />
-            ))}
-          </>
-        )}
+        {acceptedIssues.length > 0 &&
+          (!expandedAcceptedIssues ? (
+            <Box
+              sx={{
+                border: "1px solid #ddd",
+                borderRadius: 1,
+                width: "100%",
+                bgcolor: "#c6d9b7",
+                padding: "5px",
+                cursor: "pointer",
+                color: "#333333",
+                textAlign: "center",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onClick={() => setExpandedAcceptedIssues(true)}
+            >
+              Show {acceptedIssues.length} Accepted Issues
+            </Box>
+          ) : (
+            <>
+              {acceptedIssues.map((issue: Issue) => (
+                <IssueComponent
+                  key={issue.id}
+                  issue={issue}
+                  expanded={expandedIssueIds.has(issue.id)}
+                  onToggleExpanded={() => handleExpandIssue(issue.id)}
+                />
+              ))}
+            </>
+          ))}{" "}
         {inProgressIssues.map((issue: Issue) => (
           <IssueComponent
             key={issue.id}

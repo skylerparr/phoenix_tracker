@@ -19,7 +19,7 @@ use sea_orm::*;
 
 #[derive(Clone)]
 pub struct IssueCrud {
-    app_state: AppState
+    app_state: AppState,
 }
 
 impl IssueCrud {
@@ -195,7 +195,11 @@ impl IssueCrud {
         Ok(issues)
     }
 
-    pub async fn find_all_by_user_id(&self, user_id: i32) -> Result<Vec<issue::Model>, DbErr> {
+    pub async fn find_all_by_user_id(
+        &self,
+        project_id: i32,
+        user_id: i32,
+    ) -> Result<Vec<issue::Model>, DbErr> {
         let now = chrono::Utc::now().date_naive();
         let days_from_monday = now.weekday().num_days_from_monday();
         let monday = now - chrono::Duration::days(days_from_monday as i64);
@@ -203,6 +207,7 @@ impl IssueCrud {
         let mut issues = issue_assignee::Entity::find()
             .filter(issue_assignee::Column::UserId.eq(user_id))
             .find_also_related(issue::Entity)
+            .filter(issue::Column::ProjectId.eq(project_id))
             .filter(
                 Condition::any()
                     .add(issue::Column::Status.ne(STATUS_ACCEPTED))
