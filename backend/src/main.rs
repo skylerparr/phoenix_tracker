@@ -127,7 +127,7 @@ fn main() {
 
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
-        let database_url = "sqlite:/data/app.db";
+        let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
         let conn = Database::connect(database_url).await.unwrap();
 
         let cors = CorsLayer::new()

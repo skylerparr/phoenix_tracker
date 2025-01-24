@@ -12,8 +12,10 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - DATABASE_URL=sqlite:///./data/app.db
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/app
       - PORT=3001
+    depends_on:
+      - postgres
       
   frontend:
     build:
@@ -30,7 +32,19 @@ services:
     depends_on:
       - backend
 
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=app
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
 volumes:
   backend_data:
   cargo-target:
-  cargo-registry: 
+  cargo-registry:
+  postgres_data:

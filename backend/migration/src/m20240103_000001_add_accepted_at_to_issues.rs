@@ -10,11 +10,7 @@ impl MigrationTrait for Migration {
             .alter_table(
                 Table::alter()
                     .table(Issue::Table)
-                    .add_column(
-                        ColumnDef::new(Issue::AcceptedAt)
-                            .timestamp()
-                            .null(),
-                    )
+                    .add_column(ColumnDef::new(Issue::AcceptedAt).timestamp_with_time_zone().null())
                     .to_owned(),
             )
             .await?;

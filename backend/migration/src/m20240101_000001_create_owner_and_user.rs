@@ -22,13 +22,13 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(User::Email).string().not_null().unique_key())
                     .col(
                         ColumnDef::new(User::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(User::UpdatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
@@ -48,13 +48,13 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Owner::UserId).integer().not_null())
                     .col(
                         ColumnDef::new(Owner::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(Owner::UpdatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
@@ -82,13 +82,13 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Project::OwnerId).integer().not_null())
                     .col(
                         ColumnDef::new(Project::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(Project::UpdatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
@@ -117,13 +117,13 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Tag::ProjectId).integer().not_null())
                     .col(
                         ColumnDef::new(Tag::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(Tag::UpdatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
@@ -161,7 +161,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Issue::WorkType).integer().not_null())
                     .col(ColumnDef::new(Issue::ProjectId).integer().not_null())
                     .col(ColumnDef::new(Issue::CreatedById).integer().not_null())
-                    .col(ColumnDef::new(Issue::TargetReleaseAt).timestamp())
+                    .col(ColumnDef::new(Issue::TargetReleaseAt).timestamp_with_time_zone())
                     .col(
                         ColumnDef::new(Issue::LockVersion)
                             .integer()
@@ -170,13 +170,13 @@ impl MigrationTrait for Migration {
                     )
                     .col(
                         ColumnDef::new(Issue::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(Issue::UpdatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
@@ -204,13 +204,13 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(IssueTag::TagId).integer().not_null())
                     .col(
                         ColumnDef::new(IssueTag::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(IssueTag::UpdatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
@@ -239,13 +239,13 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(IssueAssignee::UserId).integer().not_null())
                     .col(
                         ColumnDef::new(IssueAssignee::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(IssueAssignee::UpdatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
@@ -285,13 +285,13 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Comment::UserId).integer().not_null())
                     .col(
                         ColumnDef::new(Comment::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(Comment::UpdatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
@@ -326,13 +326,13 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Tasks::IssueId).integer().not_null())
                     .col(
                         ColumnDef::new(Tasks::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(Tasks::UpdatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
@@ -362,16 +362,16 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .unique_key(),
                     )
-                    .col(ColumnDef::new(Token::ExpiresAt).timestamp().not_null())
+                    .col(ColumnDef::new(Token::ExpiresAt).timestamp_with_time_zone().not_null())
                     .col(
                         ColumnDef::new(Token::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(Token::UpdatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
@@ -392,13 +392,13 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(ProjectUser::UserId).integer().not_null())
                     .col(
                         ColumnDef::new(ProjectUser::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(ProjectUser::UpdatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
@@ -439,13 +439,13 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(History::Action).string().not_null())
                     .col(
                         ColumnDef::new(History::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(History::UpdatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
@@ -499,13 +499,13 @@ impl MigrationTrait for Migration {
                     )
                     .col(
                         ColumnDef::new(Notification::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(Notification::UpdatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
@@ -538,13 +538,13 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Blocker::BlockedId).integer().not_null())
                     .col(
                         ColumnDef::new(Blocker::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(Blocker::UpdatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
@@ -612,13 +612,13 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(UserSetting::LockVersion).integer())
                     .col(
                         ColumnDef::new(UserSetting::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(UserSetting::UpdatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
@@ -709,12 +709,12 @@ impl MigrationTrait for Migration {
                     .execute(sea_orm::Statement::from_string(
                         manager.get_database_backend(),
                         r#"CREATE OR REPLACE FUNCTION update_updated_at_column()
-                                    RETURNS TRIGGER AS $
+                                    RETURNS TRIGGER AS $$
                                     BEGIN
                                         NEW.updated_at = CURRENT_TIMESTAMP;
                                         RETURN NEW;
                                     END;
-                                    $ language 'plpgsql';"#
+                                    $$ language 'plpgsql';"#
                             .to_owned(),
                     ))
                     .await?;
@@ -756,7 +756,7 @@ impl MigrationTrait for Migration {
                         .get_connection()
                         .execute(sea_orm::Statement::from_string(
                             manager.get_database_backend(),
-                            format!("DROP TRIGGER IF EXISTS set_updated_at ON {};", table),
+                            format!("DROP TRIGGER IF EXISTS set_updated_at ON \"{}\";", table),
                         ))
                         .await?;
                     // Then create new trigger
@@ -766,7 +766,7 @@ impl MigrationTrait for Migration {
                             manager.get_database_backend(),
                             format!(
                                 r#"CREATE TRIGGER set_updated_at
-                                            BEFORE UPDATE ON {}
+                                            BEFORE UPDATE ON "{}"
                                             FOR EACH ROW
                                             EXECUTE FUNCTION update_updated_at_column();"#,
                                 table
@@ -788,7 +788,7 @@ impl MigrationTrait for Migration {
                             manager.get_database_backend(),
                             format!(
                                 r#"CREATE TRIGGER set_updated_at
-                                            BEFORE UPDATE ON {}
+                                            BEFORE UPDATE ON "{}"
                                             FOR EACH ROW
                                             SET NEW.updated_at = CURRENT_TIMESTAMP"#,
                                 table

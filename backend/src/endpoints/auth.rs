@@ -58,7 +58,8 @@ async fn register(
 
     let user = match user_crud.create(payload.name, payload.email).await {
         Ok(user) => user,
-        Err(_) => {
+        Err(e) => {
+            debug!("Error creating user: {:?}", e);
             return (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create user").into_response()
         }
     };
