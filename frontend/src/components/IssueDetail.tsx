@@ -975,6 +975,13 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         sx={{
           bgcolor: "white",
           "& .MuiInputBase-input": { color: "black" },
+          "& .MuiInputBase-root": {
+            resize: "vertical",
+            minHeight: "100px",
+            "& textarea": {
+              resize: "vertical",
+            },
+          },
         }}
         onChange={(e) => handleDescriptionUpdate(e.target.value)}
       />
@@ -1144,6 +1151,13 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
           sx={{
             bgcolor: "white",
             "& .MuiInputBase-input": { color: "black" },
+            "& .MuiInputBase-root": {
+              resize: "vertical",
+              minHeight: "100px",
+              "& textarea": {
+                resize: "vertical",
+              },
+            },
           }}
           value={comment}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>

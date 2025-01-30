@@ -6,19 +6,15 @@ Rising from the ashes of a beloved issue tracker. I was a fan, I'm sad it's gone
 
 ## Development Setup
 
-1. Create the SQLite database file:
-```bash
-mkdir -p data && touch data/app.db
-```
-2. Start the development server:
+1. Start the development server:
 ```bash
 docker compose up
 ```
-3. Run migrations
+2. Run migrations
 ```bash
-docker exec -it phoenix-tracker-backend-1 sea-orm-cli migrate fresh --database-url sqlite:/data/app.db
+docker exec -it phoenix-tracker-backend-1 sea-orm-cli migrate fresh --database-url postgresql://postgres:postgres@postgres:5432/phoenix_tracker
 ```
-4. Navigate to http://localhost:3000
+3. Navigate to http://localhost:3000
    
 ## Tools
 

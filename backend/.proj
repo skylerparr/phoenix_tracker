@@ -1,9 +1,9 @@
 alias container="docker ps | grep backend | cut -d ' ' -f 1"
 alias fmt="docker exec -it `container` cargo fmt"
 alias fmt_migrations="docker exec -it $(container) sh -c 'cd migration && cargo fmt'"
-alias migrate_fresh="docker exec -it `container` sea-orm-cli migrate fresh --database-url postgresql://postgres:postgres@postgres:5432/app"
-alias migrate_up="docker exec -it `container` sea-orm-cli migrate up --database-url postgresql://postgres:postgres@postgres:5432/app"
-alias migrate_down="docker exec -it `container` sea-orm-cli migrate down --database-url postgresql://postgres:postgres@postgres:5432/app"
+alias migrate_fresh="docker exec -it `container` sea-orm-cli migrate fresh --database-url postgresql://postgres:postgres@10.0.0.111:5432/phoenix_tracker"
+alias migrate_up="docker exec -it `container` sea-orm-cli migrate up --database-url postgresql://postgres:postgres@10.0.0.111:5432/phoenix_tracker"
+alias migrate_down="docker exec -it `container` sea-orm-cli migrate down --database-url postgresql://postgres:postgres@10.0.0.111:5432/phoenix_tracker"
 
 function cargo_add() {
     docker exec -it `container` cargo add $1
