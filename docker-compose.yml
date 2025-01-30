@@ -14,8 +14,8 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - PORT=3001
-    # depends_on:
-    #   - postgres
+    depends_on:
+      - postgres
       
   frontend:
     build:
@@ -32,16 +32,16 @@ services:
     depends_on:
       - backend
 
-  # postgres:
-  #   image: postgres:15
-  #   environment:
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=postgres
-  #     - POSTGRES_DB=app
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   ports:
-  #     - "5432:5432"
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=app
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
 volumes:
   backend_data:
