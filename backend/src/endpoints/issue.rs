@@ -13,7 +13,7 @@ use axum::{
 };
 use sea_orm::entity::prelude::*;
 use serde::Deserialize;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -118,7 +118,7 @@ pub async fn create_issue(
     {
         Ok(issue) => Ok(Json(issue)),
         Err(e) => {
-            info!("Error creating issue: {:?}", e);
+            warn!("Error creating issue: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -129,10 +129,10 @@ async fn get_all_issues_for_backlog(
 ) -> impl IntoResponse {
     let project_id = app_state.project.clone().unwrap().id;
     let issue_crud = IssueCrud::new(app_state);
-    match issue_crud.find_all_for_backlog(project_id, false).await {
+    match issue_crud.find_all_for_backlog(project_id).await {
         Ok(issues) => Ok(Json(issues)),
         Err(e) => {
-            info!("Error getting all issues: {:?}", e);
+            warn!("Error getting all issues: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -145,7 +145,7 @@ async fn get_issues_for_me(Extension(app_state): Extension<AppState>) -> impl In
     match issue_crud.find_all_by_user_id(project_id, user_id).await {
         Ok(issues) => Ok(Json(issues)),
         Err(e) => {
-            info!("Error getting all issues: {:?}", e);
+            warn!("Error getting all issues: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }

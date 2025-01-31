@@ -60,7 +60,7 @@ async fn register(
         Ok(user) => user,
         Err(e) => {
             debug!("Error creating user: {:?}", e);
-            return (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create user").into_response()
+            return (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create user").into_response();
         }
     };
 

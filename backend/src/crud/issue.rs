@@ -16,6 +16,7 @@ use crate::AppState;
 use chrono::Datelike;
 use sea_orm::entity::prelude::*;
 use sea_orm::*;
+use tracing::error;
 
 #[derive(Clone)]
 pub struct IssueCrud {
@@ -97,18 +98,14 @@ impl IssueCrud {
         Ok(issue)
     }
 
-    pub async fn find_all_for_backlog(
-        &self,
-        project_id: i32,
-        is_icebox: bool,
-    ) -> Result<Vec<issue::Model>, DbErr> {
+    pub async fn find_all_for_backlog(&self, project_id: i32) -> Result<Vec<issue::Model>, DbErr> {
         let now = chrono::Utc::now().date_naive();
         let days_from_monday = now.weekday().num_days_from_monday();
         let monday = now - chrono::Duration::days(days_from_monday as i64);
 
         let mut issues = issue::Entity::find()
             .filter(issue::Column::ProjectId.eq(project_id))
-            .filter(issue::Column::IsIcebox.eq(is_icebox))
+            .filter(issue::Column::IsIcebox.eq(false))
             .filter(
                 Condition::any()
                     .add(issue::Column::Status.ne(STATUS_ACCEPTED))
