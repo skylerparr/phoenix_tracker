@@ -7,6 +7,7 @@ use crate::entities::project_user;
 use crate::AppState;
 use sea_orm::*;
 use tracing::debug;
+use chrono::{DateTime, FixedOffset};
 
 #[derive(Clone)]
 pub struct ProjectCrud {
@@ -41,34 +42,65 @@ impl ProjectCrud {
         user_id: i32,
     ) -> Result<Vec<project::Model>, DbErr> {
         debug!("Finding projects for user with ID: {}", user_id);
-        let query = project::Entity::find().filter(
-            project::Column::Id.in_subquery(
-                project_user::Entity::find()
-                    .filter(project_user::Column::UserId.eq(user_id))
-                    .select_only()
-                    .column(project_user::Column::ProjectId)
-                    .distinct()
-                    .into_query(),
-            ),
-        );
-        debug!(
-            "Generated query: {:?}",
-            query.build(self.state.db.get_database_backend())
-        );
-        match query.all(&self.state.db).await {
-            Ok(data) => {
-                debug!(
-                    "Query result IDs: {:?}",
-                    data.iter().map(|project| project.id).collect::<Vec<_>>()
-                );
-                Ok(data)
-            }
-            Err(e) => {
-                debug!("Query error: {:?}", e);
-                Err(e)
+    
+        // First get all the projects for this user
+        let projects_query = project::Entity::find()
+            .filter(
+                project::Column::Id.in_subquery(
+                    project_user::Entity::find()
+                        .filter(project_user::Column::UserId.eq(user_id))
+                        .select_only()
+                        .column(project_user::Column::ProjectId)
+                        .distinct()
+                        .into_query(),
+                ),
+            );
+    
+        let projects = projects_query.all(&self.state.db).await?;
+    
+        // If there are no projects, return early
+        if projects.is_empty() {
+            return Ok(projects);
+        }
+    
+        // Get all project IDs
+        let project_ids: Vec<i32> = projects.iter().map(|p| p.id).collect();
+    
+        // Get the latest issue for each project
+        let latest_issues = issue::Entity::find()
+            .filter(issue::Column::ProjectId.is_in(project_ids.clone()))
+            .order_by_desc(issue::Column::UpdatedAt)
+            .all(&self.state.db)
+            .await?;
+    
+        // Create a map of project ID to its latest issue updated timestamp
+        let mut project_latest_update: std::collections::HashMap<i32, DateTime<FixedOffset>> = std::collections::HashMap::new();
+    
+        for issue_model in latest_issues {
+            // Note: project_id is not an Option, so we access it directly
+            let project_id = issue_model.project_id;
+            if !project_latest_update.contains_key(&project_id) {
+                project_latest_update.insert(project_id, issue_model.updated_at);
             }
         }
-    }
+    
+        // Sort projects by their latest issue's updated_at timestamp
+        let mut sorted_projects = projects;
+        sorted_projects.sort_by(|a, b| {
+            let a_time = project_latest_update.get(&a.id).cloned().unwrap_or_else(|| a.created_at);
+            let b_time = project_latest_update.get(&b.id).cloned().unwrap_or_else(|| b.created_at);
+            b_time.cmp(&a_time) // Descending order
+        });
+    
+        debug!(
+            "Sorted project IDs: {:?}",
+            sorted_projects.iter().map(|project| project.id).collect::<Vec<_>>()
+        );
+    
+        Ok(sorted_projects)
+    }    
+
+
 
     pub async fn update(
         &self,
