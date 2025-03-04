@@ -11,8 +11,14 @@ pub struct Model {
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }
-
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(
+        has_many = "super::issue::Entity",
+        from = "Column::Id",
+        to = "super::issue::Column::ProjectId"
+    )]
+    Issue,
+}
 
 impl ActiveModelBehavior for ActiveModel {}
