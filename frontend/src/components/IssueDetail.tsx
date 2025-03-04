@@ -60,6 +60,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
 import { PARAM_HISTORY_ISSUE_ID } from "./SearchComponent";
+import IssueComments from "./IssueComments";
 
 const lightTheme = createTheme({
   palette: {
@@ -1124,62 +1125,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
           </IconButton>
         </Stack>
       ))}
-      <Stack spacing={1}>
-        <Typography sx={{ color: "#666", fontWeight: "bold" }}>
-          Activity
-        </Typography>
-
-        {comments.map((comment: Comment) => (
-          <React.Fragment key={comment.id}>
-            <Stack spacing={1}>
-              <Typography sx={{ color: "#666", fontSize: "12px" }}>
-                Posted by{" "}
-                {users.find((user: User) => user.id === comment.userId)?.name}{" "}
-                on {new Date(comment.createdAt).toLocaleString()}{" "}
-              </Typography>
-              <Typography sx={{ color: "#333" }}>{comment.content}</Typography>
-            </Stack>
-            <hr />
-          </React.Fragment>
-        ))}
-
-        <TextField
-          multiline
-          rows={4}
-          fullWidth
-          placeholder="Add a comment"
-          sx={{
-            bgcolor: "white",
-            "& .MuiInputBase-input": { color: "black" },
-            "& .MuiInputBase-root": {
-              resize: "vertical",
-              minHeight: "100px",
-              "& textarea": {
-                resize: "vertical",
-              },
-            },
-          }}
-          value={comment}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setComment(e.target.value)
-          }
-          onKeyPress={(e) => {
-            if (e.key === "Enter" && !e.shiftKey && comment.length >= 2) {
-              e.preventDefault();
-              handlePostComment();
-            }
-          }}
-        />
-
-        <Button
-          variant="contained"
-          disabled={!comment || comment.length < 2}
-          sx={{ width: "200px", marginLeft: "auto", display: "block" }}
-          onClick={handlePostComment}
-        >
-          Post Comment
-        </Button>
-      </Stack>{" "}
+      <IssueComments issueId={issue.id} comments={comments} users={users} />
     </Stack>
   );
 };
