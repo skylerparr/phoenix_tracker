@@ -2,10 +2,8 @@ import React, { useEffect } from "react";
 import { Box } from "@mui/material";
 import { issueService } from "../services/IssueService";
 import IssueList from "./IssueList";
-import IssueGroup from "./IssueGroup";
 import { useIssueFilter } from "../hooks/useIssueFilter";
 import AcceptedIssuesToggle from "./AcceptedIssuesToggle";
-import { Issue } from "../models/Issue";
 
 const Backlog: React.FC = () => {
   const {

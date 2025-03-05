@@ -14,6 +14,7 @@ import {
   Stars,
   AccessTime,
   Settings,
+  Notes as NotesIcon,
 } from "@mui/icons-material";
 import CreateIssue from "../components/CreateIssue";
 import Backlog from "../components/Backlog";
@@ -32,6 +33,7 @@ import ManageTagsComponent from "../components/ManageTagsComponent";
 import EpicsComponent from "../components/EpicsComponent";
 import HistoryComponent from "../components/HistoryComponent";
 import SettingsComponent from "../components/SettingsComponent";
+import { ProjectNotesComponent } from "../components/ProjectNotesComponent";
 
 const toolbarButtons = [
   {
@@ -81,6 +83,12 @@ const toolbarButtons = [
     icon: <Stars />,
     id: "epics",
     component: EpicsComponent,
+  },
+  {
+    tooltip: "Notes",
+    icon: <NotesIcon />,
+    id: "project_notes",
+    component: ProjectNotesComponent,
   },
   {
     tooltip: "History",

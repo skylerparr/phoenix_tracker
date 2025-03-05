@@ -362,7 +362,11 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .unique_key(),
                     )
-                    .col(ColumnDef::new(Token::ExpiresAt).timestamp_with_time_zone().not_null())
+                    .col(
+                        ColumnDef::new(Token::ExpiresAt)
+                            .timestamp_with_time_zone()
+                            .not_null(),
+                    )
                     .col(
                         ColumnDef::new(Token::CreatedAt)
                             .timestamp_with_time_zone()

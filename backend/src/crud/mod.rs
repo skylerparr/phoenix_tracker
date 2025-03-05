@@ -8,6 +8,7 @@ pub mod issue_assignee;
 pub mod issue_tag;
 pub mod owner;
 pub mod project;
+pub mod project_note;
 pub mod project_user;
 pub mod status;
 pub mod tag;

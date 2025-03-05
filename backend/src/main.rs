@@ -18,7 +18,8 @@ use endpoints::{
     auth::auth_routes, blocker::blocker_routes, comment::comment_routes, history::history_routes,
     import_export::import_export_routes, issue::issue_routes,
     issue_assignee::issue_assignee_routes, issue_tag::issue_tag_routes, owner::owner_routes,
-    project::project_routes, tag::tag_routes, task::task_routes, user::user_routes,
+    project::project_routes, project_note::project_note_routes, tag::tag_routes, task::task_routes,
+    user::user_routes,
 };
 use sea_orm::{Database, DatabaseConnection};
 use std::net::SocketAddr;
@@ -131,7 +132,7 @@ fn main() {
         let conn = Database::connect(database_url).await.unwrap();
 
         let cors = CorsLayer::new()
-            .allow_origin(HeaderValue::from_static("http://localhost:3000"))
+            .allow_origin(HeaderValue::from_static("http://10.0.0.101:3000"))
             .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
             .allow_headers(vec![
                 HeaderName::from_static("content-type"),
@@ -161,6 +162,7 @@ fn main() {
             .merge(blocker_routes())
             .merge(import_export_routes())
             .merge(history_routes())
+            .merge(project_note_routes())
             .route("/ws", get(websocket::ws_handler))
             .route("/", get(|| async { "Tracker Root" }))
             .layer(middleware::from_fn(logging_middleware))
