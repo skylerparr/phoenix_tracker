@@ -101,7 +101,6 @@ export const ProjectNotesComponent: React.FC = () => {
                   ...note,
                   title: editTitle,
                   detail: editDetail,
-                  updatedAt: new Date().toISOString(),
                 }
               : note,
           ),
