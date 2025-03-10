@@ -53,13 +53,13 @@ const ProjectsPage: React.FC = () => {
 
   return (
     <RequireAuth>
-      <Container 
-        maxWidth="lg" 
-        sx={{ 
-          py: 4, 
+      <Container
+        maxWidth="lg"
+        sx={{
+          py: 4,
           height: "calc(100vh - 64px)",
           maxHeight: "100vh",
-          overflowY: "auto"
+          overflowY: "auto",
         }}
       >
         <Box

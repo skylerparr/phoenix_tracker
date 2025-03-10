@@ -9,6 +9,7 @@ import {
   STATUS_COMPLETED,
   STATUS_ACCEPTED,
   STATUS_REJECTED,
+  STATUS_DELIVERED,
 } from "../services/StatusService";
 import {
   Issue,
@@ -93,7 +94,18 @@ const StatusButton: React.FC<StatusButtonProps> = ({ issue }) => {
           nextStatusHandler: () =>
             isChoreOrRelease
               ? issueService.acceptIssue(issue.id)
-              : issueService.finishIssue(issue.id),
+              : issueService.deliverIssue(issue.id),
+        },
+      ],
+    ],
+    [
+      STATUS_DELIVERED,
+      [
+        {
+          status: "Deliver",
+          color: "#EE8829",
+          textColor: "#FFF",
+          nextStatusHandler: () => issueService.finishIssue(issue.id),
         },
       ],
     ],

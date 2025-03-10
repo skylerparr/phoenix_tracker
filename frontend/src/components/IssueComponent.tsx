@@ -8,6 +8,7 @@ import {
   STATUS_IN_PROGRESS,
   STATUS_ACCEPTED,
   STATUS_COMPLETED,
+  STATUS_DELIVERED,
 } from "../services/StatusService";
 import { IssueDetail } from "./IssueDetail";
 import { issueTagService } from "../services/IssueTagService";
@@ -39,6 +40,8 @@ export const getBackgroundColor = (issue: Issue | undefined) => {
       return "#FFFFE0";
     case STATUS_COMPLETED:
       return "#FFFFE0";
+    case STATUS_DELIVERED:
+      return "#FFFFE0";
     case STATUS_ACCEPTED:
       return "#c6d9b7";
     default:
@@ -60,6 +63,8 @@ export const getHoverBackgroundColor = (issue: Issue | undefined) => {
     case STATUS_IN_PROGRESS:
       return "#FFFF99";
     case STATUS_COMPLETED:
+      return "#FFFF99";
+    case STATUS_DELIVERED:
       return "#FFFF99";
     case STATUS_ACCEPTED:
       return "#a8c594";

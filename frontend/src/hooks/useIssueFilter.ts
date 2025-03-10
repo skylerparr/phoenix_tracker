@@ -4,6 +4,7 @@ import {
   STATUS_IN_PROGRESS,
   STATUS_ACCEPTED,
   STATUS_COMPLETED,
+  STATUS_DELIVERED,
 } from "../services/StatusService";
 
 export const useIssueFilter = () => {
@@ -18,10 +19,12 @@ export const useIssueFilter = () => {
     const inProgress = issues.filter(
       (issue) =>
         issue.status === STATUS_IN_PROGRESS ||
+        issue.status === STATUS_DELIVERED ||
         issue.status === STATUS_COMPLETED,
     );
     const sortedInProgress = [
       ...inProgress.filter((issue) => issue.status === STATUS_COMPLETED),
+      ...inProgress.filter((issue) => issue.status === STATUS_DELIVERED),
       ...inProgress.filter((issue) => issue.status === STATUS_IN_PROGRESS),
     ];
 
@@ -29,6 +32,7 @@ export const useIssueFilter = () => {
       (issue) =>
         issue.status !== STATUS_ACCEPTED &&
         issue.status !== STATUS_IN_PROGRESS &&
+        issue.status !== STATUS_DELIVERED &&
         issue.status !== STATUS_COMPLETED,
     );
 
@@ -36,11 +40,25 @@ export const useIssueFilter = () => {
       (a, b) =>
         new Date(b.acceptedAt!).getTime() - new Date(a.acceptedAt!).getTime(),
     );
-    const sortedInProgressWithDate = sortedInProgress.sort(
-      (a, b) =>
-        new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
-    );
-
+    const sortedInProgressWithDate = sortedInProgress.sort((a, b) => {
+      if (
+        (a.status === STATUS_COMPLETED || a.status === STATUS_DELIVERED) &&
+        b.status !== STATUS_COMPLETED &&
+        b.status !== STATUS_DELIVERED
+      )
+        return -1;
+      if (
+        (b.status === STATUS_COMPLETED || b.status === STATUS_DELIVERED) &&
+        a.status !== STATUS_COMPLETED &&
+        a.status !== STATUS_DELIVERED
+      )
+        return 1;
+      if (a.status === STATUS_IN_PROGRESS && b.status !== STATUS_IN_PROGRESS)
+        return -1;
+      if (b.status === STATUS_IN_PROGRESS && a.status !== STATUS_IN_PROGRESS)
+        return 1;
+      return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+    });
     setAcceptedIssues(sortedAccepted);
     setInprogressIssues(sortedInProgressWithDate);
 

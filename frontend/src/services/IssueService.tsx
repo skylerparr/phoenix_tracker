@@ -62,6 +62,10 @@ export class IssueService extends BaseService<Issue> {
     return this.put<Issue>(`/${id}/finish`);
   }
 
+  async deliverIssue(id: number): Promise<Issue> {
+    return this.put<Issue>(`/${id}/deliver`);
+  }
+
   async acceptIssue(id: number): Promise<Issue> {
     return this.put<Issue>(`/${id}/accept`);
   }

@@ -8,6 +8,7 @@ import {
   STATUS_IN_PROGRESS,
   STATUS_ACCEPTED,
   STATUS_COMPLETED,
+  STATUS_DELIVERED,
 } from "../services/StatusService";
 
 const MyIssuesComponent: React.FC = () => {
@@ -32,17 +33,20 @@ const MyIssuesComponent: React.FC = () => {
     const inProgress = issues.filter(
       (issue) =>
         issue.status === STATUS_IN_PROGRESS ||
-        issue.status === STATUS_COMPLETED,
+        issue.status === STATUS_COMPLETED ||
+        issue.status === STATUS_DELIVERED,
     );
     const sortedInProgress = [
       ...inProgress.filter((issue) => issue.status === STATUS_COMPLETED),
       ...inProgress.filter((issue) => issue.status === STATUS_IN_PROGRESS),
+      ...inProgress.filter((issue) => issue.status === STATUS_DELIVERED),
     ];
 
     const prioritizable = issues.filter(
       (issue) =>
         issue.status !== STATUS_ACCEPTED &&
         issue.status !== STATUS_IN_PROGRESS &&
+        issue.status !== STATUS_DELIVERED &&
         issue.status !== STATUS_COMPLETED,
     );
 

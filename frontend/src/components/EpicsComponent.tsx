@@ -9,6 +9,7 @@ import {
   STATUS_ACCEPTED,
   STATUS_COMPLETED,
   STATUS_IN_PROGRESS,
+  STATUS_DELIVERED,
 } from "../services/StatusService";
 import { PROGRESS_COLORS } from "../constants";
 import { searchTagsForIssue } from "./IssueComponent";
@@ -49,6 +50,11 @@ const tooltipContent = (issues: Issue[]) => (
         label: "Accepted",
         predicate: (issue: Issue) => issue.status === STATUS_ACCEPTED,
         color: PROGRESS_COLORS.ACCEPTED,
+      },
+      {
+        label: "Delivered",
+        predicate: (issue: Issue) => issue.status === STATUS_DELIVERED,
+        color: PROGRESS_COLORS.DELIVERED,
       },
       {
         label: "Icebox",
@@ -216,10 +222,10 @@ const EpicsComponent: React.FC = () => {
                     sx={{
                       width: calculateWidth(
                         epic,
-                        (issue) => issue.status === STATUS_COMPLETED,
+                        (issue) => issue.status === STATUS_DELIVERED,
                         issuesMap,
                       ),
-                      bgcolor: PROGRESS_COLORS.COMPLETED,
+                      bgcolor: PROGRESS_COLORS.DELIVERED,
                       height: "8px",
                     }}
                   />

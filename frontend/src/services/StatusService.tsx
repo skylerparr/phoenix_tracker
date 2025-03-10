@@ -7,11 +7,13 @@ export const STATUS_IN_PROGRESS = 1;
 export const STATUS_COMPLETED = 2;
 export const STATUS_REJECTED = 3;
 export const STATUS_ACCEPTED = 4;
+export const STATUS_DELIVERED = 5;
 
 const STATUS_MAP = new Map<number, string>([
   [STATUS_UNSTARTED, "Unstarted"],
   [STATUS_IN_PROGRESS, "In Progress"],
   [STATUS_COMPLETED, "Completed"],
+  [STATUS_DELIVERED, "Delivered"],
   [STATUS_REJECTED, "Rejected"],
   [STATUS_ACCEPTED, "Accepted"],
 ]);

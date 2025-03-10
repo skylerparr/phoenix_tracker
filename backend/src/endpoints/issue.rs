@@ -1,6 +1,7 @@
 use crate::crud::issue::IssueCrud;
 use crate::crud::status::{
-    STATUS_ACCEPTED, STATUS_COMPLETED, STATUS_IN_PROGRESS, STATUS_REJECTED, STATUS_UNSTARTED,
+    STATUS_ACCEPTED, STATUS_COMPLETED, STATUS_DELIVERED, STATUS_IN_PROGRESS, STATUS_REJECTED,
+    STATUS_UNSTARTED,
 };
 use crate::AppState;
 use axum::Extension;
@@ -61,6 +62,7 @@ pub fn issue_routes() -> Router<AppState> {
         .route("/issues/:id", put(update_issue))
         .route("/issues/:id/start", put(start_issue))
         .route("/issues/:id/finish", put(finish_issue))
+        .route("/issues/:id/deliver", put(deliver_issue))
         .route("/issues/:id/accept", put(accept_issue))
         .route("/issues/:id/reject", put(reject_issue))
         .route("/issues/:id", delete(delete_issue))
@@ -217,6 +219,14 @@ async fn finish_issue(
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
     update_issue_status(app_state, id, STATUS_COMPLETED).await
+}
+
+#[axum::debug_handler]
+async fn deliver_issue(
+    Extension(app_state): Extension<AppState>,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
+    update_issue_status(app_state, id, STATUS_DELIVERED).await
 }
 
 #[axum::debug_handler]
