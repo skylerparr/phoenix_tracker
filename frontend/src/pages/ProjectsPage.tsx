@@ -65,15 +65,19 @@ const ProjectsPage: React.FC = () => {
         <Box
           sx={{
             display: "flex",
-            justifyContent: "space  -between",
+            justifyContent: "space-between",
             alignItems: "center",
             mb: 4,
           }}
         >
-          <Typography variant="h4" component="h1">
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{ justifySelf: "flex-start" }}
+          >
             Projects
           </Typography>
-          <Box sx={{ display: "flex", gap: 2 }}>
+          <Box sx={{ display: "flex", gap: 2, justifySelf: "flex-end" }}>
             <TextField
               size="small"
               label="Project Name"
