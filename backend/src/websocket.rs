@@ -130,7 +130,28 @@ pub async fn handle_socket(
                                 }
                             }
                         }
-                        Message::Close(_) => break,
+                        Message::Close(_) => {
+                            debug!("WebSocket closed, clearing all subscriptions");
+                            // Acquire lock on web_socket_state
+                            if let Ok(mut ws_state) = web_socket_state.try_lock() {
+                                // Get all subscribed project IDs before clearing
+                                let project_ids: Vec<i32> = ws_state.subscribed_projects.iter().copied().collect();
+
+                                // Clear all subscriptions
+                                ws_state.subscribed_projects.clear();
+
+                                // Log which projects were unsubscribed
+                                for project_id in project_ids {
+                                    debug!("Unsubscribed user {} from project {} due to WebSocket closure",
+                                           ws_state.user_id, project_id);
+                                }
+
+                                debug!("Successfully cleared all subscriptions for user {}", ws_state.user_id);
+                            } else {
+                                debug!("Could not acquire lock to clear subscriptions on WebSocket close");
+                            }
+                            break;
+                        },
                         _ => {}
                     }
                 }
