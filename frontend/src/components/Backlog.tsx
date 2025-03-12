@@ -16,8 +16,15 @@ const Backlog: React.FC = () => {
     handleIssuesChanged,
   } = useIssueFilter();
 
+  const [weeklyAverage, setWeeklyAverage] = React.useState<number>(10);
+
   useEffect(() => {
     issueService.subscribeToGetAllIssues(handleIssuesChanged);
+    const fetchAverage = async () => {
+      const average = await issueService.getWeeklyPointsAverage();
+      setWeeklyAverage(average);
+    };
+    fetchAverage();
     return () => {
       issueService.unsubscribeFromGetAllIssues(handleIssuesChanged);
     };

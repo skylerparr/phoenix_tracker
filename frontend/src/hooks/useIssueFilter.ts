@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Issue } from "../models/Issue";
 import {
   STATUS_IN_PROGRESS,
