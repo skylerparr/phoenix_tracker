@@ -34,7 +34,7 @@ const Backlog: React.FC = () => {
     return () => {
       issueService.unsubscribeFromGetAllIssues(handleIssuesChanged);
     };
-  }, [handleIssuesChanged]);
+  }, []);
 
   // Find upcoming releases and calculate if we'll meet them
   useEffect(() => {

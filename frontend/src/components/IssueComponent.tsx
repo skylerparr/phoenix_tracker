@@ -29,11 +29,11 @@ export const getBackgroundColor = (issue: Issue | undefined) => {
   if (!issue) {
     return "#f5f5f5";
   }
-  if (issue.isIcebox) {
-    return "#e4eff6";
-  }
   if (issue.workType === WORK_TYPE_RELEASE) {
     return "#437aa2";
+  }
+  if (issue.isIcebox) {
+    return "#e4eff6";
   }
   switch (issue.status) {
     case STATUS_IN_PROGRESS:
@@ -53,11 +53,11 @@ export const getHoverBackgroundColor = (issue: Issue | undefined) => {
   if (!issue) {
     return "#e0e0e0";
   }
-  if (issue.isIcebox) {
-    return "#c9dff0";
-  }
   if (issue.workType === WORK_TYPE_RELEASE) {
     return "#326491";
+  }
+  if (issue.isIcebox) {
+    return "#c9dff0";
   }
   switch (issue.status) {
     case STATUS_IN_PROGRESS:
