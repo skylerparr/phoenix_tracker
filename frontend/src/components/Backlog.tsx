@@ -76,12 +76,21 @@ const Backlog: React.FC = () => {
       // Calculate expected points we can complete by release date
       const expectedPointsCapacity = weeklyAverage * weeksUntilRelease;
 
+      // Calculate the predicted completion date
+      // If we can complete totalPoints / weeklyAverage weeks from now
+      const predictedCompletionWeeks = Math.ceil(totalPoints / weeklyAverage);
+      const predictedCompletionDate = new Date(now);
+      predictedCompletionDate.setDate(
+        predictedCompletionDate.getDate() + predictedCompletionWeeks * 7,
+      );
+
       releaseData.push({
         release,
         totalPoints,
         weeksUntilRelease,
         expectedPointsCapacity,
         willComplete: expectedPointsCapacity >= totalPoints,
+        predictedCompletionDate,
       });
     }
 
@@ -109,18 +118,6 @@ const Backlog: React.FC = () => {
           width: "100%",
         }}
       >
-        {/* Display release status bars for upcoming releases */}
-        {releaseIssues.map((releaseData, index) => (
-          <ReleaseStatusBar
-            key={`release-status-${releaseData.release.id}`}
-            release={releaseData.release}
-            totalPoints={releaseData.totalPoints}
-            weeksUntilRelease={releaseData.weeksUntilRelease}
-            expectedPointsCapacity={releaseData.expectedPointsCapacity}
-            willComplete={releaseData.willComplete}
-          />
-        ))}
-
         {expandedAcceptedIssues ? (
           <>
             <AcceptedIssuesToggle
@@ -154,6 +151,7 @@ const Backlog: React.FC = () => {
           enableDragDrop={true}
           enableGrouping={true}
           onDragEnd={handlePriorityUpdates}
+          releaseData={releaseIssues}
         />
       </Box>
     </Box>

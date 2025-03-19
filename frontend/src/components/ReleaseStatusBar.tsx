@@ -58,17 +58,11 @@ const ReleaseStatusBar: React.FC<ReleaseStatusBarProps> = ({
         sx={{
           backgroundColor: willComplete ? "#000000" : "#8B0000",
           color: "white",
-          padding: "8px 16px",
+          padding: "2px 16px",
           borderRadius: "4px",
-          margin: "10px 0",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.2)",
-          "&:hover": {
-            opacity: 0.9,
-            cursor: "pointer",
-          },
         }}
       >
         <Typography variant="subtitle1" fontWeight="bold">
@@ -76,8 +70,8 @@ const ReleaseStatusBar: React.FC<ReleaseStatusBarProps> = ({
         </Typography>
         <Typography variant="caption">
           {willComplete
-            ? `On Track (${totalPoints} pts / ${weeksUntilRelease} wks)`
-            : `At Risk (${totalPoints} pts / ${weeksUntilRelease} wks)`}
+            ? `On Track (${totalPoints} pts / ${weeksUntilRelease} wks until target)`
+            : `At Risk (${totalPoints} pts / ${weeksUntilRelease} wks until target)`}
         </Typography>
       </Box>
     </Tooltip>
