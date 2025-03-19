@@ -1,5 +1,5 @@
-use sea_orm_migration::prelude::*;
 use crate::sea_orm::DatabaseBackend;
+use sea_orm_migration::prelude::*;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -69,7 +69,7 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await?;
-        
+
         // Add updated_at trigger
         let table = "project_notes";
         match manager.get_database_backend() {

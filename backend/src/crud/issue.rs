@@ -506,21 +506,50 @@ impl IssueCrud {
         let now = chrono::Utc::now().date_naive();
         let mut total_points = 0;
         let mut weeks_with_data = 0;
+        let target_weeks = 3i64; // Number of weeks to consider, explicitly as i64
 
-        for week_offset in 0..3 {
-            let days_from_monday = (now - chrono::Duration::weeks(week_offset))
-                .weekday()
-                .num_days_from_monday();
-            let monday = now
-                - chrono::Duration::days(days_from_monday as i64)
-                - chrono::Duration::weeks(week_offset);
+        // Find the earliest accepted issue to determine how long the project has been active
+        let earliest_issue = issue::Entity::find()
+            .filter(issue::Column::ProjectId.eq(project_id))
+            .filter(issue::Column::Status.eq(STATUS_ACCEPTED))
+            .order_by(issue::Column::AcceptedAt, Order::Asc)
+            .one(&self.app_state.db)
+            .await?;
+
+        // Calculate how many weeks the project has been active
+        let weeks_active = if let Some(issue) = &earliest_issue {
+            let earliest_date = if let Some(accepted_at) = issue.accepted_at {
+                accepted_at.date_naive()
+            } else {
+                issue.created_at.date_naive()
+            };
+
+            let days_diff = (now - earliest_date).num_days();
+            (days_diff as f64 / 7.0).ceil() as i64 // Convert to i64
+        } else {
+            0i64 // No accepted issues yet, explicitly as i64
+        };
+
+        // Get the start of the current week (Monday)
+        let days_from_monday = now.weekday().num_days_from_monday();
+        let current_week_monday = now - chrono::Duration::days(days_from_monday as i64);
+
+        // Collect actual data for the 3 weeks preceding the current week
+        for week_offset in 1..=target_weeks {
+            // Start from 1 to skip current week
+            let monday_of_week = current_week_monday - chrono::Duration::weeks(week_offset);
+            let sunday_of_week = monday_of_week + chrono::Duration::days(6); // End of the week (Sunday)
 
             let issues = issue::Entity::find()
                 .filter(issue::Column::ProjectId.eq(project_id))
                 .filter(issue::Column::Points.is_not_null())
-                .filter(issue::Column::UpdatedAt.gte(monday))
                 .filter(issue::Column::Status.eq(STATUS_ACCEPTED))
-                .filter(issue::Column::UpdatedAt.lt(monday + chrono::Duration::days(7)))
+                .filter(
+                    Condition::all()
+                        .add(issue::Column::AcceptedAt.is_not_null())
+                        .add(issue::Column::AcceptedAt.gte(monday_of_week))
+                        .add(issue::Column::AcceptedAt.lte(sunday_of_week)),
+                )
                 .all(&self.app_state.db)
                 .await?;
 
@@ -531,10 +560,23 @@ impl IssueCrud {
             }
         }
 
-        let average = if weeks_with_data > 0 {
+        // Calculate the average based on actual data
+        let actual_average = if weeks_with_data > 0 {
             total_points as f64 / weeks_with_data as f64
         } else {
-            10.0
+            10.0 // Default if no weeks have data
+        };
+
+        // If the project has been active for less than 3 weeks, blend with assumed 10 points per week
+        let average = if weeks_active < target_weeks && weeks_with_data > 0 {
+            // Calculate how many weeks to fill with the default value
+            let weeks_to_fill = target_weeks - weeks_active;
+
+            // Blend actual data with assumed data (10 points per missing week)
+            (total_points as f64 + (weeks_to_fill as f64 * 10.0))
+                / (weeks_with_data as f64 + weeks_to_fill as f64)
+        } else {
+            actual_average
         };
 
         Ok(average)
