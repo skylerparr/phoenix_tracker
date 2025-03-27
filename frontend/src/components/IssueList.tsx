@@ -115,11 +115,6 @@ const IssueList: React.FC<IssueListProps> = ({
     return result;
   };
 
-  // Helper to find appropriate position for a release status bar
-  const findReleasePosition = (issue: Issue) => {
-    return releaseData.find((data) => data.release.id === issue.id);
-  };
-
   // Place release status bars at their predicted completion points in the backlog
   const getIssuesWithReleaseStatusBars = () => {
     if (!issues.length) return [];
@@ -220,11 +215,6 @@ const IssueList: React.FC<IssueListProps> = ({
     const releaseCompletionWeeks = new Map<number, ReleaseData[]>();
 
     if (releaseData.length > 0) {
-      // Sort issues by priority to determine completion order
-      const sortedIssuesByPriority = [...issues].sort(
-        (a, b) => (a.priority ?? 0) - (b.priority ?? 0),
-      );
-
       // Calculate which week each release would be completed
       releaseData.forEach((data) => {
         // Calculate which week the release would be completed based on predicted completion date
@@ -312,7 +302,9 @@ const IssueList: React.FC<IssueListProps> = ({
                 </Box>
               )}
             </Droppable>
-            <IssueGroup weeksFromNow={weekNum} issues={weekIssues} />
+            {enableGrouping && (
+              <IssueGroup weeksFromNow={weekNum} issues={weekIssues} />
+            )}
           </Box>
         ))}
       </DragDropContext>

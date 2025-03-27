@@ -1,11 +1,10 @@
 import React, { useEffect } from "react";
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { issueService } from "../services/IssueService";
 import IssueList from "./IssueList";
 import { useIssueFilter } from "../hooks/useIssueFilter";
 import AcceptedIssuesToggle from "./AcceptedIssuesToggle";
 import { WORK_TYPE_RELEASE } from "../models/Issue";
-import ReleaseStatusBar from "./ReleaseStatusBar";
 
 const Backlog: React.FC = () => {
   const {
@@ -118,6 +117,20 @@ const Backlog: React.FC = () => {
           width: "100%",
         }}
       >
+        <Box
+          sx={{
+            backgroundColor: "#888888",
+            padding: "4px 8px",
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
+          <Typography variant="body2">Weekly Average:</Typography>
+          <Typography variant="body2">
+            {Math.round(weeklyAverage)} points
+          </Typography>
+        </Box>
+
         {expandedAcceptedIssues ? (
           <>
             <AcceptedIssuesToggle

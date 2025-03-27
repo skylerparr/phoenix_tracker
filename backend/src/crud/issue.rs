@@ -16,7 +16,6 @@ use crate::AppState;
 use chrono::Datelike;
 use sea_orm::entity::prelude::*;
 use sea_orm::*;
-use tracing::error;
 
 #[derive(Clone)]
 pub struct IssueCrud {

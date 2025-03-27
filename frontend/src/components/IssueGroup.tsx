@@ -18,9 +18,19 @@ const WeekDateBar: React.FC<WeekDateBarProps> = ({ weeksFromNow, issues }) => {
   return (
     <Box>
       <Box sx={{ display: "flex", flexDirection: "column" }}>
-        <Box sx={{ backgroundColor: "#888888", padding: "4px 8px" }}>
+        <Box
+          sx={{
+            backgroundColor: "#888888",
+            padding: "4px 8px",
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
           <Typography variant="caption">
             {format(monday, "dd MMM yyyy")} - {format(sunday, "dd MMM yyyy")}
+          </Typography>
+          <Typography variant="caption">
+            {issues.reduce((sum, issue) => sum + (issue.points || 0), 0)} points
           </Typography>
         </Box>{" "}
       </Box>
