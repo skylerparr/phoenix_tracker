@@ -22,6 +22,7 @@ use tracing::debug;
 struct WebSocketState {
     subscribed_projects: HashSet<i32>,
     user_id: i32,
+    last_ping_time: std::time::Instant,
 }
 
 #[derive(serde::Deserialize, Debug)]
@@ -71,6 +72,9 @@ pub async fn ws_handler(
         None => StatusCode::UNAUTHORIZED.into_response(),
     }
 }
+// Maximum time allowed between pings (in seconds)
+const MAX_PING_INTERVAL_SECS: u64 = 120;
+
 pub async fn handle_socket(
     mut socket: WebSocket,
     rx: broadcast::Receiver<String>,
@@ -81,19 +85,72 @@ pub async fn handle_socket(
     let web_socket_state = Arc::new(Mutex::new(WebSocketState {
         subscribed_projects: HashSet::new(),
         user_id,
+        last_ping_time: std::time::Instant::now(),
     }));
 
     let user_setting_crud = UserSettingCrud::new(state.db.clone());
+    
+    // Create a clone for the timeout task
+    let web_socket_state_clone = web_socket_state.clone();
+    
+    // Spawn a task to check for connection timeouts
+    let timeout_handle = tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
+        loop {
+            interval.tick().await;
+            
+            // Check if the connection is stale
+            let is_stale = {
+                if let Ok(ws_state) = web_socket_state_clone.try_lock() {
+                    let elapsed = ws_state.last_ping_time.elapsed().as_secs();
+                    elapsed > MAX_PING_INTERVAL_SECS
+                } else {
+                    false
+                }
+            };
+            
+            // If the connection is stale, break from the loop to clean up
+            if is_stale {
+                debug!("WebSocket connection for user {} is stale (no ping in {} seconds), closing", 
+                       user_id, MAX_PING_INTERVAL_SECS);
+                return true; // Connection should be closed
+            }
+        }
+    });
+    
+    // Keep track of the timeout task so we can abort it when we're done
+    let timeout_task = timeout_handle;
 
     loop {
         tokio::select! {
+            timeout_result = &timeout_task => {
+                if let Ok(true) = timeout_result {
+                    debug!("WebSocket timeout task completed for user {}, connection is stale, closing", user_id);
+                    break;
+                }
+            }
             msg = socket.recv() => {
                 if let Some(Ok(msg)) = msg {
                     debug!("Received message: {:?}", msg);
                     match msg {
                         Message::Text(text) => {
                             debug!("Received message: {}", text);
+                            // Handle ping messages
+                            if text == "ping" {
+                                debug!("Received ping, updating last_ping_time");
+                                let mut ws_state = web_socket_state.lock().await;
+                                ws_state.last_ping_time = std::time::Instant::now();
+                                let _ = socket.send(Message::Text("pong".to_string())).await;
+                                continue;
+                            }
+                            
                             if let Ok(wrapper) = serde_json::from_str::<SocketCommandWrapper>(&text) {
+                                // Update last ping time on any valid command
+                                {
+                                    let mut ws_state = web_socket_state.lock().await;
+                                    ws_state.last_ping_time = std::time::Instant::now();
+                                }
+                                
                                 let command = match wrapper.command.as_str() {
                                     "subscribe" => Some(SocketCommand::Subscribe {}),
                                     "unsubscribe" => Some(SocketCommand::Unsubscribe {}),
@@ -175,4 +232,9 @@ pub async fn handle_socket(
             }
         }
     }
+    
+    // Make sure we abort the timeout task when we exit
+    timeout_task.abort();
+    
+    debug!("WebSocket connection closed for user {}", user_id);
 }

@@ -37,21 +37,31 @@ export class WebsocketService {
     };
 
     this.socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      const eventTypes = [
-        ISSUE_CREATED,
-        ISSUE_UPDATED,
-        ISSUE_DELETED,
-        TAG_CREATED,
-        TAG_UPDATED,
-        TAG_DELETED,
-      ];
-      const eventType = eventTypes.find((type) => type === data.event_type);
-      if (eventType) {
-        const callbacks = this.eventCallbacks.get(eventType) || [];
-        const issue =
-          eventType !== ISSUE_DELETED ? new Issue(data.data) : data.data;
-        callbacks.forEach((callback) => callback(issue));
+      // Handle pong messages from server
+      if (event.data === "pong") {
+        console.debug("Received pong from server");
+        return;
+      }
+      
+      try {
+        const data = JSON.parse(event.data);
+        const eventTypes = [
+          ISSUE_CREATED,
+          ISSUE_UPDATED,
+          ISSUE_DELETED,
+          TAG_CREATED,
+          TAG_UPDATED,
+          TAG_DELETED,
+        ];
+        const eventType = eventTypes.find((type) => type === data.event_type);
+        if (eventType) {
+          const callbacks = this.eventCallbacks.get(eventType) || [];
+          const issue =
+            eventType !== ISSUE_DELETED ? new Issue(data.data) : data.data;
+          callbacks.forEach((callback) => callback(issue));
+        }
+      } catch (error) {
+        console.error("Error parsing WebSocket message:", error);
       }
     };
 
