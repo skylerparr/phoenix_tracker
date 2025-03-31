@@ -1,0 +1,10 @@
+FROM postgres:17
+
+# Install any additional dependencies if needed
+RUN apt-get update && apt-get install -y \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Use bash as entrypoint to allow manual interaction
+ENTRYPOINT ["/bin/bash"]
