@@ -64,8 +64,8 @@ async fn auth_middleware(
     mut req: Request<Body>,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    if req.uri().path().starts_with("/auth") || req.uri().path().starts_with("/ws") {
-        info!("Skipping auth middleware for /auth and /ws route");
+    if req.uri().path().starts_with("/api/auth") || req.uri().path().starts_with("/ws") {
+        info!("Skipping auth middleware for /api/auth and /ws route");
         return Ok(next.run(req).await);
     }
 
@@ -154,7 +154,7 @@ fn main() {
             project: None,
         };
 
-        let app = Router::new()
+        let api_routes = Router::new()
             .merge(auth_routes())
             .merge(user_routes())
             .merge(issue_routes())
@@ -168,7 +168,10 @@ fn main() {
             .merge(blocker_routes())
             .merge(import_export_routes())
             .merge(history_routes())
-            .merge(project_note_routes())
+            .merge(project_note_routes());
+
+        let app = Router::new()
+            .nest("/api", api_routes)
             .route("/ws", get(websocket::ws_handler))
             .route("/", get(|| async { "Tracker Root" }))
             .layer(middleware::from_fn(logging_middleware))

@@ -17,7 +17,7 @@ interface AuthResponse {
 }
 
 export class AuthService {
-  private baseUrl = `${API_BASE_URL}/auth`;
+  private baseUrl = `${API_BASE_URL}/api/auth`;
 
   async login(request: LoginRequest): Promise<AuthResponse> {
     const response = await fetch(`${this.baseUrl}/login`, {

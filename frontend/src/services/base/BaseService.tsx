@@ -3,7 +3,7 @@ import { sessionStorage } from "../../store/Session";
 
 export abstract class BaseService<R> {
   protected constructor(protected baseUrl: string) {
-    this.baseUrl = `${API_BASE_URL}${baseUrl}`;
+    this.baseUrl = `${API_BASE_URL}/api${baseUrl}`;
   }
 
   protected abstract createInstance(data: any): R;
