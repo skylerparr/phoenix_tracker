@@ -14,4 +14,4 @@ Write-Host "DATABASE_URL: $Env:DATABASE_URL"
 
 # Run Docker Compose
 Write-Host "Starting Docker Compose..."
-docker-compose up
+docker-compose up backend

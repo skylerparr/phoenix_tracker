@@ -28,6 +28,8 @@ use std::time::Instant;
 use tokio::net::TcpListener;
 use tokio::sync::broadcast;
 use tower_http::cors::CorsLayer;
+use tower_http::services::ServeDir;
+use tower_http::services::ServeFile;
 use tracing::{debug, info, warn};
 
 mod crud;
@@ -64,8 +66,12 @@ async fn auth_middleware(
     mut req: Request<Body>,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    if req.uri().path().starts_with("/api/auth") || req.uri().path().starts_with("/ws") {
-        info!("Skipping auth middleware for /api/auth and /ws route");
+    // Only skip auth for specific paths, not ALL paths
+    if req.uri().path().starts_with("/api/auth")
+        || req.uri().path().starts_with("/ws")
+        || (req.uri().path() == "/" || !req.uri().path().starts_with("/api"))
+    {
+        info!("Skipping auth middleware for non-API routes");
         return Ok(next.run(req).await);
     }
 
@@ -170,15 +176,24 @@ fn main() {
             .merge(history_routes())
             .merge(project_note_routes());
 
-        let app = Router::new()
+        let static_router = Router::new().nest_service(
+            "/",
+            ServeDir::new("static").fallback(ServeFile::new("static/index.html")),
+        );
+
+        let api_router = Router::new()
             .nest("/api", api_routes)
             .route("/ws", get(websocket::ws_handler))
-            .route("/", get(|| async { "Tracker Root" }))
-            .layer(middleware::from_fn(logging_middleware))
             .layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 auth_middleware,
             ))
+            .with_state(app_state.clone());
+
+        let app = Router::new()
+            .merge(api_router)
+            .fallback_service(static_router)
+            .layer(middleware::from_fn(logging_middleware))
             .layer(cors);
 
         let port = std::env::var("PORT")
@@ -188,8 +203,6 @@ fn main() {
         let addr = SocketAddr::from(([0, 0, 0, 0], port));
         info!("Listening on {}", addr);
         let listener = TcpListener::bind(addr).await.unwrap();
-        axum::serve(listener, app.with_state(app_state))
-            .await
-            .unwrap();
+        axum::serve(listener, app).await.unwrap();
     });
 }
