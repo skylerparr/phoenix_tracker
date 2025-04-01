@@ -13,10 +13,11 @@ services:
       - "3001:3001"
     environment:
       - DATABASE_URL=${DATABASE_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
       - PORT=3001
-    depends_on:
-      - postgres
-      
+    # depends_on:
+    #   - postgres
+
   frontend:
     build:
         context: ./frontend
@@ -24,27 +25,30 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      # Ensure entrypoint.sh isn't overwritten by volume mount
+      - /app/entrypoint.sh
     ports:
-      - "3000:3000"
+      - "4000:3000"
     environment:
       - CHOKIDAR_USEPOLLING=true
       - REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
+      - NODE_ENV=development
     depends_on:
       - backend
 
-  postgres:
-    image: postgres:15
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=app
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+#   postgres:
+#     image: postgres:15
+#     environment:
+#       - POSTGRES_USER=postgres
+#       - POSTGRES_PASSWORD=postgres
+#       - POSTGRES_DB=app
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     ports:
+#       - "5432:5432"
 
 volumes:
   backend_data:
   cargo-target:
   cargo-registry:
-  postgres_data:
+#   postgres_data:

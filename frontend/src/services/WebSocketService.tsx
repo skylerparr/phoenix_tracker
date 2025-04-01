@@ -42,7 +42,7 @@ export class WebsocketService {
         console.debug("Received pong from server");
         return;
       }
-      
+
       try {
         const data = JSON.parse(event.data);
         const eventTypes = [

@@ -118,7 +118,7 @@ async fn auth_middleware(
 
 fn main() {
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+        .with_max_level(tracing::Level::WARN)
         .with_file(true)
         .with_line_number(true)
         .init();
@@ -131,8 +131,14 @@ fn main() {
         let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
         let conn = Database::connect(database_url).await.unwrap();
 
+        let frontend_url =
+            std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+
         let cors = CorsLayer::new()
-            .allow_origin(HeaderValue::from_static("http://10.0.0.101:3000"))
+            .allow_origin(HeaderValue::from_str(&frontend_url).unwrap_or_else(|_| {
+                warn!("Invalid FRONTEND_URL format, falling back to default");
+                HeaderValue::from_static("http://localhost:3000")
+            }))
             .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
             .allow_headers(vec![
                 HeaderName::from_static("content-type"),

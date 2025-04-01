@@ -13,4 +13,13 @@ EXPOSE 3000
 
 ENV WATCHPACK_POLLING=true
 
-CMD ["npm", "start"]
+# Create an entrypoint script that will update the API_BASE_URL at runtime
+RUN echo '#!/bin/sh\n\
+echo "API_BASE_URL being set to: $REACT_APP_API_BASE_URL"\n\
+# Create runtime config to be injected\n\
+echo "window.ENV = { REACT_APP_API_BASE_URL: \"$REACT_APP_API_BASE_URL\" };" > /app/public/runtime-config.js\n\
+# Start the app\n\
+exec npm start\n\
+' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
+CMD ["/app/entrypoint.sh"]
