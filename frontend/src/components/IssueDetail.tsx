@@ -11,6 +11,8 @@ import {
   SelectChangeEvent,
   Checkbox,
   Autocomplete,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   KeyboardArrowDown as KeyboardArrowDownIcon,
@@ -61,6 +63,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
 import { PARAM_HISTORY_ISSUE_ID } from "./SearchComponent";
 import IssueComments from "./IssueComments";
+import ReactMarkdown from "react-markdown";
 
 const lightTheme = createTheme({
   palette: {
@@ -96,6 +99,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   >([]);
   const [blockers, setBlockers] = useState<Blocker[]>([]);
   const [blocker, setBlocker] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<number>(0);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -303,12 +307,8 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     closeHandler();
   };
 
-  const handlePostComment = async () => {
-    await commentService.createComment({
-      issueId: issue.id,
-      content: comment,
-    });
-    setComment("");
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
   };
 
   const handleTaskComplete = (id: number, checked: boolean) => {
@@ -967,25 +967,73 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
       <Typography sx={{ color: "#666", fontWeight: "bold" }}>
         DESCRIPTION
       </Typography>
-      <TextField
-        multiline
-        rows={4}
-        fullWidth
-        placeholder="Add a description"
-        value={issue.description}
-        sx={{
-          bgcolor: "white",
-          "& .MuiInputBase-input": { color: "black" },
-          "& .MuiInputBase-root": {
-            resize: "vertical",
-            minHeight: "100px",
-            "& textarea": {
-              resize: "vertical",
+      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+        <Tabs
+          value={activeTab}
+          onChange={(event, newValue) => setActiveTab(newValue)}
+          aria-label="description tabs"
+          textColor="inherit"
+          indicatorColor="primary"
+          sx={{
+            "& .MuiTab-root": {
+              color: "black",
+              "&.Mui-selected": {
+                color: "black",
+                backgroundColor: "rgba(0, 0, 0, 0.05)",
+                borderTopLeftRadius: "4px",
+                borderTopRightRadius: "4px",
+              },
             },
-          },
+            "& .MuiTabs-indicator": {
+              backgroundColor: "black",
+            },
+          }}
+        >
+          <Tab label="View" />
+          <Tab label="Write" />
+        </Tabs>
+      </Box>
+      <Box sx={{ display: activeTab === 1 ? "block" : "none" }}>
+        <TextField
+          multiline
+          rows={4}
+          fullWidth
+          placeholder="Add a description"
+          value={issue.description}
+          sx={{
+            bgcolor: "white",
+            "& .MuiInputBase-input": { color: "black" },
+            "& .MuiInputBase-root": {
+              resize: "vertical",
+              minHeight: "100px",
+              "& textarea": {
+                resize: "vertical",
+              },
+            },
+          }}
+          onChange={(e) => handleDescriptionUpdate(e.target.value)}
+        />
+      </Box>
+      <Box
+        sx={{
+          display: activeTab === 0 ? "block" : "none",
+          bgcolor: "transparent",
+          minHeight: "100px",
+          border: "1px solid rgba(0, 0, 0, 0.23)",
+          borderRadius: "4px",
+          color: "black",
+          padding: "0",
+          overflowY: "auto",
         }}
-        onChange={(e) => handleDescriptionUpdate(e.target.value)}
-      />
+      >
+        {issue.description ? (
+          <ReactMarkdown>{issue.description}</ReactMarkdown>
+        ) : (
+          <Typography sx={{ color: "#999", fontStyle: "italic" }}>
+            Nothing to preview
+          </Typography>
+        )}
+      </Box>
       <Typography sx={{ color: "#666", fontWeight: "bold" }}>LABELS</Typography>
       <IssueAutoCompleteComponent
         options={availableTags}
