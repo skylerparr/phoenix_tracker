@@ -65,6 +65,7 @@ impl ProjectNoteCrud {
         let project_id = &self.app_state.project.clone().unwrap().id;
         project_note::Entity::find()
             .filter(project_note::Column::ProjectId.eq(*project_id))
+            .order_by_asc(project_note::Column::CreatedAt)
             .all(&self.app_state.db)
             .await
     }
