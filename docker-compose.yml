@@ -20,13 +20,17 @@ services:
 
   frontend:
     build:
-        context: ./frontend
-        dockerfile: Dockerfile.dev
+      context: ./frontend
+      dockerfile: Dockerfile.dev
     volumes:
-      - ./frontend:/app
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/package.json:/app/package.json
+      - ./frontend/package-lock.json:/app/package-lock.json
+      - ./frontend/tsconfig.json:/app/tsconfig.json
       - /app/node_modules
-      # Ensure entrypoint.sh isn't overwritten by volume mount
-      - /app/entrypoint.sh
+    command: >
+      sh -c 'echo "window.ENV = { REACT_APP_API_BASE_URL: \"$$REACT_APP_API_BASE_URL\" };" > /app/public/runtime-config.js && npm start'
     ports:
       - "4000:3000"
     environment:
