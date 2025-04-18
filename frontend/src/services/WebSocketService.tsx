@@ -21,23 +21,27 @@ export const ISSUE_ASSIGNEE_DELETED = "issue_assignee_deleted";
 export class WebsocketService {
   private static socket: WebSocket;
   private static isConnecting: boolean = false;
-  private static eventCallbacks: Map<string, ((data: any) => void)[]> =
-    new Map();
+  private static eventCallbacks: Map<string, ((data: any) => void)[]> = new Map();
   private static heartbeatId: ReturnType<typeof setInterval> | null = null;
+  private static wasConnected: boolean = false;
+
   private static createNewConnection() {
     const wsUrl = `${API_BASE_URL.replace("http", "ws")}/ws?token=${sessionStorage.getSession().user?.token}`;
     this.socket = new WebSocket(wsUrl);
 
-    this.socket.onopen = () => {
+    this.socket.onopen = async () => {
       this.isConnecting = false;
       this.heartbeatId && clearInterval(this.heartbeatId);
       this.heartbeatId = setInterval(() => {
         this.ping();
       }, 5000);
+
+      if (this.wasConnected) {
+        await this.subscribe();
+      }
     };
 
     this.socket.onmessage = (event) => {
-      // Handle pong messages from server
       if (event.data === "pong") {
         console.debug("Received pong from server");
         return;
@@ -52,6 +56,12 @@ export class WebsocketService {
           TAG_CREATED,
           TAG_UPDATED,
           TAG_DELETED,
+          USER_CREATED,
+          USER_UPDATED,
+          USER_DELETED,
+          ISSUE_ASSIGNEE_CREATED,
+          ISSUE_ASSIGNEE_UPDATED,
+          ISSUE_ASSIGNEE_DELETED,
         ];
         const eventType = eventTypes.find((type) => type === data.event_type);
         if (eventType) {
@@ -79,6 +89,7 @@ export class WebsocketService {
     this.isConnecting = true;
     this.createNewConnection();
   }
+
   private static async ensureConnection() {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       this.connect();
@@ -94,6 +105,7 @@ export class WebsocketService {
   public static async subscribe() {
     await this.ensureConnection();
     this.socket.send(`{"command": "subscribe"}`);
+    this.wasConnected = true;
   }
 
   public static async unsubscribe() {
