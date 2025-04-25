@@ -66,12 +66,8 @@ async fn auth_middleware(
     mut req: Request<Body>,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    // Only skip auth for specific paths, not ALL paths
-    if req.uri().path().starts_with("/api/auth")
-        || req.uri().path().starts_with("/ws")
-        || (req.uri().path() == "/" || !req.uri().path().starts_with("/api"))
-    {
-        info!("Skipping auth middleware for non-API routes");
+    if req.uri().path().starts_with("/api/auth") || req.uri().path().starts_with("/ws") {
+        info!("Skipping auth middleware for /api/auth and /ws route");
         return Ok(next.run(req).await);
     }
 
@@ -184,17 +180,19 @@ fn main() {
         let api_router = Router::new()
             .nest("/api", api_routes)
             .route("/ws", get(websocket::ws_handler))
+            .layer(middleware::from_fn(logging_middleware))
             .layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 auth_middleware,
             ))
+            .layer(cors.clone())
             .with_state(app_state.clone());
 
         let app = Router::new()
             .merge(api_router)
-            .fallback_service(static_router)
+            .fallback_service(static_router.clone())
             .layer(middleware::from_fn(logging_middleware))
-            .layer(cors);
+            .layer(cors.clone());
 
         let port = std::env::var("PORT")
             .unwrap_or_else(|_| "3001".to_string())
@@ -203,6 +201,6 @@ fn main() {
         let addr = SocketAddr::from(([0, 0, 0, 0], port));
         info!("Listening on {}", addr);
         let listener = TcpListener::bind(addr).await.unwrap();
-        axum::serve(listener, app).await.unwrap();
+        axum::serve(listener, app).await.unwrap()
     });
 }

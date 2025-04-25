@@ -3,26 +3,12 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      no_cache: true
+    volumes:
+      - ./backend/static:/usr/local/bin/static
     ports:
       - "3001:3001"
     environment:
-      - DATABASE_URL=sqlite:///./data/app.db
+      - DATABASE_URL=${DATABASE_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
       - PORT=3001
-    volumes:
-      - ./data:/data
-    restart: always
-      
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000" 
-    environment:
-      - REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
-    depends_on:
-      - backend
-    restart: always
-
-volumes:
-  data:
