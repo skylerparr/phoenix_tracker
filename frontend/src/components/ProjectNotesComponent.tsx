@@ -25,6 +25,8 @@ import ReactMarkdown from "react-markdown";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import DeleteIcon from "@mui/icons-material/Delete";
+import SaveIcon from "@mui/icons-material/Save";
+import useDebounce from "../utils/Debounce";
 
 export const ProjectNotesComponent: React.FC = () => {
   const [notes, setNotes] = useState<ProjectNote[]>([]);
@@ -34,6 +36,7 @@ export const ProjectNotesComponent: React.FC = () => {
   const [editTitle, setEditTitle] = useState<string>("");
   const [editDetail, setEditDetail] = useState<string>("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+  const { debouncedUpdate } = useDebounce();
 
   useEffect(() => {
     const fetchNotes = async () => {
@@ -76,9 +79,38 @@ export const ProjectNotesComponent: React.FC = () => {
     setEditDetail(note.detail || "");
   };
 
-  const handleCollapseAndSave = async () => {
-    if (expandedNoteId === null) return;
+  const saveProjectNote = async (
+    noteId: number,
+    title: string,
+    detail: string,
+  ) => {
+    try {
+      await projectNoteService.updateProjectNote(noteId, {
+        title,
+        detail,
+      });
 
+      // Update the local state
+      setNotes((prevNotes) =>
+        prevNotes.map((note) =>
+          note.id === noteId
+            ? {
+                ...note,
+                title,
+                detail,
+              }
+            : note,
+        ),
+      );
+
+      return true;
+    } catch (error) {
+      console.error("Error updating note:", error);
+      return false;
+    }
+  };
+
+  const handleSaveNoteChanges = async () => {
     try {
       const noteToUpdate = notes.find((note) => note.id === expandedNoteId);
       if (!noteToUpdate) return;
@@ -88,31 +120,33 @@ export const ProjectNotesComponent: React.FC = () => {
         noteToUpdate.detail !== editDetail
       ) {
         // Only update if there are changes
-        await projectNoteService.updateProjectNote(expandedNoteId, {
-          title: editTitle,
-          detail: editDetail,
-        });
-
-        // Update the local state
-        setNotes((prevNotes) =>
-          prevNotes.map((note) =>
-            note.id === expandedNoteId
-              ? {
-                  ...note,
-                  title: editTitle,
-                  detail: editDetail,
-                }
-              : note,
-          ),
+        const saveSuccess = await saveProjectNote(
+          expandedNoteId as number,
+          editTitle,
+          editDetail,
         );
+        if (!saveSuccess) return;
       }
 
-      setExpandedNoteId(null);
+      return true;
     } catch (error) {
       console.error("Error updating note:", error);
+      return false;
     }
   };
 
+  const handleCollapseAndSave = async () => {
+    if (expandedNoteId === null) return;
+    const success = await handleSaveNoteChanges();
+    if (success) {
+      setExpandedNoteId(null);
+    }
+  };
+
+  const handleSaveNote = async () => {
+    if (expandedNoteId === null) return;
+    await handleSaveNoteChanges();
+  };
   const handleDeleteNote = async () => {
     if (expandedNoteId === null) return;
 
@@ -275,15 +309,33 @@ export const ProjectNotesComponent: React.FC = () => {
                           e.target.style.height = "auto";
                           e.target.style.height = e.target.scrollHeight + "px";
                           setEditDetail(e.target.value);
+
+                          // Add debounced auto-save when text changes
+                          debouncedUpdate(async () => {
+                            if (expandedNoteId === null) return;
+                            await saveProjectNote(
+                              expandedNoteId,
+                              editTitle,
+                              e.target.value,
+                            );
+                          });
                         }}
                       />
                     </Box>
                   )}
-
                   {/* Delete button at the bottom */}
                   <Box
                     sx={{ display: "flex", justifyContent: "flex-end", p: 1 }}
                   >
+                    <IconButton
+                      onClick={() => handleSaveNote()}
+                      size="small"
+                      color="primary"
+                      title="Save note"
+                      sx={{ mr: 1 }}
+                    >
+                      <SaveIcon />
+                    </IconButton>
                     <IconButton
                       onClick={() => setDeleteDialogOpen(true)}
                       size="small"
