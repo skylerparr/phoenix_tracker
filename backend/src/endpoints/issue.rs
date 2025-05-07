@@ -174,8 +174,6 @@ async fn update_issue(
     Path(id): Path<i32>,
     Json(payload): Json<UpdateIssueRequest>,
 ) -> impl IntoResponse {
-    let project_id = app_state.project.clone().unwrap().id;
-
     let issue_crud = IssueCrud::new(app_state);
 
     match issue_crud
@@ -189,7 +187,6 @@ async fn update_issue(
             payload.is_icebox,
             payload.work_type,
             payload.target_release_at,
-            project_id,
             None,
         )
         .await
@@ -246,7 +243,6 @@ async fn reject_issue(
 }
 
 async fn update_issue_status(app_state: AppState, id: i32, status: i32) -> impl IntoResponse {
-    let project_id = app_state.project.clone().unwrap().id;
     let issue_crud = IssueCrud::new(app_state);
     // whenever the status is updated, the is_icebox flag should be set to false
     let accepted_at = if status == STATUS_ACCEPTED {
@@ -266,7 +262,6 @@ async fn update_issue_status(app_state: AppState, id: i32, status: i32) -> impl 
             Some(false),
             None,
             None,
-            project_id,
             accepted_at,
         )
         .await

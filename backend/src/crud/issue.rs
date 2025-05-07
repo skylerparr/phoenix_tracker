@@ -268,7 +268,6 @@ impl IssueCrud {
         is_icebox: Option<bool>,
         work_type: Option<i32>,
         target_release_at: Option<DateTimeWithTimeZone>,
-        project_id: i32,
         accepted_at: Option<DateTimeWithTimeZone>,
     ) -> Result<issue::Model, DbErr> {
         let txn = self.app_state.db.begin().await?;
@@ -277,6 +276,7 @@ impl IssueCrud {
             .await?
             .ok_or(DbErr::Custom("Issue not found".to_owned()))?;
 
+        let project_id = issue.project_id.clone();
         let mut history_records = Vec::new();
         let current_user_id = &self.app_state.user.clone().unwrap().id;
         let history_crud = HistoryCrud::new(self.app_state.db.clone());
@@ -398,7 +398,6 @@ impl IssueCrud {
             issue.accepted_at = Set(Some(new_accepted_at));
         }
 
-        issue.project_id = Set(project_id);
         issue.lock_version = Set(current_version + 1);
         let mut result = issue.update(&txn).await?;
         if result.lock_version != current_version + 1 {
@@ -423,7 +422,7 @@ impl IssueCrud {
         self.populate_issue_tags(&mut result).await?;
 
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
-        broadcaster.broadcast_event(project_id.clone(), ISSUE_UPDATED, serde_json::json!(result));
+        broadcaster.broadcast_event(project_id, ISSUE_UPDATED, serde_json::json!(result));
 
         Ok(result)
     }
