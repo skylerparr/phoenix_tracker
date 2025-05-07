@@ -21,7 +21,8 @@ export const ISSUE_ASSIGNEE_DELETED = "issue_assignee_deleted";
 export class WebsocketService {
   private static socket: WebSocket;
   private static isConnecting: boolean = false;
-  private static eventCallbacks: Map<string, ((data: any) => void)[]> = new Map();
+  private static eventCallbacks: Map<string, ((data: any) => void)[]> =
+    new Map();
   private static heartbeatId: ReturnType<typeof setInterval> | null = null;
   private static wasConnected: boolean = false;
 

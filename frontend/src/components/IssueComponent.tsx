@@ -116,12 +116,10 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
 
   const onAssigneesUpdated = async () => {
     try {
-      const assignees = await issueAssigneeService.getIssueAssigneesByIssueId(
-        issue.id,
-      );
+      const assignees = issue.issueAssigneeIds;
       const users = await userService.getAllUsers();
       const issueUsersFilter = users.filter((user) =>
-        assignees.some((assignee) => assignee.userId === user.id),
+        assignees.some((assigneeId: number) => assigneeId === user.id),
       );
       setIssueUsers(issueUsersFilter);
     } catch (error) {
@@ -132,12 +130,10 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
   const onUsersUpdated = async () => {
     try {
       const users = await userService.getAllUsers();
-      const assignees = await issueAssigneeService.getIssueAssigneesByIssueId(
-        issue.id,
-      );
+      const assignees = issue.issueAssigneeIds;
 
       const issueUsersFilter = users.filter((user) =>
-        assignees.some((assignee) => assignee.userId === user.id),
+        assignees.some((assigneeId: number) => assigneeId === user.id),
       );
       setIssueUsers(issueUsersFilter);
     } catch (error) {

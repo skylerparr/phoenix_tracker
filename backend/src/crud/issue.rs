@@ -69,6 +69,7 @@ impl IssueCrud {
             .await?;
 
         self.populate_issue_tags(&mut issue).await?;
+        self.populate_issue_assignees(&mut issue).await?;
 
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
         broadcaster.broadcast_event(project_id, ISSUE_CREATED, serde_json::json!(issue));
@@ -93,6 +94,7 @@ impl IssueCrud {
             .await?;
         if let Some(ref mut issue) = issue {
             self.populate_issue_tags(issue).await?;
+            self.populate_issue_assignees(issue).await?;
         }
         Ok(issue)
     }
@@ -120,8 +122,24 @@ impl IssueCrud {
 
         for issue in &mut issues {
             self.populate_issue_tags(issue).await?;
+            self.populate_issue_assignees(issue).await?;
         }
+
         Ok(self.schedule_issues(issues).await?)
+    }
+
+    async fn populate_issue_assignees(&self, issue: &mut issue::Model) -> Result<(), DbErr> {
+        let assignee_user_ids = issue_assignee::Entity::find()
+            .filter(issue_assignee::Column::IssueId.eq(issue.id))
+            .all(&self.app_state.db)
+            .await?
+            .into_iter()
+            .map(|assignee| assignee.user_id)
+            .collect();
+
+        issue.issue_assignee_ids = assignee_user_ids;
+
+        Ok(())
     }
 
     async fn schedule_issues(&self, issues: Vec<issue::Model>) -> Result<Vec<issue::Model>, DbErr> {
@@ -174,6 +192,7 @@ impl IssueCrud {
             .await?;
         for issue in &mut issues {
             self.populate_issue_tags(issue).await?;
+            self.populate_issue_assignees(issue).await?;
         }
         Ok(issues)
     }
@@ -187,6 +206,7 @@ impl IssueCrud {
 
         for issue in &mut issues {
             self.populate_issue_tags(issue).await?;
+            self.populate_issue_assignees(issue).await?;
         }
         Ok(issues)
     }
@@ -221,6 +241,7 @@ impl IssueCrud {
 
         for issue in &mut issues {
             self.populate_issue_tags(issue).await?;
+            self.populate_issue_assignees(issue).await?;
         }
         Ok(issues)
     }
@@ -236,6 +257,7 @@ impl IssueCrud {
 
         for issue in &mut issues {
             self.populate_issue_tags(issue).await?;
+            self.populate_issue_assignees(issue).await?;
         }
         Ok(issues)
     }
@@ -420,6 +442,7 @@ impl IssueCrud {
         }
 
         self.populate_issue_tags(&mut result).await?;
+        self.populate_issue_assignees(&mut result).await?;
 
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
         broadcaster.broadcast_event(project_id, ISSUE_UPDATED, serde_json::json!(result));

@@ -23,6 +23,8 @@ pub struct Model {
     pub issue_tag_ids: Vec<i32>,
     #[sea_orm(ignore)]
     pub scheduled_at: Option<DateTimeWithTimeZone>,
+    #[sea_orm(ignore)]
+    pub issue_assignee_ids: Vec<i32>,
 }
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {

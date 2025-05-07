@@ -15,6 +15,7 @@ export class Issue {
   updatedAt: Date;
   acceptedAt: Date | null;
   scheduledAt: Date | null;
+  issueAssigneeIds: number[];
 
   constructor(data: any) {
     this.id = data.id;
@@ -35,6 +36,7 @@ export class Issue {
     this.updatedAt = new Date(data.updated_at);
     this.acceptedAt = data.accepted_at ? new Date(data.accepted_at) : null;
     this.scheduledAt = data.scheduled_at ? new Date(data.scheduled_at) : null;
+    this.issueAssigneeIds = data.issue_assignee_ids;
   }
 }
 
