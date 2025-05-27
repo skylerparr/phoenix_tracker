@@ -5,20 +5,20 @@ import {
   Grid,
   Card,
   CardContent,
-  CardMedia,
   Button,
   TextField,
   Box,
+  CircularProgress,
 } from "@mui/material";
 import RequireAuth from "../components/RequireAuth";
 import { projectService } from "../services/ProjectService";
 import { Project } from "../models/Project";
-import { useNavigate } from "react-router-dom";
 import { sessionStorage } from "../store/Session";
+
 const ProjectsPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [newProjectName, setNewProjectName] = useState("");
-  const navigate = useNavigate();
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -33,15 +33,20 @@ const ProjectsPage: React.FC = () => {
   }, []);
 
   const handleCreateProject = async () => {
+    if (isCreatingProject || !newProjectName.trim()) return;
+
+    setIsCreatingProject(true);
     try {
       const newProject = await projectService.createProject({
-        name: newProjectName,
+        name: newProjectName.trim(),
       });
       setProjects([...projects, newProject]);
       setNewProjectName("");
       handleProjectClick(newProject);
     } catch (error) {
       console.error("Failed to create project:", error);
+    } finally {
+      setIsCreatingProject(false);
     }
   };
 
@@ -49,6 +54,12 @@ const ProjectsPage: React.FC = () => {
     await projectService.selectProject(project.id);
     sessionStorage.setProject(project);
     window.location.href = "/home";
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !isCreatingProject && newProjectName.trim()) {
+      handleCreateProject();
+    }
   };
 
   return (
@@ -83,14 +94,20 @@ const ProjectsPage: React.FC = () => {
               label="Project Name"
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={isCreatingProject}
             />
             <Button
               variant="contained"
               color="primary"
-              disabled={!newProjectName}
+              disabled={!newProjectName.trim() || isCreatingProject}
               onClick={handleCreateProject}
+              startIcon={
+                isCreatingProject ? <CircularProgress size={16} /> : null
+              }
+              sx={{ minWidth: 140 }}
             >
-              Create Project
+              {isCreatingProject ? "Creating..." : "Create Project"}
             </Button>
           </Box>
         </Box>
@@ -118,7 +135,7 @@ const ProjectsPage: React.FC = () => {
               </Card>
             </Grid>
           ))}
-        </Grid>{" "}
+        </Grid>
       </Container>
     </RequireAuth>
   );

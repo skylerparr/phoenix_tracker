@@ -439,17 +439,14 @@ const Home = () => {
                       p: 2,
                       borderRadius: 1,
                       cursor: "pointer",
-
-
-
-
-                      backgroundColor: isActive ? buttonColor.full : "transparent",
+                      backgroundColor: isActive
+                        ? buttonColor.full
+                        : "transparent",
                       color: isActive ? "white" : "inherit",
                       "&:hover": {
-
-
-
-                        backgroundColor: isActive ? buttonColor.full : buttonColor.hover,
+                        backgroundColor: isActive
+                          ? buttonColor.full
+                          : buttonColor.hover,
                       },
                     }}
                   >
@@ -461,16 +458,14 @@ const Home = () => {
                     <IconButton
                       onClick={() => handleButtonClick(button.id)}
                       sx={{
-
-
-
-                        backgroundColor: isActive ? buttonColor.full : buttonColor.half,
+                        backgroundColor: isActive
+                          ? buttonColor.full
+                          : buttonColor.half,
                         color: "white",
                         "&:hover": {
-
-
-
-                          backgroundColor: isActive ? buttonColor.full : buttonColor.hover,
+                          backgroundColor: isActive
+                            ? buttonColor.full
+                            : buttonColor.hover,
                         },
                       }}
                     >

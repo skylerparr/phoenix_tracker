@@ -37,8 +37,6 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
       - NODE_ENV=development
-    depends_on:
-      - backend
 
   postgres:
     image: postgres:15
