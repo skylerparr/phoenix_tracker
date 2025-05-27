@@ -1,4 +1,5 @@
 use crate::crud::issue::IssueCrud;
+use crate::crud::notification::NotificationCrud;
 use crate::crud::owner::OwnerCrud;
 use crate::crud::user_setting::UserSettingCrud;
 use crate::entities::issue;
@@ -173,6 +174,9 @@ impl ProjectCrud {
         for issue in issues {
             issue_crud.delete(issue.id).await?;
         }
+
+        let notification_crud = NotificationCrud::new(self.state.clone());
+        notification_crud.delete_all_for_project(id).await?;
 
         project_user::Entity::delete_many()
             .filter(project_user::Column::ProjectId.eq(id))

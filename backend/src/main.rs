@@ -17,9 +17,9 @@ use axum::{
 use endpoints::{
     auth::auth_routes, blocker::blocker_routes, comment::comment_routes, history::history_routes,
     import_export::import_export_routes, issue::issue_routes,
-    issue_assignee::issue_assignee_routes, issue_tag::issue_tag_routes, owner::owner_routes,
-    project::project_routes, project_note::project_note_routes, tag::tag_routes, task::task_routes,
-    user::user_routes,
+    issue_assignee::issue_assignee_routes, issue_tag::issue_tag_routes,
+    notification::notification_routes, owner::owner_routes, project::project_routes,
+    project_note::project_note_routes, tag::tag_routes, task::task_routes, user::user_routes,
 };
 use sea_orm::{Database, DatabaseConnection};
 use std::net::SocketAddr;
@@ -170,6 +170,7 @@ fn main() {
             .merge(blocker_routes())
             .merge(import_export_routes())
             .merge(history_routes())
+            .merge(notification_routes())
             .merge(project_note_routes());
 
         let static_router = Router::new().nest_service(

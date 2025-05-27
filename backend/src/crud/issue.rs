@@ -5,6 +5,8 @@ use crate::crud::event_broadcaster::{ISSUE_CREATED, ISSUE_DELETED, ISSUE_UPDATED
 use crate::crud::history::HistoryCrud;
 use crate::crud::issue_assignee::IssueAssigneeCrud;
 use crate::crud::issue_tag::IssueTagCrud;
+use crate::crud::notification::NotificationCrud;
+use crate::crud::project_user::ProjectUserCrud;
 use crate::crud::status::STATUS_MAP;
 use crate::crud::status::{STATUS_ACCEPTED, STATUS_REJECTED, STATUS_UNSTARTED};
 use crate::crud::task::TaskCrud;
@@ -16,6 +18,7 @@ use crate::AppState;
 use chrono::Datelike;
 use sea_orm::entity::prelude::*;
 use sea_orm::*;
+use std::collections::HashSet;
 
 #[derive(Clone)]
 pub struct IssueCrud {
@@ -299,6 +302,8 @@ impl IssueCrud {
             .ok_or(DbErr::Custom("Issue not found".to_owned()))?;
 
         let project_id = issue.project_id.clone();
+        let issue_created_by_id = issue.created_by_id.clone();
+        let issue_title = issue.title.clone();
         let mut history_records = Vec::new();
         let current_user_id = &self.app_state.user.clone().unwrap().id;
         let history_crud = HistoryCrud::new(self.app_state.db.clone());
@@ -439,6 +444,42 @@ impl IssueCrud {
             history_crud
                 .create(*current_user_id, Some(id), None, None, record)
                 .await?;
+        }
+
+        // Create notifications for project owners and issue requester
+        let notification_crud = NotificationCrud::new(self.app_state.clone());
+        let project_user_crud = ProjectUserCrud::new(self.app_state.clone());
+
+        // Get project users
+        let project_users = project_user_crud.get_users_for_project(project_id).await?;
+        let mut target_user_ids = HashSet::new();
+
+        // Add all project users
+        for project_user in project_users {
+            target_user_ids.insert(project_user.user_id);
+        }
+
+        // Add issue requester/creator
+        target_user_ids.insert(issue_created_by_id);
+
+        // Remove current user to avoid self-notification
+        target_user_ids.remove(current_user_id);
+
+        // Create notifications for each target user
+        for target_user_id in target_user_ids {
+            let notification_title = format!("Issue Updated: {}", issue_title);
+            let notification_description = format!("Issue '{}' has been updated", issue_title);
+
+            let _ = notification_crud
+                .create(
+                    notification_title,
+                    notification_description,
+                    project_id,
+                    id,
+                    *current_user_id,
+                    target_user_id,
+                )
+                .await;
         }
 
         self.populate_issue_tags(&mut result).await?;

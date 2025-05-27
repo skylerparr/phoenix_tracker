@@ -7,6 +7,10 @@ alias migrate_up="docker exec -it `container` sea-orm-cli migrate up --database-
 alias migrate_down="docker exec -it `container` sea-orm-cli migrate down --database-url postgresql://postgres:postgres@postgres:5432/phoenix_tracker"
 alias createdb_phoenix="docker exec -it $(postgres_container) createdb -U postgres phoenix_tracker"
 
+function migrate_create() {
+    docker exec -it `container` sea-orm-cli migrate generate $1 --database-url postgresql://postgres:postgres@postgres:5432/phoenix_tracker
+}
+
 function cargo_add() {
     docker exec -it `container` cargo add $1
 }
