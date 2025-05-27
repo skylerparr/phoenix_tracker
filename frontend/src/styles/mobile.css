@@ -1,0 +1,207 @@
+/* Mobile-specific styles for Phoenix Tracker */
+
+/* Touch-friendly interactions */
+@media (max-width: 768px) {
+  /* Ensure buttons are touch-friendly */
+  button {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+
+  /* Better touch targets for icons */
+  .MuiIconButton-root {
+    padding: 12px !important;
+  }
+
+  /* Prevent zoom on input focus */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+
+  /* Better scrolling on mobile */
+  .mobile-scroll {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+  }
+
+  /* Prevent text selection on UI elements */
+  .mobile-no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Mobile-friendly spacing */
+  .mobile-padding {
+    padding: 16px !important;
+  }
+
+  /* Full width containers on mobile */
+  .mobile-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Hide desktop-only elements */
+  .desktop-only {
+    display: none !important;
+  }
+
+  /* Show mobile-only elements */
+  .mobile-only {
+    display: block !important;
+  }
+
+  /* Mobile drawer styles */
+  .mobile-drawer {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .mobile-drawer.open {
+    transform: translateX(0);
+  }
+
+  /* Better tap highlighting */
+  .mobile-tap-highlight {
+    -webkit-tap-highlight-color: rgba(144, 202, 249, 0.3);
+  }
+
+  /* Prevent bounce scrolling on iOS */
+  body {
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  #root {
+    height: 100vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tablet-responsive {
+    padding: 12px !important;
+  }
+
+  .MuiIconButton-root {
+    padding: 10px !important;
+  }
+}
+
+/* Mobile landscape */
+@media (orientation: landscape) and (max-width: 768px) {
+  .mobile-landscape {
+    height: 100vh !important;
+  }
+
+  /* Reduce header height in landscape */
+  .mobile-header {
+    height: 48px !important;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Crisp icons on retina displays */
+  .mobile-icon {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Dark theme mobile adjustments */
+@media (prefers-color-scheme: dark) {
+  .mobile-dark-theme {
+    background-color: #121212 !important;
+    color: #ffffff !important;
+  }
+
+  .mobile-overlay {
+    background-color: rgba(0, 0, 0, 0.7) !important;
+  }
+}
+
+/* Animation classes for smooth transitions */
+.mobile-slide-in {
+  animation: slideInFromLeft 0.3s ease-out;
+}
+
+.mobile-slide-out {
+  animation: slideOutToLeft 0.3s ease-out;
+}
+
+.mobile-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.mobile-fade-out {
+  animation: fadeOut 0.2s ease-out;
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToLeft {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Swipe gesture indicators */
+.mobile-swipe-indicator {
+  position: relative;
+}
+
+.mobile-swipe-indicator::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(144, 202, 249, 0.5) 50%,
+    transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.mobile-swipe-indicator.active::after {
+  opacity: 1;
+}

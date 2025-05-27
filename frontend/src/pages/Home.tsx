@@ -34,6 +34,8 @@ import EpicsComponent from "../components/EpicsComponent";
 import HistoryComponent from "../components/HistoryComponent";
 import SettingsComponent from "../components/SettingsComponent";
 import { ProjectNotesComponent } from "../components/ProjectNotesComponent";
+import { useMobile } from "../context/MobileContext";
+import { Menu as MenuIcon } from "@mui/icons-material";
 
 const toolbarButtons = [
   {
@@ -107,6 +109,9 @@ const Home = () => {
   WebsocketService.connect();
   WebsocketService.subscribe();
 
+  const { isMobile, tabHistory } = useMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const [activeButtons, setActiveButtons] = useState<string[]>(() => {
     const params = new URLSearchParams(window.location.search);
     const hasHistoryParam = params.has(PARAM_HISTORY_ISSUE_ID);
@@ -123,6 +128,19 @@ const Home = () => {
     }
     if (hasSearchParams) {
       newButtons = Array.from(new Set([...newButtons, "search"]));
+    }
+
+    // Mobile: Ensure only one tab is active, default to "my_work" if none
+    if (isMobile) {
+      if (newButtons.length === 0) {
+        tabHistory.addTab("my_work");
+        return ["my_work"];
+      } else {
+        // Take the first tab and add it to history
+        const firstTab = newButtons[0];
+        tabHistory.addTab(firstTab);
+        return [firstTab];
+      }
     }
 
     return newButtons.sort((a, b) => {
@@ -204,9 +222,8 @@ const Home = () => {
 
   const handleButtonClick = (buttonId: string) => {
     setActiveButtons((prevButtons: string[]) => {
-      const newButtons = prevButtons.includes(buttonId)
-        ? prevButtons.filter((id: string) => id !== buttonId)
-        : [...prevButtons, buttonId];
+      const isClosing = prevButtons.includes(buttonId);
+
       const clearUrlParams = (paramsToDelete: string[], isHistory = false) => {
         const currentParams = new URLSearchParams(window.location.search);
         paramsToDelete.forEach((param) => currentParams.delete(param));
@@ -220,20 +237,50 @@ const Home = () => {
         }
       };
 
-      // Clear URL params when search tab is closed
-      if (buttonId === "search" && prevButtons.includes("search")) {
-        clearUrlParams(["id", "tagId", "userId"]);
-      }
-      // Clear URL params when history tab is closed
-      if (buttonId === "history" && prevButtons.includes("history")) {
-        clearUrlParams(["historyIssueId"], true);
-      }
+      if (isClosing) {
+        // Clear URL params when search tab is closed
+        if (buttonId === "search") {
+          clearUrlParams(["id", "tagId", "userId"]);
+        }
+        // Clear URL params when history tab is closed
+        if (buttonId === "history") {
+          clearUrlParams(["historyIssueId"], true);
+        }
 
-      return newButtons.sort((a: string, b: string) => {
-        const aIndex = toolbarButtons.findIndex((button) => button.id === a);
-        const bIndex = toolbarButtons.findIndex((button) => button.id === b);
-        return aIndex - bIndex;
-      });
+        // Mobile: When closing a tab, open the previous one from history
+        if (isMobile) {
+          const previousTab = tabHistory.removeTab(buttonId);
+          if (previousTab && !prevButtons.includes(previousTab)) {
+            return [previousTab];
+          }
+          // If no previous tab or it's already open, default to "my_work"
+          const defaultTab = "my_work";
+          if (!prevButtons.includes(defaultTab)) {
+            tabHistory.addTab(defaultTab);
+            return [defaultTab];
+          }
+          return prevButtons.filter((id: string) => id !== buttonId);
+        } else {
+          // Desktop: Normal multi-tab behavior
+          return prevButtons.filter((id: string) => id !== buttonId);
+        }
+      } else {
+        // Opening a tab
+        if (isMobile) {
+          // Mobile: Only allow one tab at a time, add to history
+          tabHistory.addTab(buttonId);
+          setSidebarOpen(false); // Close mobile sidebar when tab is selected
+          return [buttonId];
+        } else {
+          // Desktop: Normal multi-tab behavior
+          const newButtons = [...prevButtons, buttonId];
+          return newButtons.sort((a: string, b: string) => {
+            const aIndex = toolbarButtons.findIndex((button) => button.id === a);
+            const bIndex = toolbarButtons.findIndex((button) => button.id === b);
+            return aIndex - bIndex;
+          });
+        }
+      }
     });
   };
 
@@ -245,72 +292,178 @@ const Home = () => {
 
   return (
     <RequireAuth>
-      <Box sx={{ display: "flex" }}>
-        <Box
-          sx={{
-            width: "64px",
-            backgroundColor: "background.paper",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            py: 2,
-            gap: 2,
-          }}
-        >
-          {toolbarButtons.map((button) => (
-            <Tooltip key={button.id} title={button.tooltip} placement="right">
-              <IconButton
-                onClick={() => handleButtonClick(button.id)}
-                sx={{
-                  backgroundColor: activeButtons.includes(button.id)
-                    ? "primary.main"
-                    : "transparent",
-                  color: activeButtons.includes(button.id)
-                    ? "white"
-                    : "inherit",
-                  "&:hover": {
-                    backgroundColor: activeButtons.includes(button.id)
-                      ? "primary.dark"
-                      : "rgba(0, 0, 0, 0.04)",
-                  },
-                }}
-              >
-                {button.icon}
-              </IconButton>
-            </Tooltip>
-          ))}
-          <Tooltip title="Back to Projects" placement="right">
+      <Box sx={{ display: "flex", height: "100vh" }}>
+        {/* Mobile Header with hamburger menu */}
+        {isMobile && (
+          <Box
+            sx={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: "56px",
+              backgroundColor: "background.paper",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              px: 2,
+              zIndex: 1000,
+            }}
+          >
+            <IconButton
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              sx={{
+                p: 1,
+                color: "inherit"
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6">
+              {activeButtons.length > 0
+                ? toolbarButtons.find((btn) => btn.id === activeButtons[0])?.tooltip
+                : "Phoenix Tracker"}
+            </Typography>
             <IconButton
               onClick={handleBackToProjects}
               sx={{
-                color: "inherit",
-                "&:hover": {
-                  backgroundColor: "rgba(0, 0, 0, 0.04)",
-                },
+                p: 1,
+                color: "inherit"
               }}
             >
               <ArrowBackIcon />
             </IconButton>
-          </Tooltip>
+          </Box>
+        )}
+
+        {/* Sidebar */}
+        <Box
+          sx={{
+            width: isMobile ? (sidebarOpen ? "280px" : "0") : "42px",
+            backgroundColor: "background.paper",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: isMobile ? "flex-start" : "center",
+            py: isMobile ? 8 : 2,
+            px: isMobile ? 2 : 0,
+            padding: 0,
+            gap: 2,
+            position: isMobile ? "fixed" : "relative",
+            height: "100vh",
+            zIndex: 999,
+            overflow: "hidden",
+            transition: "width 0.3s ease",
+            borderRight: isMobile ? "1px solid rgba(255, 255, 255, 0.12)" : "none",
+          }}
+        >
+          {toolbarButtons.map((button) => (
+            <Box key={button.id} sx={{ width: "100%" }}>
+              {isMobile ? (
+                <Box
+                  onClick={() => handleButtonClick(button.id)}
+                  sx={{
+                    display: sidebarOpen ? "flex" : "none",
+                    alignItems: "center",
+                    gap: 2,
+                    p: 2,
+                    borderRadius: 1,
+                    cursor: "pointer",
+                    backgroundColor: activeButtons.includes(button.id)
+                      ? "primary.main"
+                      : "transparent",
+                    color: activeButtons.includes(button.id) ? "white" : "inherit",
+                    "&:hover": {
+                      backgroundColor: activeButtons.includes(button.id)
+                        ? "primary.dark"
+                        : "rgba(255, 255, 255, 0.08)",
+                    },
+                  }}
+                >
+                  {button.icon}
+                  <Typography>{button.tooltip}</Typography>
+                </Box>
+              ) : (
+                <Tooltip title={button.tooltip} placement="right">
+                  <IconButton
+                    onClick={() => handleButtonClick(button.id)}
+                    sx={{
+                      backgroundColor: activeButtons.includes(button.id)
+                        ? "primary.main"
+                        : "transparent",
+                      color: activeButtons.includes(button.id)
+                        ? "white"
+                        : "inherit",
+                      "&:hover": {
+                        backgroundColor: activeButtons.includes(button.id)
+                          ? "primary.dark"
+                          : "rgba(0, 0, 0, 0.04)",
+                      },
+                    }}
+                  >
+                    {button.icon}
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Box>
+          ))}
+
+          {!isMobile && (
+            <Box  sx={{ width: "100%" }}>
+            <Tooltip title="Back to Projects" placement="right">
+              <IconButton
+                onClick={handleBackToProjects}
+                sx={{
+                  color: "inherit",
+                  "&:hover": {
+                    backgroundColor: "rgba(0, 0, 0, 0.04)",
+                  },
+                }}
+              >
+                <ArrowBackIcon />
+              </IconButton>
+            </Tooltip>
+            </Box>
+          )}
         </Box>
+
+        {/* Mobile overlay */}
+        {isMobile && sidebarOpen && (
+          <Box
+            onClick={() => setSidebarOpen(false)}
+            sx={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              zIndex: 998,
+            }}
+          />
+        )}
+
+        {/* Main content area */}
         <Box
           sx={{
             flexGrow: 1,
             display: "flex",
-            flexDirection: "row",
-            gap: "3px",
+            flexDirection: isMobile ? "column" : "row",
+            gap: isMobile ? 0 : "3px",
+            marginTop: isMobile ? "56px" : 0,
+            height: isMobile ? "calc(100vh - 56px)" : "100vh",
           }}
         >
           {activeButtons.map((buttonId) => (
             <Box
               key={buttonId}
               sx={{
-                border: "1px solid navy",
+                border: isMobile ? "none" : "1px solid navy",
                 backgroundColor: "#333333",
-                height: "100vh",
+                height: "100%",
                 flexGrow: 1,
-                minWidth: "250px",
-                maxWidth: "800px",
+                minWidth: isMobile ? "100%" : "250px",
+                maxWidth: isMobile ? "100%" : "800px",
                 display: "flex",
                 flexDirection: "column",
               }}
@@ -323,6 +476,7 @@ const Home = () => {
                   paddingLeft: "8px",
                   borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
                   flexShrink: 0,
+                  display: isMobile ? "none" : "flex",
                 }}
               >
                 <Typography variant="subtitle1">

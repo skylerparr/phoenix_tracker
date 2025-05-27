@@ -4,6 +4,8 @@ import CssBaseline from "@mui/material/CssBaseline";
 import Container from "@mui/material/Container";
 import { styled } from "@mui/material/styles";
 import Sidebar from "./navigation/Sidebar";
+import { MobileProvider } from "./context/MobileContext";
+import "./styles/mobile.css";
 
 const theme = createTheme({
   palette: {
@@ -30,7 +32,6 @@ const GlobalStyles = styled("div")({
   },
   "#root": {
     overflow: "hidden",
-    position: "fixed",
     width: "100%",
     height: "100%",
   },
@@ -40,21 +41,19 @@ const App: React.FC = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <GlobalStyles />
-      <Container
-        maxWidth={false}
-        disableGutters
-        sx={{
-          height: "100vh",
-          overflow: "hidden",
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-        }}
-      >
-        <Sidebar />
-      </Container>
+      <MobileProvider>
+        <Container
+          maxWidth={false}
+          disableGutters
+          sx={{
+            height: "100vh",
+            overflow: "hidden",
+            width: "100%",
+          }}
+        >
+          <Sidebar />
+        </Container>
+      </MobileProvider>
     </ThemeProvider>
   );
 };
