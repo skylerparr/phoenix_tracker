@@ -14,7 +14,9 @@
   }
 
   /* Prevent zoom on input focus */
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     font-size: 16px !important;
   }
 
@@ -188,16 +190,18 @@
 }
 
 .mobile-swipe-indicator::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -2px;
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     transparent 0%,
     rgba(144, 202, 249, 0.5) 50%,
-    transparent 100%);
+    transparent 100%
+  );
   opacity: 0;
   transition: opacity 0.3s ease;
 }

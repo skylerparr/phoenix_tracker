@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 export interface TabHistoryManager {
   tabHistory: string[];
@@ -13,9 +13,9 @@ export const useTabHistory = (): TabHistoryManager => {
   const [tabHistory, setTabHistory] = useState<string[]>([]);
 
   const addTab = useCallback((tabId: string) => {
-    setTabHistory(prev => {
+    setTabHistory((prev) => {
       // Remove existing occurrence of this tab
-      const filtered = prev.filter(id => id !== tabId);
+      const filtered = prev.filter((id) => id !== tabId);
       // Add to the end (most recent)
       return [...filtered, tabId];
     });
@@ -24,7 +24,7 @@ export const useTabHistory = (): TabHistoryManager => {
   const removeTab = useCallback((tabId: string): string | null => {
     let previousTab: string | null = null;
 
-    setTabHistory(prev => {
+    setTabHistory((prev) => {
       const index = prev.indexOf(tabId);
       if (index === -1) return prev;
 
@@ -37,7 +37,7 @@ export const useTabHistory = (): TabHistoryManager => {
       }
 
       // Remove the tab from history
-      return prev.filter(id => id !== tabId);
+      return prev.filter((id) => id !== tabId);
     });
 
     return previousTab;
@@ -63,6 +63,6 @@ export const useTabHistory = (): TabHistoryManager => {
     removeTab,
     getCurrentTab,
     getPreviousTab,
-    clearHistory
+    clearHistory,
   };
 };

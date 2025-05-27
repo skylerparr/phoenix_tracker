@@ -9,10 +9,7 @@ import Logout from "../pages/Logout";
 export default function Sidebar() {
   return (
     <Router>
-      <Box
-        component="main"
-        sx={{ p: 0, width: `100%`, height: `100%` }}
-      >
+      <Box component="main" sx={{ p: 0, width: `100%`, height: `100%` }}>
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />

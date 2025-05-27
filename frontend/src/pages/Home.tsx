@@ -37,6 +37,64 @@ import { ProjectNotesComponent } from "../components/ProjectNotesComponent";
 import { useMobile } from "../context/MobileContext";
 import { Menu as MenuIcon } from "@mui/icons-material";
 
+// Color mapping for each button with full opacity and half opacity versions
+const buttonColors = {
+  create_task: {
+    full: "rgba(76, 175, 80, 1.0)", // Green
+    half: "rgba(76, 175, 80, 0.2)",
+    hover: "rgba(76, 175, 80, 0.4)",
+  },
+  my_work: {
+    full: "rgba(33, 150, 243, 1.0)", // Blue
+    half: "rgba(33, 150, 243, 0.2)",
+    hover: "rgba(33, 150, 243, 0.4)",
+  },
+  backlog: {
+    full: "rgba(255, 152, 0, 1.0)", // Orange
+    half: "rgba(255, 152, 0, 0.2)",
+    hover: "rgba(255, 152, 0, 0.4)",
+  },
+  ice_box: {
+    full: "rgba(0, 188, 212, 1.0)", // Cyan
+    half: "rgba(0, 188, 212, 0.2)",
+    hover: "rgba(0, 188, 212, 0.4)",
+  },
+  accepted_work: {
+    full: "rgba(139, 195, 74, 1.0)", // Light Green
+    half: "rgba(139, 195, 74, 0.2)",
+    hover: "rgba(139, 195, 74, 0.4)",
+  },
+  manage_labels: {
+    full: "rgba(233, 30, 99, 1.0)", // Pink
+    half: "rgba(233, 30, 99, 0.2)",
+    hover: "rgba(233, 30, 99, 0.4)",
+  },
+  search: {
+    full: "rgba(156, 39, 176, 1.0)", // Purple
+    half: "rgba(156, 39, 176, 0.2)",
+    hover: "rgba(156, 39, 176, 0.4)",
+  },
+  epics: {
+    full: "rgba(255, 215, 0, 1.0)", // Gold
+    half: "rgba(255, 215, 0, 0.2)",
+    hover: "rgba(255, 215, 0, 0.4)",
+  },
+  project_notes: {
+    full: "rgba(121, 85, 72, 1.0)", // Brown
+    half: "rgba(121, 85, 72, 0.2)",
+    hover: "rgba(121, 85, 72, 0.4)",
+  },
+  history: {
+    full: "rgba(96, 125, 139, 1.0)", // Blue Grey
+    half: "rgba(96, 125, 139, 0.2)",
+    hover: "rgba(96, 125, 139, 0.4)",
+  },
+  settings: {
+    full: "rgba(158, 158, 158, 1.0)", // Grey
+    half: "rgba(158, 158, 158, 0.2)",
+    hover: "rgba(158, 158, 158, 0.4)",
+  },
+};
 const toolbarButtons = [
   {
     tooltip: "Create Task",
@@ -275,8 +333,12 @@ const Home = () => {
           // Desktop: Normal multi-tab behavior
           const newButtons = [...prevButtons, buttonId];
           return newButtons.sort((a: string, b: string) => {
-            const aIndex = toolbarButtons.findIndex((button) => button.id === a);
-            const bIndex = toolbarButtons.findIndex((button) => button.id === b);
+            const aIndex = toolbarButtons.findIndex(
+              (button) => button.id === a,
+            );
+            const bIndex = toolbarButtons.findIndex(
+              (button) => button.id === b,
+            );
             return aIndex - bIndex;
           });
         }
@@ -315,21 +377,22 @@ const Home = () => {
               onClick={() => setSidebarOpen(!sidebarOpen)}
               sx={{
                 p: 1,
-                color: "inherit"
+                color: "inherit",
               }}
             >
               <MenuIcon />
             </IconButton>
             <Typography variant="h6">
               {activeButtons.length > 0
-                ? toolbarButtons.find((btn) => btn.id === activeButtons[0])?.tooltip
+                ? toolbarButtons.find((btn) => btn.id === activeButtons[0])
+                    ?.tooltip
                 : "Phoenix Tracker"}
             </Typography>
             <IconButton
               onClick={handleBackToProjects}
               sx={{
                 p: 1,
-                color: "inherit"
+                color: "inherit",
               }}
             >
               <ArrowBackIcon />
@@ -345,84 +408,95 @@ const Home = () => {
             display: "flex",
             flexDirection: "column",
             alignItems: isMobile ? "flex-start" : "center",
-            py: isMobile ? 8 : 2,
-            px: isMobile ? 2 : 0,
-            padding: 0,
+            py: isMobile ? 2 : 2,
+            px: isMobile ? 0 : 0,
             gap: 2,
             position: isMobile ? "fixed" : "relative",
             height: "100vh",
             zIndex: 999,
             overflow: "hidden",
             transition: "width 0.3s ease",
-            borderRight: isMobile ? "1px solid rgba(255, 255, 255, 0.12)" : "none",
+            borderRight: isMobile
+              ? "1px solid rgba(255, 255, 255, 0.12)"
+              : "none",
+            paddingTop: isMobile ? "64px" : "16px",
           }}
         >
-          {toolbarButtons.map((button) => (
-            <Box key={button.id} sx={{ width: "100%" }}>
-              {isMobile ? (
-                <Box
-                  onClick={() => handleButtonClick(button.id)}
-                  sx={{
-                    display: sidebarOpen ? "flex" : "none",
-                    alignItems: "center",
-                    gap: 2,
-                    p: 2,
-                    borderRadius: 1,
-                    cursor: "pointer",
-                    backgroundColor: activeButtons.includes(button.id)
-                      ? "primary.main"
-                      : "transparent",
-                    color: activeButtons.includes(button.id) ? "white" : "inherit",
-                    "&:hover": {
-                      backgroundColor: activeButtons.includes(button.id)
-                        ? "primary.dark"
-                        : "rgba(255, 255, 255, 0.08)",
-                    },
-                  }}
-                >
-                  {button.icon}
-                  <Typography>{button.tooltip}</Typography>
-                </Box>
-              ) : (
-                <Tooltip title={button.tooltip} placement="right">
-                  <IconButton
+          {toolbarButtons.map((button) => {
+            const buttonColor =
+              buttonColors[button.id as keyof typeof buttonColors];
+            const isActive = activeButtons.includes(button.id);
+
+            return (
+              <Box key={button.id} sx={{ width: "100%", px: isMobile ? 2 : 0 }}>
+                {isMobile ? (
+                  <Box
                     onClick={() => handleButtonClick(button.id)}
                     sx={{
-                      backgroundColor: activeButtons.includes(button.id)
-                        ? "primary.main"
-                        : "transparent",
-                      color: activeButtons.includes(button.id)
-                        ? "white"
-                        : "inherit",
+                      display: sidebarOpen ? "flex" : "none",
+                      alignItems: "center",
+                      gap: 2,
+                      p: 2,
+                      borderRadius: 1,
+                      cursor: "pointer",
+
+
+
+
+                      backgroundColor: isActive ? buttonColor.full : "transparent",
+                      color: isActive ? "white" : "inherit",
                       "&:hover": {
-                        backgroundColor: activeButtons.includes(button.id)
-                          ? "primary.dark"
-                          : "rgba(0, 0, 0, 0.04)",
+
+
+
+                        backgroundColor: isActive ? buttonColor.full : buttonColor.hover,
                       },
                     }}
                   >
                     {button.icon}
-                  </IconButton>
-                </Tooltip>
-              )}
-            </Box>
-          ))}
+                    <Typography>{button.tooltip}</Typography>
+                  </Box>
+                ) : (
+                  <Tooltip title={button.tooltip} placement="right">
+                    <IconButton
+                      onClick={() => handleButtonClick(button.id)}
+                      sx={{
+
+
+
+                        backgroundColor: isActive ? buttonColor.full : buttonColor.half,
+                        color: "white",
+                        "&:hover": {
+
+
+
+                          backgroundColor: isActive ? buttonColor.full : buttonColor.hover,
+                        },
+                      }}
+                    >
+                      {button.icon}
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Box>
+            );
+          })}
 
           {!isMobile && (
-            <Box  sx={{ width: "100%" }}>
-            <Tooltip title="Back to Projects" placement="right">
-              <IconButton
-                onClick={handleBackToProjects}
-                sx={{
-                  color: "inherit",
-                  "&:hover": {
-                    backgroundColor: "rgba(0, 0, 0, 0.04)",
-                  },
-                }}
-              >
-                <ArrowBackIcon />
-              </IconButton>
-            </Tooltip>
+            <Box sx={{ width: "100%" }}>
+              <Tooltip title="Back to Projects" placement="right">
+                <IconButton
+                  onClick={handleBackToProjects}
+                  sx={{
+                    color: "inherit",
+                    "&:hover": {
+                      backgroundColor: "rgba(0, 0, 0, 0.04)",
+                    },
+                  }}
+                >
+                  <ArrowBackIcon />
+                </IconButton>
+              </Tooltip>
             </Box>
           )}
         </Box>

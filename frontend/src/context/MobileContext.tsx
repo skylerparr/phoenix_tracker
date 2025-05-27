@@ -1,6 +1,6 @@
-import React, { createContext, useContext, ReactNode } from 'react';
-import { useMobileDetection } from '../hooks/useMobileDetection';
-import { useTabHistory, TabHistoryManager } from '../hooks/useTabHistory';
+import React, { createContext, useContext, ReactNode } from "react";
+import { useMobileDetection } from "../hooks/useMobileDetection";
+import { useTabHistory, TabHistoryManager } from "../hooks/useTabHistory";
 
 interface MobileContextType {
   isMobile: boolean;
@@ -27,7 +27,7 @@ export const MobileProvider: React.FC<MobileProviderProps> = ({ children }) => {
 export const useMobile = (): MobileContextType => {
   const context = useContext(MobileContext);
   if (context === undefined) {
-    throw new Error('useMobile must be used within a MobileProvider');
+    throw new Error("useMobile must be used within a MobileProvider");
   }
   return context;
 };
