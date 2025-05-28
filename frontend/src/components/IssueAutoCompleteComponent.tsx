@@ -22,6 +22,25 @@ const IssueAutoCompleteComponent: React.FC<IssueAutoCompleteComponentProps> = ({
   handleCreateNew,
   getChipColor = () => "#2e7d32",
 }) => {
+  const handleCreateIfValid = () => {
+    if (
+      handleCreateNew &&
+      inputValue &&
+      !options.includes(inputValue) &&
+      !value.includes(inputValue)
+    ) {
+      // Add the new value to the existing values (create the chip)
+      const newValues = [...value, inputValue];
+      onChange(newValues);
+
+      // Call the external handler
+      handleCreateNew(inputValue);
+
+      // Clear the input
+      onInputChange("");
+    }
+  };
+
   return (
     <Autocomplete
       sx={{ width: "100%" }}
@@ -44,13 +63,8 @@ const IssueAutoCompleteComponent: React.FC<IssueAutoCompleteComponentProps> = ({
       onKeyDown={
         handleCreateNew !== undefined
           ? (event) => {
-              if (
-                event.key === "Enter" &&
-                inputValue &&
-                !options.includes(inputValue) &&
-                handleCreateNew
-              ) {
-                handleCreateNew(inputValue);
+              if (event.key === "Enter") {
+                handleCreateIfValid();
               }
             }
           : undefined
@@ -78,6 +92,9 @@ const IssueAutoCompleteComponent: React.FC<IssueAutoCompleteComponentProps> = ({
           variant="outlined"
           size="small"
           placeholder={value.length === 0 ? placeholder : ""}
+          onBlur={
+            handleCreateNew !== undefined ? handleCreateIfValid : undefined
+          }
           sx={{
             backgroundColor: "#ffffff",
             boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
