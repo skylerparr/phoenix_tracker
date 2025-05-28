@@ -63,8 +63,13 @@ const SettingsComponent: React.FC = () => {
       console.error("Project ID is undefined");
       return;
     }
-    await projectService.deleteProject(projectId);
-    window.location.href = "/projects";
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this project? This action cannot be undone.",
+    );
+    if (confirmed) {
+      await projectService.deleteProject(projectId);
+      window.location.href = "/projects";
+    }
   };
 
   return (
