@@ -403,7 +403,7 @@ const Home = () => {
         {/* Sidebar */}
         <Box
           sx={{
-            width: isMobile ? (sidebarOpen ? "280px" : "0") : "42px",
+            width: isMobile ? (sidebarOpen ? "280px" : "0") : "46px",
             backgroundColor: "background.paper",
             display: "flex",
             flexDirection: "column",
@@ -414,7 +414,8 @@ const Home = () => {
             position: isMobile ? "fixed" : "relative",
             height: "100vh",
             zIndex: 999,
-            overflow: "hidden",
+            overflowX: "hidden",
+            overflowY: "auto",
             transition: "width 0.3s ease",
             borderRight: isMobile
               ? "1px solid rgba(255, 255, 255, 0.12)"
@@ -455,22 +456,38 @@ const Home = () => {
                   </Box>
                 ) : (
                   <Tooltip title={button.tooltip} placement="right">
-                    <IconButton
-                      onClick={() => handleButtonClick(button.id)}
-                      sx={{
-                        backgroundColor: isActive
-                          ? buttonColor.full
-                          : buttonColor.half,
-                        color: "white",
-                        "&:hover": {
+                    <Box sx={{ position: "relative" }}>
+                      <IconButton
+                        onClick={() => handleButtonClick(button.id)}
+                        sx={{
                           backgroundColor: isActive
                             ? buttonColor.full
-                            : buttonColor.hover,
-                        },
-                      }}
-                    >
-                      {button.icon}
-                    </IconButton>
+                            : buttonColor.half,
+                          color: "white",
+                          "&:hover": {
+                            backgroundColor: isActive
+                              ? buttonColor.full
+                              : buttonColor.hover,
+                          },
+                        }}
+                      >
+                        {button.icon}
+                      </IconButton>
+                      {button.id === "notifications" &&
+                        notificationCount > 0 && (
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              top: 2,
+                              right: 2,
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              backgroundColor: "red",
+                            }}
+                          />
+                        )}
+                    </Box>
                   </Tooltip>
                 )}
               </Box>
