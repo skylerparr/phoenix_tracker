@@ -6,7 +6,6 @@ use crate::crud::history::HistoryCrud;
 use crate::crud::issue_assignee::IssueAssigneeCrud;
 use crate::crud::issue_tag::IssueTagCrud;
 use crate::crud::notification::NotificationCrud;
-use crate::crud::project_user::ProjectUserCrud;
 use crate::crud::status::STATUS_MAP;
 use crate::crud::status::{STATUS_ACCEPTED, STATUS_REJECTED, STATUS_UNSTARTED};
 use crate::crud::task::TaskCrud;
@@ -44,7 +43,7 @@ impl IssueCrud {
         created_by_id: i32,
     ) -> Result<issue::Model, DbErr> {
         let issue = issue::ActiveModel {
-            title: Set(title.clone()), // Clone title before moving
+            title: Set(title.clone()),
             description: Set(Some(description.clone().unwrap_or_default())),
             priority: Set(priority),
             points: Set(points.unwrap_or_default()),
@@ -309,6 +308,7 @@ impl IssueCrud {
         let history_crud = HistoryCrud::new(self.app_state.db.clone());
         let current_version = issue.lock_version;
         let mut issue: issue::ActiveModel = issue.into();
+        let mut notification_changes = Vec::new();
 
         // Points update
         if let Some(new_points) = points {
@@ -321,10 +321,9 @@ impl IssueCrud {
             let new_points_str = new_points
                 .map(|p| p.to_string())
                 .unwrap_or("none".to_string());
-            history_records.push(format!(
-                "updated points from {} to {}",
-                old_points, new_points_str
-            ));
+            let change_msg = format!("updated points from {} to {}", old_points, new_points_str);
+            history_records.push(change_msg.clone());
+            notification_changes.push(change_msg);
             match new_points {
                 Some(p) => issue.points = Set(Some(p)),
                 None => issue.points = Set(None),
@@ -335,11 +334,13 @@ impl IssueCrud {
         let mut status_changed = false;
         if let Some(new_status) = status {
             let old_status = issue.status.clone().unwrap();
-            history_records.push(format!(
+            let change_msg = format!(
                 "changed status from '{}' to '{}'",
                 STATUS_MAP.get(&old_status).unwrap_or(&"unknown"),
                 STATUS_MAP.get(&new_status).unwrap_or(&"unknown")
-            ));
+            );
+            history_records.push(change_msg.clone());
+            notification_changes.push(change_msg);
             issue.status = Set(new_status);
             status_changed = true;
         }
@@ -347,11 +348,13 @@ impl IssueCrud {
         // Work type update
         if let Some(new_work_type) = work_type {
             let old_work_type = issue.work_type.clone().unwrap();
-            history_records.push(format!(
+            let change_msg = format!(
                 "changed type from '{}' to '{}', points will are set to `Unestimated`.",
                 WORK_TYPE_MAP.get(&old_work_type).unwrap_or(&"unknown"),
                 WORK_TYPE_MAP.get(&new_work_type).unwrap_or(&"unknown")
-            ));
+            );
+            history_records.push(change_msg.clone());
+            notification_changes.push(change_msg);
             issue.work_type = Set(new_work_type);
             if new_work_type != WORK_TYPE_FEATURE {
                 issue.points = Set(None);
@@ -362,10 +365,9 @@ impl IssueCrud {
         if let Some(new_title) = title {
             let old_title = issue.title.clone().unwrap();
             if old_title != new_title {
-                history_records.push(format!(
-                    "changed title from '{}' to '{}'",
-                    old_title, new_title
-                ));
+                let change_msg = format!("changed title from '{}' to '{}'", old_title, new_title);
+                history_records.push(change_msg.clone());
+                notification_changes.push(change_msg);
                 issue.title = Set(new_title);
             }
         }
@@ -374,10 +376,12 @@ impl IssueCrud {
         if let Some(new_description) = description {
             let old_description = issue.description.clone().unwrap().unwrap_or_default();
             if old_description != new_description {
-                history_records.push(format!(
+                let change_msg = format!(
                     "updated description from '{}' to '{}'",
                     old_description, new_description
-                ));
+                );
+                history_records.push(change_msg.clone());
+                notification_changes.push(change_msg);
                 issue.description = Set(Some(new_description));
             }
         }
@@ -386,20 +390,21 @@ impl IssueCrud {
         if let Some(new_priority) = priority {
             let old_priority = issue.priority.clone().unwrap();
             if old_priority != new_priority {
-                history_records.push(format!(
+                let change_msg = format!(
                     "changed priority from '{}' to '{}'",
                     old_priority, new_priority
-                ));
+                );
+                history_records.push(change_msg.clone());
+                notification_changes.push(change_msg);
                 issue.priority = Set(new_priority);
             }
         }
 
         // Target release date update
         if let Some(new_target_release) = target_release_at {
-            history_records.push(format!(
-                "set target release date to '{}'",
-                new_target_release
-            ));
+            let change_msg = format!("set target release date to '{}'", new_target_release);
+            history_records.push(change_msg.clone());
+            notification_changes.push(change_msg);
             issue.target_release_at = Set(Some(new_target_release));
         }
 
@@ -407,11 +412,13 @@ impl IssueCrud {
         if let Some(new_is_icebox) = is_icebox {
             let old_is_icebox = issue.is_icebox.clone().unwrap();
             if old_is_icebox != new_is_icebox {
-                if new_is_icebox {
-                    history_records.push("moved to icebox.".to_string());
+                let change_msg = if new_is_icebox {
+                    "moved to icebox.".to_string()
                 } else {
-                    history_records.push("moved to backlog.".to_string());
-                }
+                    "moved to backlog.".to_string()
+                };
+                history_records.push(change_msg.clone());
+                notification_changes.push(change_msg);
                 issue.is_icebox = Set(new_is_icebox);
                 if new_is_icebox {
                     issue.status = Set(STATUS_UNSTARTED);
@@ -421,7 +428,9 @@ impl IssueCrud {
 
         // Accepted date update
         if let Some(new_accepted_at) = accepted_at {
-            history_records.push(format!("accepted on '{}'", new_accepted_at));
+            let change_msg = format!("accepted on '{}'", new_accepted_at);
+            history_records.push(change_msg.clone());
+            notification_changes.push(change_msg);
             issue.accepted_at = Set(Some(new_accepted_at));
         }
 
@@ -446,17 +455,16 @@ impl IssueCrud {
                 .await?;
         }
 
-        // Create notifications for project owners and issue requester
+        // Create notifications for issue assignees and issue creator
         let notification_crud = NotificationCrud::new(self.app_state.clone());
-        let project_user_crud = ProjectUserCrud::new(self.app_state.clone());
 
-        // Get project users
-        let project_users = project_user_crud.get_users_for_project(project_id).await?;
+        // Get issue assignees
         let mut target_user_ids = HashSet::new();
 
-        // Add all project users
-        for project_user in project_users {
-            target_user_ids.insert(project_user.user_id);
+        // Add issue assignees
+        self.populate_issue_assignees(&mut result).await?;
+        for assignee_id in &result.issue_assignee_ids {
+            target_user_ids.insert(*assignee_id);
         }
 
         // Add issue requester/creator
@@ -468,7 +476,11 @@ impl IssueCrud {
         // Create notifications for each target user
         for target_user_id in target_user_ids {
             let notification_title = format!("Issue Updated: {}", issue_title);
-            let notification_description = format!("Issue '{}' has been updated", issue_title);
+            let notification_description = if notification_changes.is_empty() {
+                format!("Issue '{}' has been updated", issue_title)
+            } else {
+                format!("{}", notification_changes.join(", "))
+            };
 
             let _ = notification_crud
                 .create(

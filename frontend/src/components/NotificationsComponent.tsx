@@ -109,15 +109,20 @@ const NotificationsComponent: React.FC = () => {
             <Box sx={{ flexGrow: 1 }}>
               <Typography
                 variant="subtitle2"
+                onClick={(e) => handleIssueClick(notification.issueId, e)}
                 sx={{
                   fontWeight: "bold",
                   color: "text.primary",
                   marginBottom: 0.5,
+                  cursor: "pointer",
+                  "&:hover": {
+                    color: "primary.dark",
+                    textDecoration: "underline",
+                  },
                 }}
               >
                 {notification.title}
               </Typography>
-
               <Typography
                 variant="body2"
                 sx={{
@@ -127,35 +132,18 @@ const NotificationsComponent: React.FC = () => {
               >
                 {notification.description}
               </Typography>
-
-              {/* Issue link */}
-              <Typography
-                variant="body2"
-                component="span"
-                onClick={(e) => handleIssueClick(notification.issueId, e)}
-                sx={{
-                  color: "primary.main",
-                  textDecoration: "underline",
-                  cursor: "pointer",
-                  "&:hover": {
-                    color: "primary.dark",
-                  },
-                }}
-              >
-                Issue #{notification.issueId}
-              </Typography>
-
               <Typography
                 variant="caption"
                 sx={{
                   display: "block",
-                  color: "text.secondary",
+                  color: "#333",
                   marginTop: 1,
+                  fontStyle: "italic",
                 }}
               >
-                {notification.createdAt.toLocaleDateString()}{" "}
+                Created at: {notification.createdAt.toLocaleDateString()}{" "}
                 {notification.createdAt.toLocaleTimeString()}
-              </Typography>
+              </Typography>{" "}
             </Box>
           </Box>
         ))
