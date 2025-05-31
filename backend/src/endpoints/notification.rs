@@ -16,8 +16,6 @@ use tracing::{info, warn};
 #[serde(rename_all = "camelCase")]
 pub struct GetNotificationsQuery {
     #[serde(default)]
-    pub limit: Option<u64>,
-    #[serde(default)]
     pub cursor_created_at: Option<DateTime<FixedOffset>>,
     #[serde(default)]
     pub cursor_id: Option<i32>,
@@ -27,8 +25,11 @@ pub fn notification_routes() -> Router<AppState> {
     Router::new()
         .route("/notifications", get(get_notifications_for_project))
         .route("/notifications/:id/read", put(mark_notification_as_read))
+        .route(
+            "/notifications/count",
+            get(get_notification_count_for_project),
+        )
 }
-
 #[axum::debug_handler]
 async fn get_notifications_for_project(
     Extension(app_state): Extension<AppState>,
@@ -45,7 +46,7 @@ async fn get_notifications_for_project(
     };
 
     match notification_crud
-        .get_all_for_project(project_id, user_id, params.limit, cursor)
+        .get_all_for_project(project_id, user_id, cursor)
         .await
     {
         Ok(notifications) => Ok(Json(notifications)),
@@ -89,7 +90,7 @@ async fn get_notification_count_for_project(
     let notification_crud = NotificationCrud::new(app_state);
 
     match notification_crud
-        .get_count_for_user_and_project(project_id, user_id)
+        .get_unread_count_for_user_and_project(project_id, user_id)
         .await
     {
         Ok(count) => Ok(Json(count)),

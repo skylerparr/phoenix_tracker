@@ -15,6 +15,7 @@ import {
   AccessTime,
   Settings,
   Notes as NotesIcon,
+  Notifications as NotificationIcon,
 } from "@mui/icons-material";
 import CreateIssue from "../components/CreateIssue";
 import Backlog from "../components/Backlog";
@@ -34,6 +35,8 @@ import EpicsComponent from "../components/EpicsComponent";
 import HistoryComponent from "../components/HistoryComponent";
 import SettingsComponent from "../components/SettingsComponent";
 import { ProjectNotesComponent } from "../components/ProjectNotesComponent";
+import NotificationsComponent from "../components/NotificationsComponent";
+import { useNotificationCount } from "../hooks/useNotificationCount";
 import { useMobile } from "../context/MobileContext";
 import { Menu as MenuIcon } from "@mui/icons-material";
 
@@ -93,6 +96,11 @@ const buttonColors = {
     full: "rgba(158, 158, 158, 1.0)", // Grey
     half: "rgba(158, 158, 158, 0.2)",
     hover: "rgba(158, 158, 158, 0.4)",
+  },
+  notifications: {
+    full: "rgba(255, 87, 34, 1.0)", // Deep Orange
+    half: "rgba(255, 87, 34, 0.2)",
+    hover: "rgba(255, 87, 34, 0.4)",
   },
 };
 const toolbarButtons = [
@@ -157,6 +165,12 @@ const toolbarButtons = [
     component: HistoryComponent,
   },
   {
+    tooltip: "Notifications",
+    icon: <NotificationIcon />,
+    id: "notifications",
+    component: NotificationsComponent,
+  },
+  {
     tooltip: "Settings",
     icon: <Settings />,
     id: "settings",
@@ -169,6 +183,7 @@ const Home = () => {
 
   const { isMobile, tabHistory } = useMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { count: notificationCount } = useNotificationCount();
 
   const [activeButtons, setActiveButtons] = useState<string[]>(() => {
     const params = new URLSearchParams(window.location.search);

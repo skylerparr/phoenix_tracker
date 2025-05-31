@@ -7,11 +7,16 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // Drop the existing notification table
+        manager
+            .drop_table(Table::drop().table(Notification::Table).to_owned())
+            .await?;
+
+        // Recreate the notification table with the new structure
         manager
             .create_table(
                 Table::create()
                     .table(Notification::Table)
-                    .if_not_exists()
                     .col(
                         ColumnDef::new(Notification::Id)
                             .integer()
@@ -82,41 +87,45 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
-        // Create index on project and read field using string literals
         manager
-            .get_connection()
-            .execute(sea_orm::Statement::from_string(
-                manager.get_database_backend(),
-                r#"CREATE INDEX "idx-notification-project-read" ON "notification" ("project_id", "read")"#.to_string(),
-            ))
+            .create_index(
+                Index::create()
+                    .name("idx-notification-project-read")
+                    .table(Notification::Table)
+                    .col(Notification::ProjectId)
+                    .col(Notification::Read)
+                    .to_owned(),
+            )
             .await?;
 
-        // Create index on initiated user
         manager
-            .get_connection()
-            .execute(sea_orm::Statement::from_string(
-                manager.get_database_backend(),
-                r#"CREATE INDEX "idx-notification-initiated-by-user" ON "notification" ("initiated_by_user_id")"#.to_string(),
-            ))
+            .create_index(
+                Index::create()
+                    .name("idx-notification-initiated-by-user")
+                    .table(Notification::Table)
+                    .col(Notification::InitiatedByUserId)
+                    .to_owned(),
+            )
             .await?;
 
-        // Create index on targeted user
         manager
-            .get_connection()
-            .execute(sea_orm::Statement::from_string(
-                manager.get_database_backend(),
-                r#"CREATE INDEX "idx-notification-targeted-user" ON "notification" ("targeted_user_id")"#.to_string(),
-            ))
+            .create_index(
+                Index::create()
+                    .name("idx-notification-targeted-user")
+                    .table(Notification::Table)
+                    .col(Notification::TargetedUserId)
+                    .to_owned(),
+            )
             .await?;
 
-        // Create index on issue
         manager
-            .get_connection()
-            .execute(sea_orm::Statement::from_string(
-                manager.get_database_backend(),
-                r#"CREATE INDEX "idx-notification-issue" ON "notification" ("issue_id")"#
-                    .to_string(),
-            ))
+            .create_index(
+                Index::create()
+                    .name("idx-notification-issue")
+                    .table(Notification::Table)
+                    .col(Notification::IssueId)
+                    .to_owned(),
+            )
             .await?;
 
         // Add updated_at trigger
@@ -202,8 +211,64 @@ impl MigrationTrait for Migration {
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // Drop the new table
         manager
             .drop_table(Table::drop().table(Notification::Table).to_owned())
+            .await?;
+
+        // Recreate the original notification table structure
+        manager
+            .create_table(
+                Table::create()
+                    .table(Notification::Table)
+                    .col(
+                        ColumnDef::new(Notification::Id)
+                            .integer()
+                            .primary_key()
+                            .auto_increment(),
+                    )
+                    .col(ColumnDef::new(Notification::UserId).integer().not_null())
+                    .col(ColumnDef::new(Notification::IssueId).integer())
+                    .col(ColumnDef::new(Notification::CommentId).integer())
+                    .col(ColumnDef::new(Notification::Message).string().not_null())
+                    .col(
+                        ColumnDef::new(Notification::Read)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
+                    .col(
+                        ColumnDef::new(Notification::CreatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(
+                        ColumnDef::new(Notification::UpdatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-notification-user")
+                            .from(Notification::Table, Notification::UserId)
+                            .to(User::Table, User::Id),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-notification-issue")
+                            .from(Notification::Table, Notification::IssueId)
+                            .to(Issue::Table, Issue::Id),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-notification-comment")
+                            .from(Notification::Table, Notification::CommentId)
+                            .to(Comment::Table, Comment::Id),
+                    )
+                    .to_owned(),
+            )
             .await
     }
 }
@@ -215,7 +280,10 @@ enum Notification {
     Title,
     Description,
     ProjectId,
+    Message,
     IssueId,
+    CommentId,
+    UserId,
     InitiatedByUserId,
     TargetedUserId,
     Read,
@@ -237,6 +305,12 @@ enum Issue {
 
 #[derive(DeriveIden)]
 enum User {
+    Table,
+    Id,
+}
+
+#[derive(DeriveIden)]
+enum Comment {
     Table,
     Id,
 }

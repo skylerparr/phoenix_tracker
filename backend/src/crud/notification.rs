@@ -35,7 +35,7 @@ impl NotificationCrud {
             issue_id: Set(issue_id),
             initiated_by_user_id: Set(initiated_by_user_id),
             targeted_user_id: Set(targeted_user_id),
-            read: Set(false), // New notifications start as unread
+            read: Set(false),
             ..Default::default()
         };
 
@@ -53,7 +53,6 @@ impl NotificationCrud {
         &self,
         project_id: i32,
         target_user_id: i32,
-        limit: Option<u64>,
         cursor: Option<(DateTime<FixedOffset>, i32)>,
     ) -> Result<Vec<notification::Model>, DbErr> {
         debug!(
@@ -61,7 +60,7 @@ impl NotificationCrud {
             project_id, target_user_id
         );
 
-        let limit = limit.unwrap_or(25);
+        let limit = 25;
         let mut query = notification::Entity::find()
             .filter(notification::Column::ProjectId.eq(project_id))
             .filter(notification::Column::TargetedUserId.eq(target_user_id))
@@ -69,7 +68,6 @@ impl NotificationCrud {
             .order_by_desc(notification::Column::Id)
             .limit(limit);
 
-        // Apply cursor-based pagination
         if let Some((cursor_created_at, cursor_id)) = cursor {
             query = query.filter(
                 Condition::any()
@@ -131,7 +129,7 @@ impl NotificationCrud {
         Ok(updated_notification)
     }
 
-    pub async fn get_count_for_user_and_project(
+    pub async fn get_unread_count_for_user_and_project(
         &self,
         project_id: i32,
         target_user_id: i32,
@@ -140,10 +138,10 @@ impl NotificationCrud {
             "Getting notification count for project {} and user {}",
             project_id, target_user_id
         );
-
         let count = notification::Entity::find()
             .filter(notification::Column::ProjectId.eq(project_id))
             .filter(notification::Column::TargetedUserId.eq(target_user_id))
+            .filter(notification::Column::Read.eq(false))
             .count(&self.state.db)
             .await?;
 
