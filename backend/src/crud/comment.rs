@@ -1,6 +1,9 @@
 use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::ISSUE_UPDATED;
 use crate::crud::history::HistoryCrud;
+use crate::crud::issue::IssueCrud;
+use crate::crud::issue_assignee::IssueAssigneeCrud;
+use crate::crud::notification::NotificationCrud;
 use crate::{entities::comment, AppState};
 use sea_orm::*;
 use tracing::debug;
@@ -46,6 +49,36 @@ impl CommentCrud {
                 format!("created comment: {}", content),
             )
             .await?;
+
+        // Create notifications for assigned users (excluding the comment author)
+        let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
+        if let Ok(assignees) = issue_assignee_crud.find_by_issue_id(issue_id).await {
+            let issue_crud = IssueCrud::new(self.app_state.clone());
+            if let Ok(Some(issue)) = issue_crud.find_by_id(issue_id).await {
+                let notification_crud = NotificationCrud::new(self.app_state.clone());
+                let project_id = &self.app_state.project.clone().unwrap().id;
+
+                for assignee in assignees {
+                    // Don't notify the user who created the comment
+                    if assignee.user_id != user_id {
+                        let notification_title = format!("New Comment on Issue: {}", issue.title);
+                        let notification_description =
+                            format!("New comment: '{}'", content.clone());
+
+                        let _ = notification_crud
+                            .create(
+                                notification_title,
+                                notification_description,
+                                *project_id,
+                                issue_id,
+                                user_id,
+                                assignee.user_id,
+                            )
+                            .await;
+                    }
+                }
+            }
+        }
 
         let project_id = &self.app_state.project.clone().unwrap().id;
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());

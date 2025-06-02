@@ -10,6 +10,8 @@ pub struct Model {
     pub owner_id: i32,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
+    #[sea_orm(ignore)]
+    pub notification_count: i32,
 }
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {

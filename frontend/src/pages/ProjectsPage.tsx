@@ -120,6 +120,7 @@ const ProjectsPage: React.FC = () => {
                   border: "1px solid #0d47a1",
                   borderRadius: "16px",
                   cursor: "pointer",
+                  position: "relative",
                   "&:hover": {
                     transform: "scale(1.02)",
                     transition: "transform 0.2s ease-in-out",
@@ -127,6 +128,28 @@ const ProjectsPage: React.FC = () => {
                 }}
                 onClick={() => handleProjectClick(project)}
               >
+                {project.notificationCount > 0 && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 8,
+                      right: 8,
+                      backgroundColor: "#ff4444",
+                      color: "white",
+                      borderRadius: "50%",
+                      minWidth: "24px",
+                      height: "24px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "12px",
+                      fontWeight: "bold",
+                      zIndex: 1,
+                    }}
+                  >
+                    {project.notificationCount}
+                  </Box>
+                )}
                 <CardContent>
                   <Typography variant="h6" component="h2">
                     {project.name}

@@ -34,10 +34,6 @@ impl ProjectCrud {
         project::Entity::find_by_id(id).one(&self.state.db).await
     }
 
-    pub async fn find_all(&self) -> Result<Vec<project::Model>, DbErr> {
-        project::Entity::find().all(&self.state.db).await
-    }
-
     pub async fn find_all_projects_by_user_id(
         &self,
         user_id: i32,
@@ -85,9 +81,22 @@ impl ProjectCrud {
             }
         }
 
+        // Get notification counts for each project
+        let notification_crud = NotificationCrud::new(self.state.clone());
+        let mut projects_with_notifications = Vec::new();
+
+        for mut project in projects {
+            let notification_count = notification_crud
+                .get_unread_count_for_user_and_project(project.id, user_id)
+                .await
+                .unwrap_or(0);
+
+            project.notification_count = notification_count;
+            projects_with_notifications.push(project);
+        }
+
         // Sort projects by their latest issue's updated_at timestamp
-        let mut sorted_projects = projects;
-        sorted_projects.sort_by(|a, b| {
+        projects_with_notifications.sort_by(|a, b| {
             let a_time = project_latest_update
                 .get(&a.id)
                 .cloned()
@@ -101,13 +110,13 @@ impl ProjectCrud {
 
         debug!(
             "Sorted project IDs: {:?}",
-            sorted_projects
+            projects_with_notifications
                 .iter()
                 .map(|project| project.id)
                 .collect::<Vec<_>>()
         );
 
-        Ok(sorted_projects)
+        Ok(projects_with_notifications)
     }
 
     pub async fn update(

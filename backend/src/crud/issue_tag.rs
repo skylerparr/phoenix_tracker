@@ -2,6 +2,9 @@ use super::event_broadcaster::TAG_DELETED;
 use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::ISSUE_UPDATED;
 use crate::crud::history::HistoryCrud;
+use crate::crud::issue::IssueCrud;
+use crate::crud::issue_assignee::IssueAssigneeCrud;
+use crate::crud::notification::NotificationCrud;
 use crate::crud::tag::TagCrud;
 use crate::entities::issue_tag;
 use crate::AppState;
@@ -45,6 +48,35 @@ impl IssueTagCrud {
         };
 
         let result = issue_tag.insert(&self.app_state.db).await?;
+
+        // Create notifications for assigned users (excluding the current user)
+        let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
+        if let Ok(assignees) = issue_assignee_crud.find_by_issue_id(issue_id).await {
+            let issue_crud = IssueCrud::new(self.app_state.clone());
+            if let Ok(Some(issue)) = issue_crud.find_by_id(issue_id).await {
+                let notification_crud = NotificationCrud::new(self.app_state.clone());
+                let project_id = &self.app_state.project.clone().unwrap().id;
+
+                for assignee in assignees {
+                    // Don't notify the current user who added the tag
+                    if assignee.user_id != *current_user_id {
+                        let notification_title = format!("Label Added to Issue: {}", issue.title);
+                        let notification_description = format!("Label '{}' was added.", tag.name);
+
+                        let _ = notification_crud
+                            .create(
+                                notification_title,
+                                notification_description,
+                                *project_id,
+                                issue_id,
+                                *current_user_id,
+                                assignee.user_id,
+                            )
+                            .await;
+                    }
+                }
+            }
+        }
 
         let project_id = &self.app_state.project.clone().unwrap().id;
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
@@ -106,6 +138,36 @@ impl IssueTagCrud {
             .filter(issue_tag::Column::TagId.eq(tag_id))
             .exec(&self.app_state.db)
             .await?;
+
+        // Create notifications for assigned users (excluding the current user)
+        let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
+        if let Ok(assignees) = issue_assignee_crud.find_by_issue_id(issue_id).await {
+            let issue_crud = IssueCrud::new(self.app_state.clone());
+            if let Ok(Some(issue)) = issue_crud.find_by_id(issue_id).await {
+                let notification_crud = NotificationCrud::new(self.app_state.clone());
+                let project_id = &self.app_state.project.clone().unwrap().id;
+
+                for assignee in assignees {
+                    // Don't notify the current user who removed the tag
+                    if assignee.user_id != *current_user_id {
+                        let notification_title =
+                            format!("Label Removed from Issue: {}", issue.title);
+                        let notification_description = format!("Label '{}' was removed.", tag.name);
+
+                        let _ = notification_crud
+                            .create(
+                                notification_title,
+                                notification_description,
+                                *project_id,
+                                issue_id,
+                                *current_user_id,
+                                assignee.user_id,
+                            )
+                            .await;
+                    }
+                }
+            }
+        }
 
         let project_id = &self.app_state.project.clone().unwrap().id;
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());

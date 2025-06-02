@@ -30,7 +30,6 @@ pub struct UpdateProjectRequest {
 pub fn project_routes() -> Router<AppState> {
     Router::new()
         .route("/projects", post(create_project))
-        .route("/projects", get(get_all_projects))
         .route("/projects/:id", get(get_project))
         .route("/projects/:id", put(update_project))
         .route("/projects/:id", delete(delete_project))
@@ -69,17 +68,6 @@ async fn create_project(
             }
         }
         None => Err(StatusCode::UNAUTHORIZED),
-    }
-}
-#[axum::debug_handler]
-async fn get_all_projects(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
-    let project_crud = ProjectCrud::new(app_state.clone());
-    match project_crud.find_all().await {
-        Ok(projects) => Ok(Json(projects)),
-        Err(e) => {
-            debug!("Error getting all projects: {:?}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
     }
 }
 
