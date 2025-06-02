@@ -1,7 +1,7 @@
 use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::ISSUE_UPDATED;
 use crate::crud::history::HistoryCrud;
-use crate::crud::issue::IssueCrud;
+
 use crate::crud::notification::NotificationCrud;
 use crate::crud::user::UserCrud;
 use crate::entities::issue_assignee;
@@ -54,26 +54,19 @@ impl IssueAssigneeCrud {
 
                 // Create notification for the assigned user if it's not the current user
                 if user_id != *current_user_id {
-                    let issue_crud = IssueCrud::new(self.app_state.clone());
-                    if let Ok(Some(issue)) = issue_crud.find_by_id(issue_id).await {
-                        let notification_crud = NotificationCrud::new(self.app_state.clone());
-                        let project_id = &self.app_state.project.clone().unwrap().id;
+                    let notification_crud = NotificationCrud::new(self.app_state.clone());
+                    let project_id = &self.app_state.project.clone().unwrap().id;
 
-                        let notification_title = format!("Issue Assigned: {}", issue.title);
-                        let notification_description =
-                            format!("You have been assigned to issue '{}'", issue.title);
-
-                        let _ = notification_crud
-                            .create(
-                                notification_title,
-                                notification_description,
-                                *project_id,
-                                issue_id,
-                                *current_user_id,
-                                user_id,
-                            )
-                            .await;
-                    }
+                    let _ = notification_crud
+                        .notify_single_user_with_context(
+                            issue_id,
+                            "Issue Assigned: {}",
+                            "You have been assigned to issue '{}'",
+                            *current_user_id,
+                            user_id,
+                            *project_id,
+                        )
+                        .await;
                 }
 
                 let project_id = &self.app_state.project.clone().unwrap().id;

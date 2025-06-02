@@ -2,7 +2,7 @@ use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::ISSUE_UPDATED;
 use crate::crud::history::HistoryCrud;
 use crate::crud::issue::IssueCrud;
-use crate::crud::issue_assignee::IssueAssigneeCrud;
+
 use crate::crud::notification::NotificationCrud;
 use crate::entities::blocker;
 use crate::AppState;
@@ -58,57 +58,38 @@ impl BlockerCrud {
         let result = blocker.insert(&self.app_state.db).await?;
 
         // Create notifications for assigned users on both issues (excluding the current user)
-        let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
         let notification_crud = NotificationCrud::new(self.app_state.clone());
         let project_id = &self.app_state.project.clone().unwrap().id;
 
         // Notify assignees of the blocker issue
-        if let Ok(blocker_assignees) = issue_assignee_crud.find_by_issue_id(blocker_id).await {
-            for assignee in blocker_assignees {
-                if assignee.user_id != *current_user_id {
-                    let notification_title = format!("Issue Now Blocking: {}", blocked_issue.title);
-                    let notification_description = format!(
-                        "Your issue '{}' is now blocking issue '{}'",
-                        blocker_issue.title, blocked_issue.title
-                    );
-
-                    let _ = notification_crud
-                        .create(
-                            notification_title,
-                            notification_description,
-                            *project_id,
-                            blocker_id,
-                            *current_user_id,
-                            assignee.user_id,
-                        )
-                        .await;
-                }
-            }
-        }
+        let blocker_description = format!(
+            "Your issue '{}' is now blocking issue '{}'",
+            blocker_issue.title, blocked_issue.title
+        );
+        let _ = notification_crud
+            .notify_issue_assignees(
+                blocker_id,
+                format!("Issue Now Blocking: {}", blocked_issue.title),
+                blocker_description,
+                *current_user_id,
+                *project_id,
+            )
+            .await;
 
         // Notify assignees of the blocked issue
-        if let Ok(blocked_assignees) = issue_assignee_crud.find_by_issue_id(blocked_id).await {
-            for assignee in blocked_assignees {
-                if assignee.user_id != *current_user_id {
-                    let notification_title = format!("Issue Blocked: {}", blocked_issue.title);
-                    let notification_description = format!(
-                        "Your issue '{}' is now blocked by issue '{}'",
-                        blocked_issue.title, blocker_issue.title
-                    );
-
-                    let _ = notification_crud
-                        .create(
-                            notification_title,
-                            notification_description,
-                            *project_id,
-                            blocked_id,
-                            *current_user_id,
-                            assignee.user_id,
-                        )
-                        .await;
-                }
-            }
-        }
+        let blocked_description = format!(
+            "Your issue '{}' is now blocked by issue '{}'",
+            blocked_issue.title, blocker_issue.title
+        );
+        let _ = notification_crud
+            .notify_issue_assignees(
+                blocked_id,
+                format!("Issue Blocked: {}", blocked_issue.title),
+                blocked_description,
+                *current_user_id,
+                *project_id,
+            )
+            .await;
 
         let project_id = &self.app_state.project.clone().unwrap().id;
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
@@ -181,59 +162,38 @@ impl BlockerCrud {
             .await?;
 
         // Create notifications for assigned users on both issues (excluding the current user)
-        let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
         let notification_crud = NotificationCrud::new(self.app_state.clone());
         let project_id = &self.app_state.project.clone().unwrap().id;
 
         // Notify assignees of the blocker issue
-        if let Ok(blocker_assignees) = issue_assignee_crud.find_by_issue_id(blocker_id).await {
-            for assignee in blocker_assignees {
-                if assignee.user_id != *current_user_id {
-                    let notification_title =
-                        format!("Issue No Longer Blocking: {}", blocked_issue.title);
-                    let notification_description = format!(
-                        "Your issue '{}' is no longer blocking issue '{}'",
-                        blocker_issue.title, blocked_issue.title
-                    );
-
-                    let _ = notification_crud
-                        .create(
-                            notification_title,
-                            notification_description,
-                            *project_id,
-                            blocker_id,
-                            *current_user_id,
-                            assignee.user_id,
-                        )
-                        .await;
-                }
-            }
-        }
+        let blocker_description = format!(
+            "Your issue '{}' is no longer blocking issue '{}'",
+            blocker_issue.title, blocked_issue.title
+        );
+        let _ = notification_crud
+            .notify_issue_assignees(
+                blocker_id,
+                format!("Issue No Longer Blocking: {}", blocked_issue.title),
+                blocker_description,
+                *current_user_id,
+                *project_id,
+            )
+            .await;
 
         // Notify assignees of the blocked issue
-        if let Ok(blocked_assignees) = issue_assignee_crud.find_by_issue_id(blocked_id).await {
-            for assignee in blocked_assignees {
-                if assignee.user_id != *current_user_id {
-                    let notification_title =
-                        format!("Issue No Longer Blocked: {}", blocked_issue.title);
-                    let notification_description = format!(
-                        "Your issue '{}' is no longer blocked by issue '{}'",
-                        blocked_issue.title, blocker_issue.title
-                    );
-
-                    let _ = notification_crud
-                        .create(
-                            notification_title,
-                            notification_description,
-                            *project_id,
-                            blocked_id,
-                            *current_user_id,
-                            assignee.user_id,
-                        )
-                        .await;
-                }
-            }
-        }
+        let blocked_description = format!(
+            "Your issue '{}' is no longer blocked by issue '{}'",
+            blocked_issue.title, blocker_issue.title
+        );
+        let _ = notification_crud
+            .notify_issue_assignees(
+                blocked_id,
+                format!("Issue No Longer Blocked: {}", blocked_issue.title),
+                blocked_description,
+                *current_user_id,
+                *project_id,
+            )
+            .await;
 
         let project_id = &self.app_state.project.clone().unwrap().id;
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());

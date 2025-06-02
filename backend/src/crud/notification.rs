@@ -1,7 +1,10 @@
+use crate::crud::issue::IssueCrud;
+use crate::crud::issue_assignee::IssueAssigneeCrud;
 use crate::entities::notification;
 use crate::AppState;
 use chrono::{DateTime, FixedOffset};
 use sea_orm::*;
+use std::collections::HashSet;
 use tracing::debug;
 
 #[derive(Clone)]
@@ -151,5 +154,208 @@ impl NotificationCrud {
         );
 
         Ok(count as i32)
+    }
+
+    /// Notify only the assignees of an issue (excluding the current user)
+    pub async fn notify_issue_assignees(
+        &self,
+        issue_id: i32,
+        title: String,
+        description: String,
+        current_user_id: i32,
+        project_id: i32,
+    ) -> Result<(), DbErr> {
+        let issue_assignee_crud = IssueAssigneeCrud::new(self.state.clone());
+
+        if let Ok(assignees) = issue_assignee_crud.find_by_issue_id(issue_id).await {
+            for assignee in assignees {
+                if assignee.user_id != current_user_id {
+                    let _ = self
+                        .create(
+                            title.clone(),
+                            description.clone(),
+                            project_id,
+                            issue_id,
+                            current_user_id,
+                            assignee.user_id,
+                        )
+                        .await;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Notify both assignees and issue creator (excluding the current user)
+    pub async fn notify_issue_stakeholders(
+        &self,
+        issue_id: i32,
+        title: String,
+        description: String,
+        current_user_id: i32,
+        project_id: i32,
+    ) -> Result<(), DbErr> {
+        let issue_assignee_crud = IssueAssigneeCrud::new(self.state.clone());
+        let issue_crud = IssueCrud::new(self.state.clone());
+
+        // Get issue assignees and creator
+        let mut target_user_ids = HashSet::new();
+
+        // Add assignees
+        if let Ok(assignees) = issue_assignee_crud.find_by_issue_id(issue_id).await {
+            for assignee in assignees {
+                target_user_ids.insert(assignee.user_id);
+            }
+        }
+
+        // Add issue creator
+        if let Ok(Some(issue)) = issue_crud.find_by_id(issue_id).await {
+            target_user_ids.insert(issue.created_by_id);
+        }
+
+        // Remove current user to avoid self-notification
+        target_user_ids.remove(&current_user_id);
+
+        // Create notifications for each target user
+        for target_user_id in target_user_ids {
+            let _ = self
+                .create(
+                    title.clone(),
+                    description.clone(),
+                    project_id,
+                    issue_id,
+                    current_user_id,
+                    target_user_id,
+                )
+                .await;
+        }
+
+        Ok(())
+    }
+
+    /// Notify assignees with issue context (gets issue title automatically)
+    pub async fn notify_issue_assignees_with_context(
+        &self,
+        issue_id: i32,
+        title_template: &str,
+        description: String,
+        current_user_id: i32,
+        project_id: i32,
+    ) -> Result<(), DbErr> {
+        let issue_crud = IssueCrud::new(self.state.clone());
+
+        if let Ok(Some(issue)) = issue_crud.find_by_id(issue_id).await {
+            let title = title_template.replace("{}", &issue.title);
+            self.notify_issue_assignees(issue_id, title, description, current_user_id, project_id)
+                .await?
+        }
+
+        Ok(())
+    }
+
+    /// Notify stakeholders with issue context (gets issue title automatically)
+    pub async fn notify_issue_stakeholders_with_context(
+        &self,
+        issue_id: i32,
+        title_template: &str,
+        description: String,
+        current_user_id: i32,
+        project_id: i32,
+    ) -> Result<(), DbErr> {
+        let issue_crud = IssueCrud::new(self.state.clone());
+
+        if let Ok(Some(issue)) = issue_crud.find_by_id(issue_id).await {
+            let title = title_template.replace("{}", &issue.title);
+            self.notify_issue_stakeholders(
+                issue_id,
+                title,
+                description,
+                current_user_id,
+                project_id,
+            )
+            .await?
+        }
+
+        Ok(())
+    }
+
+    /// Notify a single user with issue context (gets issue title automatically)
+    pub async fn notify_single_user_with_context(
+        &self,
+        issue_id: i32,
+        title_template: &str,
+        description_template: &str,
+        current_user_id: i32,
+        target_user_id: i32,
+        project_id: i32,
+    ) -> Result<(), DbErr> {
+        let issue_crud = IssueCrud::new(self.state.clone());
+
+        if let Ok(Some(issue)) = issue_crud.find_by_id(issue_id).await {
+            let title = title_template.replace("{}", &issue.title);
+            let description = description_template.replace("{}", &issue.title);
+
+            let _ = self
+                .create(
+                    title,
+                    description,
+                    project_id,
+                    issue_id,
+                    current_user_id,
+                    target_user_id,
+                )
+                .await;
+        }
+
+        Ok(())
+    }
+
+    /// Notify stakeholders with explicit creator context (gets issue title automatically)
+    pub async fn notify_issue_stakeholders_with_creator_context(
+        &self,
+        issue_id: i32,
+        title_template: &str,
+        description: String,
+        current_user_id: i32,
+        project_id: i32,
+        issue_creator_id: i32,
+    ) -> Result<(), DbErr> {
+        let issue_assignee_crud = IssueAssigneeCrud::new(self.state.clone());
+        let issue_crud = IssueCrud::new(self.state.clone());
+
+        if let Ok(Some(issue)) = issue_crud.find_by_id(issue_id).await {
+            let mut target_user_ids = HashSet::new();
+
+            // Add issue assignees
+            if let Ok(assignees) = issue_assignee_crud.find_by_issue_id(issue_id).await {
+                for assignee in assignees {
+                    target_user_ids.insert(assignee.user_id);
+                }
+            }
+
+            // Add explicit creator
+            target_user_ids.insert(issue_creator_id);
+
+            // Remove current user to avoid self-notification
+            target_user_ids.remove(&current_user_id);
+
+            // Create notifications for each target user
+            let title = title_template.replace("{}", &issue.title);
+            for target_user_id in target_user_ids {
+                let _ = self
+                    .create(
+                        title.clone(),
+                        description.clone(),
+                        project_id,
+                        issue_id,
+                        current_user_id,
+                        target_user_id,
+                    )
+                    .await;
+            }
+        }
+
+        Ok(())
     }
 }

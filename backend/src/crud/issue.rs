@@ -17,7 +17,6 @@ use crate::AppState;
 use chrono::Datelike;
 use sea_orm::entity::prelude::*;
 use sea_orm::*;
-use std::collections::HashSet;
 
 #[derive(Clone)]
 pub struct IssueCrud {
@@ -456,40 +455,22 @@ impl IssueCrud {
         }
 
         // Create notifications for issue assignees and issue creator
-        let notification_crud = NotificationCrud::new(self.app_state.clone());
-
-        // Get issue assignees
-        let mut target_user_ids = HashSet::new();
-
-        // Add issue assignees
-        self.populate_issue_assignees(&mut result).await?;
-        for assignee_id in &result.issue_assignee_ids {
-            target_user_ids.insert(*assignee_id);
-        }
-
-        // Add issue requester/creator
-        target_user_ids.insert(issue_created_by_id);
-
-        // Remove current user to avoid self-notification
-        target_user_ids.remove(current_user_id);
-
-        // Create notifications for each target user
-        for target_user_id in target_user_ids {
-            let notification_title = format!("Issue Updated: {}", issue_title);
-            let notification_description = if notification_changes.is_empty() {
+        if !notification_changes.is_empty() {
+            let notification_crud = NotificationCrud::new(self.app_state.clone());
+            let description = if notification_changes.is_empty() {
                 format!("Issue '{}' has been updated", issue_title)
             } else {
                 format!("{}", notification_changes.join(", "))
             };
 
             let _ = notification_crud
-                .create(
-                    notification_title,
-                    notification_description,
-                    project_id,
+                .notify_issue_stakeholders_with_creator_context(
                     id,
+                    "Issue Updated: {}",
+                    description,
                     *current_user_id,
-                    target_user_id,
+                    project_id,
+                    issue_created_by_id,
                 )
                 .await;
         }

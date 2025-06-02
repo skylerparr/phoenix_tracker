@@ -1,13 +1,12 @@
 use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::ISSUE_UPDATED;
 use crate::crud::history::HistoryCrud;
-use crate::crud::issue::IssueCrud;
-use crate::crud::issue_assignee::IssueAssigneeCrud;
+
 use crate::crud::notification::NotificationCrud;
 use crate::entities::task;
 use crate::AppState;
 use sea_orm::*;
-use std::collections::HashSet;
+
 use tracing::debug;
 
 #[derive(Clone)]
@@ -55,43 +54,19 @@ impl TaskCrud {
         let result = task.insert(&txn).await?;
 
         // Create notifications for issue assignees and issue creator
-        let issue_crud = IssueCrud::new(self.app_state.clone());
-        if let Ok(Some(issue)) = issue_crud.find_by_id(issue_id).await {
-            let notification_crud = NotificationCrud::new(self.app_state.clone());
-            let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
+        let notification_crud = NotificationCrud::new(self.app_state.clone());
+        let project_id = &self.app_state.project.clone().unwrap().id;
+        let description = format!("A new task '{}'.", title);
 
-            // Get issue assignees
-            let mut target_user_ids = HashSet::new();
-            if let Ok(assignees) = issue_assignee_crud.find_by_issue_id(issue_id).await {
-                for assignee in assignees {
-                    target_user_ids.insert(assignee.user_id);
-                }
-            }
-
-            // Add issue creator
-            target_user_ids.insert(issue.created_by_id);
-
-            // Remove current user to avoid self-notification
-            target_user_ids.remove(current_user_id);
-
-            // Create notifications for each target user
-            let project_id = &self.app_state.project.clone().unwrap().id;
-            for target_user_id in target_user_ids {
-                let notification_title = format!("New Task Created: {}", issue.title);
-                let notification_description = format!("A new task '{}'.", title);
-
-                let _ = notification_crud
-                    .create(
-                        notification_title,
-                        notification_description,
-                        *project_id,
-                        issue_id,
-                        *current_user_id,
-                        target_user_id,
-                    )
-                    .await;
-            }
-        }
+        let _ = notification_crud
+            .notify_issue_stakeholders_with_context(
+                issue_id,
+                "New Task Created: {}",
+                description,
+                *current_user_id,
+                *project_id,
+            )
+            .await;
 
         let project_id = &self.app_state.project.clone().unwrap().id;
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
@@ -198,54 +173,27 @@ impl TaskCrud {
 
         // Create notifications for issue assignees and issue creator if there were changes
         if !notification_changes.is_empty() {
-            let issue_crud = IssueCrud::new(self.app_state.clone());
-            if let Ok(Some(issue)) = issue_crud.find_by_id(result.issue_id).await {
-                let notification_crud = NotificationCrud::new(self.app_state.clone());
-                let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
+            let notification_crud = NotificationCrud::new(self.app_state.clone());
+            let project_id = &self.app_state.project.clone().unwrap().id;
+            let description = if notification_changes.is_empty() {
+                format!("Task '{}' has been updated", result.title)
+            } else {
+                format!(
+                    "Task '{}' updated: {}",
+                    result.title,
+                    notification_changes.join(", ")
+                )
+            };
 
-                // Get issue assignees
-                let mut target_user_ids = HashSet::new();
-                if let Ok(assignees) = issue_assignee_crud.find_by_issue_id(result.issue_id).await {
-                    for assignee in assignees {
-                        target_user_ids.insert(assignee.user_id);
-                    }
-                }
-
-                // Add issue creator
-                target_user_ids.insert(issue.created_by_id);
-
-                // Remove current user to avoid self-notification
-                target_user_ids.remove(current_user_id);
-
-                // Create notifications for each target user
-                let project_id = &self.app_state.project.clone().unwrap().id;
-                for target_user_id in target_user_ids {
-                    let notification_title = format!("Task Updated: {}", issue.title);
-                    let notification_description = if notification_changes.is_empty() {
-                        format!(
-                            "Task '{}' in issue '{}' has been updated",
-                            result.title, issue.title
-                        )
-                    } else {
-                        format!(
-                            "Task '{}' updated: {}",
-                            result.title,
-                            notification_changes.join(", ")
-                        )
-                    };
-
-                    let _ = notification_crud
-                        .create(
-                            notification_title,
-                            notification_description,
-                            *project_id,
-                            result.issue_id,
-                            *current_user_id,
-                            target_user_id,
-                        )
-                        .await;
-                }
-            }
+            let _ = notification_crud
+                .notify_issue_stakeholders_with_context(
+                    result.issue_id,
+                    "Task Updated: {}",
+                    description,
+                    *current_user_id,
+                    *project_id,
+                )
+                .await;
         }
 
         let project_id = &self.app_state.project.clone().unwrap().id;
@@ -283,43 +231,19 @@ impl TaskCrud {
             .await?;
 
         // Create notifications for issue assignees and issue creator
-        let issue_crud = IssueCrud::new(self.app_state.clone());
-        if let Ok(Some(issue)) = issue_crud.find_by_id(task.issue_id).await {
-            let notification_crud = NotificationCrud::new(self.app_state.clone());
-            let issue_assignee_crud = IssueAssigneeCrud::new(self.app_state.clone());
+        let notification_crud = NotificationCrud::new(self.app_state.clone());
+        let project_id = &self.app_state.project.clone().unwrap().id;
+        let description = format!("Task '{}' was deleted.", task.title);
 
-            // Get issue assignees
-            let mut target_user_ids = HashSet::new();
-            if let Ok(assignees) = issue_assignee_crud.find_by_issue_id(task.issue_id).await {
-                for assignee in assignees {
-                    target_user_ids.insert(assignee.user_id);
-                }
-            }
-
-            // Add issue creator
-            target_user_ids.insert(issue.created_by_id);
-
-            // Remove current user to avoid self-notification
-            target_user_ids.remove(current_user_id);
-
-            // Create notifications for each target user
-            let project_id = &self.app_state.project.clone().unwrap().id;
-            for target_user_id in target_user_ids {
-                let notification_title = format!("Task Deleted: {}", issue.title);
-                let notification_description = format!("Task '{}' was deleted.", task.title);
-
-                let _ = notification_crud
-                    .create(
-                        notification_title,
-                        notification_description,
-                        *project_id,
-                        task.issue_id,
-                        *current_user_id,
-                        target_user_id,
-                    )
-                    .await;
-            }
-        }
+        let _ = notification_crud
+            .notify_issue_stakeholders_with_context(
+                task.issue_id,
+                "Task Deleted: {}",
+                description,
+                *current_user_id,
+                *project_id,
+            )
+            .await;
 
         let project_id = &self.app_state.project.clone().unwrap().id;
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
