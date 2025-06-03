@@ -82,9 +82,11 @@ const tooltipContent = (issues: Issue[]) => (
 );
 const EpicsComponent: React.FC = () => {
   const [epics, setEpics] = useState<Tag[]>([]);
-  const [filteredEpics, setFilteredEpics] = useState<Tag[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [issuesMap, setIssuesMap] = useState<Map<Tag, Issue[]>>(new Map());
+  const [filteredIssuesMap, setFilteredIssuesMap] = useState<Map<Tag, Issue[]>>(
+    new Map(),
+  );
 
   useEffect(() => {
     // Clear existing data first
@@ -119,7 +121,6 @@ const EpicsComponent: React.FC = () => {
       );
 
     setEpics(epicTags);
-    setFilteredEpics(epicTags);
 
     const newIssuesMap = new Map();
     await Promise.all(
@@ -130,13 +131,22 @@ const EpicsComponent: React.FC = () => {
     );
 
     setIssuesMap(newIssuesMap);
+    setFilteredIssuesMap(newIssuesMap);
   };
 
   useEffect(() => {
     const filtered = epics.filter((epic: Tag) =>
       epic.name.toLowerCase().includes(searchTerm.toLowerCase()),
     );
-    setFilteredEpics(filtered);
+    const newFilteredMap = new Map();
+    filtered.forEach((epic) => {
+      const issues = issuesMap.get(epic);
+      if (issues) {
+        newFilteredMap.set(epic, issues);
+      }
+    });
+
+    setFilteredIssuesMap(newFilteredMap);
   }, [searchTerm, epics]);
 
   const calculateWidth = (
@@ -178,7 +188,7 @@ const EpicsComponent: React.FC = () => {
         }}
       />
       <Divider sx={{ bgcolor: "#666666", width: "100%" }} />
-      {Array.from(issuesMap.keys()).map((epic: any) => (
+      {Array.from(filteredIssuesMap.keys()).map((epic: any) => (
         <Box key={epic.id} sx={{ width: "100%" }}>
           <Box sx={{ width: "100%", p: 2 }}>
             <Tooltip title={tooltipContent(issuesMap.get(epic) || [])} arrow>
