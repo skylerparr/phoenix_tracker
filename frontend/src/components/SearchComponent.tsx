@@ -108,6 +108,11 @@ const SearchComponent = () => {
                   setExpandedAcceptedIssues(!expandedAcceptedIssues)
                 }
                 enabled={expandedAcceptedIssues}
+                points={acceptedIssues.reduce(
+                  (sum: number, issue: { points?: number }) =>
+                    sum + (issue.points || 0),
+                  0,
+                )}
               />
               <IssueList
                 issues={acceptedIssues}
@@ -122,6 +127,11 @@ const SearchComponent = () => {
                 setExpandedAcceptedIssues(!expandedAcceptedIssues)
               }
               enabled={expandedAcceptedIssues}
+              points={acceptedIssues.reduce(
+                (sum: number, issue: { points?: number }) =>
+                  sum + (issue.points || 0),
+                0,
+              )}
             />
           )}
           <IssueList

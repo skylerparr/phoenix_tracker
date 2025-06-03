@@ -158,21 +158,6 @@ const EpicsComponent: React.FC = () => {
     return `${(filteredPoints / totalPoints) * 100}%`;
   };
 
-  const getStatusPercentage = (
-    issues: Issue[],
-    predicate: (issue: Issue) => boolean,
-  ): number => {
-    if (!issues?.length) return 0;
-    const totalPoints = issues.reduce(
-      (sum, issue) => sum + (issue.points || 0),
-      0,
-    );
-    const filteredPoints = issues
-      .filter(predicate)
-      .reduce((sum, issue) => sum + (issue.points || 0), 0);
-    return (filteredPoints / totalPoints) * 100;
-  };
-
   return (
     <Box sx={{ width: "100%", backgroundColor: "#f5f5f5" }}>
       <TextField

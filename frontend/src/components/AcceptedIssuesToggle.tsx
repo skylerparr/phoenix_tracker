@@ -5,13 +5,15 @@ interface AcceptedIssuesToggleProps {
   acceptedIssuesCount: number;
   onToggle: () => void;
   enabled: boolean;
+  points: number;
 }
 
 const AcceptedIssuesToggle: React.FC<AcceptedIssuesToggleProps> = ({
   acceptedIssuesCount,
   onToggle,
   enabled,
-}) => {
+  points,
+}: AcceptedIssuesToggleProps) => {
   if (acceptedIssuesCount === 0) return null;
 
   return (
@@ -35,10 +37,9 @@ const AcceptedIssuesToggle: React.FC<AcceptedIssuesToggleProps> = ({
       onClick={onToggle}
     >
       {enabled
-        ? `Hide ${acceptedIssuesCount} Accepted Issues`
-        : `Show ${acceptedIssuesCount} Accepted Issues`}
+        ? `Hide ${acceptedIssuesCount} Accepted Issues (${points} points)`
+        : `Show ${acceptedIssuesCount} Accepted Issues (${points} points)`}
     </Box>
   );
 };
-
 export default AcceptedIssuesToggle;

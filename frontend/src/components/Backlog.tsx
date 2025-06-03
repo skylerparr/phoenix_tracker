@@ -139,6 +139,11 @@ const Backlog: React.FC = () => {
                 setExpandedAcceptedIssues(!expandedAcceptedIssues)
               }
               enabled={expandedAcceptedIssues}
+              points={acceptedIssues.reduce(
+                (sum: number, issue: { points?: number }) =>
+                  sum + (issue.points || 0),
+                0,
+              )}
             />
             <IssueList
               issues={acceptedIssues}
@@ -151,6 +156,11 @@ const Backlog: React.FC = () => {
             acceptedIssuesCount={acceptedIssues.length}
             onToggle={() => setExpandedAcceptedIssues(!expandedAcceptedIssues)}
             enabled={expandedAcceptedIssues}
+            points={acceptedIssues.reduce(
+              (sum: number, issue: { points?: number }) =>
+                sum + (issue.points || 0),
+              0,
+            )}
           />
         )}
         <IssueList
