@@ -1,4 +1,5 @@
 use crate::entities::history;
+use sea_orm::prelude::Expr;
 use sea_orm::*;
 
 #[derive(Clone, Debug)]
@@ -42,6 +43,14 @@ impl HistoryCrud {
     pub async fn delete_by_issue_id(&self, issue_id: i32) -> Result<DeleteResult, DbErr> {
         history::Entity::delete_many()
             .filter(history::Column::IssueId.eq(issue_id))
+            .exec(&self.db)
+            .await
+    }
+
+    pub async fn delete_by_comment_id(&self, comment_id: i32) -> Result<UpdateResult, DbErr> {
+        history::Entity::update_many()
+            .col_expr(history::Column::CommentId, Expr::value(Value::Int(None)))
+            .filter(history::Column::CommentId.eq(comment_id))
             .exec(&self.db)
             .await
     }

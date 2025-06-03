@@ -6,6 +6,7 @@ mod m20240103_000001_add_accepted_at_to_issues;
 mod m20240520_000001_create_project_notes_table;
 mod m20250319_000001_add_missing_indexes;
 mod m20250527_202325_alter_notifications;
+mod m20250603_201757_add_lock_version_to_comments;
 
 pub struct Migrator;
 
@@ -19,6 +20,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20240520_000001_create_project_notes_table::Migration),
             Box::new(m20250319_000001_add_missing_indexes::Migration),
             Box::new(m20250527_202325_alter_notifications::Migration),
+            Box::new(m20250603_201757_add_lock_version_to_comments::Migration),
         ]
     }
 }

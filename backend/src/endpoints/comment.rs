@@ -18,10 +18,19 @@ pub struct CreateCommentRequest {
     issue_id: i32,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateCommentRequest {
+    content: String,
+}
+
 pub fn comment_routes() -> Router<AppState> {
     Router::new()
         .route("/comments", post(create_comment))
-        .route("/comments/:id", get(get_comment))
+        .route(
+            "/comments/:id",
+            get(get_comment).put(update_comment).delete(delete_comment),
+        )
         .route("/comments/issue/:id", get(get_comments_by_issue))
         .route("/comments/user/:id", get(get_comments_by_user))
 }
@@ -86,6 +95,37 @@ async fn get_comments_by_user(
         Ok(comments) => Ok(Json(comments)),
         Err(e) => {
             debug!("Error getting comments for user {}: {:?}", id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+#[axum::debug_handler]
+async fn update_comment(
+    Extension(app_state): Extension<AppState>,
+    Path(id): Path<i32>,
+    Json(payload): Json<UpdateCommentRequest>,
+) -> impl IntoResponse {
+    let comment_crud = CommentCrud::new(app_state);
+    match comment_crud.update(id, payload.content).await {
+        Ok(comment) => Ok(Json(comment)),
+        Err(e) => {
+            debug!("Error updating comment {}: {:?}", id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+#[axum::debug_handler]
+async fn delete_comment(
+    Extension(app_state): Extension<AppState>,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
+    let comment_crud = CommentCrud::new(app_state);
+    match comment_crud.delete(id).await {
+        Ok(_) => Ok(StatusCode::NO_CONTENT),
+        Err(e) => {
+            debug!("Error deleting comment {}: {:?}", id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }

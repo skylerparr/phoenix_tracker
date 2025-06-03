@@ -79,9 +79,13 @@ const Comment: React.FC<CommentProps> = ({ user, history }) => (
             width: "100%",
           }}
         >
-          {new Date(history.createdAt).toLocaleDateString("en-US", {
-            day: "2-digit",
+          {new Date(history.createdAt).toLocaleString("en-US", {
+            year: "numeric",
             month: "short",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
           })}
         </Typography>
       </Box>

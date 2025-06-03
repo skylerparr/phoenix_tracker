@@ -101,4 +101,104 @@ impl CommentCrud {
             .exec(&self.app_state.db)
             .await
     }
+
+    pub async fn update(&self, id: i32, content: String) -> Result<comment::Model, DbErr> {
+        let txn = self.app_state.db.begin().await?;
+        let comment_model = comment::Entity::find_by_id(id)
+            .one(&txn)
+            .await?
+            .ok_or(DbErr::Custom("Comment not found".to_owned()))?;
+
+        let current_version = comment_model.lock_version;
+        let user_id = comment_model.user_id;
+        let issue_id = comment_model.issue_id;
+        let old_content = comment_model.content.clone();
+
+        let mut comment: comment::ActiveModel = comment_model.into();
+
+        // Update content if it has changed
+        if old_content != content {
+            comment.content = Set(content.clone());
+        }
+
+        comment.lock_version = Set(current_version + 1);
+        let result = comment.update(&txn).await?;
+
+        if result.lock_version != current_version + 1 {
+            txn.rollback().await?;
+            return Err(DbErr::Custom("Optimistic lock error".to_owned()));
+        }
+
+        txn.commit().await?;
+
+        // Add history entry if content changed
+        if old_content != content {
+            let history_crud = HistoryCrud::new(self.app_state.db.clone());
+            history_crud
+                .create(
+                    user_id,
+                    Some(issue_id),
+                    Some(id),
+                    None,
+                    format!("updated comment from '{}' to '{}'", old_content, content),
+                )
+                .await?;
+        }
+
+        // Broadcast event
+        let project_id = &self.app_state.project.clone().unwrap().id;
+        let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+        broadcaster.broadcast_event(
+            *project_id,
+            ISSUE_UPDATED,
+            serde_json::json!({"id": user_id}),
+        );
+
+        Ok(result)
+    }
+
+    pub async fn delete(&self, id: i32) -> Result<(), DbErr> {
+        let txn = self.app_state.db.begin().await?;
+
+        // Find the comment first to get details for history
+        let comment_model = comment::Entity::find_by_id(id)
+            .one(&txn)
+            .await?
+            .ok_or(DbErr::Custom("Comment not found".to_owned()))?;
+
+        let user_id = comment_model.user_id;
+        let issue_id = comment_model.issue_id;
+        let content = comment_model.content.clone();
+
+        // Delete all history records that reference this comment
+        let history_crud = HistoryCrud::new(self.app_state.db.clone());
+        history_crud.delete_by_comment_id(id).await?;
+
+        // Delete the comment
+        comment::Entity::delete_by_id(id).exec(&txn).await?;
+
+        txn.commit().await?;
+
+        // Add history entry for the deletion
+        history_crud
+            .create(
+                user_id,
+                Some(issue_id),
+                None, // No comment_id since it's deleted
+                None,
+                format!("deleted comment: {}", content),
+            )
+            .await?;
+
+        // Broadcast event
+        let project_id = &self.app_state.project.clone().unwrap().id;
+        let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+        broadcaster.broadcast_event(
+            *project_id,
+            ISSUE_UPDATED,
+            serde_json::json!({"id": user_id}),
+        );
+
+        Ok(())
+    }
 }

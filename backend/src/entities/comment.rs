@@ -7,6 +7,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub content: String,
+    pub lock_version: i32,
     pub user_id: i32,
     pub issue_id: i32,
     pub created_at: DateTimeWithTimeZone,

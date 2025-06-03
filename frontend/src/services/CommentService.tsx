@@ -6,6 +6,10 @@ interface CreateCommentRequest {
   issueId: number;
 }
 
+interface UpdateCommentRequest {
+  content: string;
+}
+
 export class CommentService extends BaseService<Comment> {
   constructor() {
     super("/comments");
@@ -25,6 +29,17 @@ export class CommentService extends BaseService<Comment> {
 
   async getCommentsByUser(userId: number): Promise<Comment[]> {
     return this.get<Comment[]>(`/user/${userId}`);
+  }
+
+  async updateComment(
+    id: number,
+    request: UpdateCommentRequest,
+  ): Promise<Comment> {
+    return this.put<Comment>(`/${id}`, request);
+  }
+
+  async deleteComment(id: number): Promise<void> {
+    return this.delete(`/${id}`);
   }
 }
 
