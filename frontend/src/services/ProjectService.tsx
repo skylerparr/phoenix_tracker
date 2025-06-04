@@ -37,8 +37,6 @@ export class ProjectService extends BaseService<Project> {
 
   async switchToProject(projectId: number): Promise<void> {
     const token = sessionStorage.getToken();
-    console.log("Switching to project:", projectId, "with token:", token);
-
     const response = await fetch(
       `${this.baseUrl.replace("/projects", "")}/auth/switch-project`,
       {
@@ -56,22 +54,16 @@ export class ProjectService extends BaseService<Project> {
     }
 
     const data = await response.json();
-    console.log("Switch project response:", data);
 
     // Update session storage with new token
     sessionStorage.updateUserToken(data.token);
 
     // Verify the token was set correctly multiple times to ensure it's stable
     await new Promise((resolve) => setTimeout(resolve, 100));
-    const newToken = sessionStorage.getToken();
-    const session = sessionStorage.getSession();
-    console.log("Token after update:", newToken);
-    console.log("Session after update:", session);
 
     // Double-check that the token really stuck
     await new Promise((resolve) => setTimeout(resolve, 100));
     const verifyToken = sessionStorage.getToken();
-    console.log("Token verification:", verifyToken);
 
     if (verifyToken !== data.token) {
       console.error(

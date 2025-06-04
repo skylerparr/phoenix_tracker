@@ -61,9 +61,6 @@ const CreateIssue: React.FC = () => {
     const hasProject = sessionStorage.hasProjectSelected();
 
     if (!hasProject || !session.user || !session.isAuthenticated) {
-      console.log(
-        "Cannot create issue: no project selected or user not authenticated",
-      );
       return;
     }
 

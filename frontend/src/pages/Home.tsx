@@ -302,7 +302,6 @@ const Home = () => {
     const params = new URLSearchParams(location.search);
     const projectParam = params.get("project");
     if (projectParam) {
-      console.log("Project parameter changed to:", projectParam);
       // Clear service caches to force fresh data fetch
       clearProjectCaches();
       setProjectRefreshKey((prev) => prev + 1);

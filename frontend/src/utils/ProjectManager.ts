@@ -26,8 +26,6 @@ export class ProjectManager {
     currentToken: string,
   ): Promise<ProjectSwitchResult> {
     try {
-      console.log("Switching to project:", projectId);
-
       const response = await fetch(
         `${this.BASE_URL}${this.SWITCH_PROJECT_ENDPOINT}`,
         {
@@ -45,7 +43,6 @@ export class ProjectManager {
       }
 
       const data = await response.json();
-      console.log("Switch project response:", data);
 
       // Validate the response
       if (!data.token || !JwtUtils.isValidTokenFormat(data.token)) {

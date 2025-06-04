@@ -50,15 +50,11 @@ class SessionStorage {
     // First try to get project-specific token from sessionStorage (tab-specific)
     const projectToken = window.sessionStorage.getItem("project_auth_token");
     if (projectToken) {
-      console.log("Using project-specific token from sessionStorage");
       return projectToken;
     }
 
     // Fall back to base auth token from localStorage (shared across tabs)
     const baseToken = localStorage.getItem("base_auth_token");
-    if (baseToken) {
-      console.log("Using base auth token from localStorage");
-    }
     return baseToken;
   }
 
