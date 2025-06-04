@@ -31,6 +31,8 @@ interface UpdateIssueRequest {
  */
 export class IssueService extends BaseService<Issue> {
   private websocketSubscriptions: Set<() => Promise<void>> = new Set();
+  private refreshTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private isRefreshing: boolean = false;
 
   constructor() {
     super("/issues");
@@ -227,15 +229,18 @@ export class IssueService extends BaseService<Issue> {
   private ensureWebSocketSubscriptions(): void {
     if (this.websocketSubscriptions.size === 0) {
       const handleIssueCreated = (issue: Issue) => {
-        this.refreshAllCacheData();
+        console.log('WebSocket: Issue created', issue);
+        this.debouncedRefreshAllCacheData();
       };
 
       const handleIssueUpdated = (issue: Issue) => {
-        this.refreshAllCacheData();
+        console.log('WebSocket: Issue updated', issue);
+        this.debouncedRefreshAllCacheData();
       };
 
       const handleIssueDeleted = (data: { id: number }) => {
-        this.refreshAllCacheData();
+        console.log('WebSocket: Issue deleted', data);
+        this.debouncedRefreshAllCacheData();
       };
 
       WebsocketService.subscribeToIssueCreateEvent(handleIssueCreated);
@@ -250,20 +255,61 @@ export class IssueService extends BaseService<Issue> {
     }
   }
 
-  private async refreshAllCacheData(): Promise<void> {
-    const cacheKeys = IssueCacheManager.getKeys();
+  private debouncedRefreshAllCacheData(): void {
+    // Clear any existing timeout
+    if (this.refreshTimeoutId) {
+      clearTimeout(this.refreshTimeoutId);
+    }
 
-    for (const key of cacheKeys) {
-      if (key === CacheKeys.ISSUES.ALL) {
-        await this.refreshCacheData(key, () => this.fetchIssues(false));
-      } else if (key === CacheKeys.ISSUES.MY_ISSUES) {
-        await this.refreshCacheData(key, () => this.fetchIssues(true));
-      } else if (key === CacheKeys.ISSUES.ACCEPTED) {
-        await this.refreshCacheData(key, () => this.get<Issue[]>("/accepted"));
-      } else if (key === CacheKeys.ISSUES.ICEBOX) {
-        await this.refreshCacheData(key, () => this.get<Issue[]>("/icebox"));
+    // If already refreshing, skip this request
+    if (this.isRefreshing) {
+      console.log('Cache refresh already in progress, skipping...');
+      return;
+    }
+
+    // Set a timeout to refresh after 500ms of no new requests
+    this.refreshTimeoutId = setTimeout(() => {
+      this.refreshAllCacheData().catch(error => {
+        console.error('Failed to refresh cache data:', error);
+      });
+    }, 500);
+  }
+
+  private async refreshAllCacheData(): Promise<void> {
+    if (this.isRefreshing) {
+      console.log('Cache refresh already in progress, aborting...');
+      return;
+    }
+
+    this.isRefreshing = true;
+    console.log('Starting cache refresh...');
+
+    try {
+      const cacheKeys = IssueCacheManager.getKeys();
+      console.log('Refreshing cache keys:', cacheKeys);
+
+      const refreshPromises = [];
+
+      for (const key of cacheKeys) {
+        if (key === CacheKeys.ISSUES.ALL) {
+          refreshPromises.push(this.refreshCacheData(key, () => this.fetchIssues(false)));
+        } else if (key === CacheKeys.ISSUES.MY_ISSUES) {
+          refreshPromises.push(this.refreshCacheData(key, () => this.fetchIssues(true)));
+        } else if (key === CacheKeys.ISSUES.ACCEPTED) {
+          refreshPromises.push(this.refreshCacheData(key, () => this.get<Issue[]>("/accepted")));
+        } else if (key === CacheKeys.ISSUES.ICEBOX) {
+          refreshPromises.push(this.refreshCacheData(key, () => this.get<Issue[]>("/icebox")));
+        }
       }
-      // Add more cache refresh logic as needed
+
+      // Wait for all cache refreshes to complete
+      await Promise.all(refreshPromises);
+      console.log('Cache refresh completed successfully');
+    } catch (error) {
+      console.error('Error during cache refresh:', error);
+    } finally {
+      this.isRefreshing = false;
+      this.refreshTimeoutId = null;
     }
   }
 
