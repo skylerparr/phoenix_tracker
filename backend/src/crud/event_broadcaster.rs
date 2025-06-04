@@ -1,7 +1,7 @@
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::broadcast::Sender;
-use tracing::debug;
+use tracing::{debug, error, info, warn};
 
 pub struct EventBroadcaster {
     tx: Arc<Sender<String>>,
@@ -31,14 +31,48 @@ impl EventBroadcaster {
             "data": data
         });
 
+        let event_json = match serde_json::to_string(&event) {
+            Ok(json) => json,
+            Err(e) => {
+                error!(
+                    "Failed to serialize event for project {}: {:?}",
+                    project_id, e
+                );
+                return;
+            }
+        };
+
         debug!(
-            "Event payload: {}",
-            serde_json::to_string_pretty(&event).unwrap()
+            "Broadcasting event '{}' for project {}: {}",
+            event_type, project_id, event_json
         );
 
-        match self.tx.send(serde_json::to_string(&event).unwrap()) {
-            Ok(_) => debug!("Event broadcast successful"),
-            Err(e) => debug!("Failed to broadcast event: {:?}", e),
+        // Get current subscriber count for monitoring
+        let subscriber_count = self.tx.receiver_count();
+        info!(
+            "Broadcasting {} event to {} subscribers for project {}",
+            event_type, subscriber_count, project_id
+        );
+
+        match self.tx.send(event_json) {
+            Ok(subscriber_count) => {
+                info!(
+                    "Event '{}' broadcast successful to {} subscribers for project {}",
+                    event_type, subscriber_count, project_id
+                );
+            }
+            Err(e) => {
+                warn!(
+                    "Failed to broadcast event '{}' for project {}: {:?} (subscribers: {})",
+                    event_type, project_id, e, subscriber_count
+                );
+
+                error!(
+                    "Broadcast channel is full! Consider increasing WEBSOCKET_BUFFER_SIZE. \
+                    Current subscribers: {}, Event: {} for project {}",
+                    subscriber_count, event_type, project_id
+                );
+            }
         }
     }
 }

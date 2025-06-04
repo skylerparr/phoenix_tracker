@@ -184,7 +184,6 @@ class SessionStorage {
     const claims = this.parseJWT(cleanToken);
     return claims?.project_id || null;
   }
-
 }
 
 export const sessionStorage = SessionStorage.getInstance();

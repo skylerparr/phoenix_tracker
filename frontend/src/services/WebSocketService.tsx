@@ -25,6 +25,10 @@ export class WebsocketService {
     new Map();
   private static heartbeatId: ReturnType<typeof setInterval> | null = null;
   private static wasConnected: boolean = false;
+  private static reconnectAttempts: number = 0;
+  private static maxReconnectAttempts: number = 10;
+  private static reconnectTimeoutId: ReturnType<typeof setTimeout> | null =
+    null;
 
   private static createNewConnection() {
     const token = sessionStorage.getToken();
@@ -33,7 +37,16 @@ export class WebsocketService {
     this.socket = new WebSocket(wsUrl);
 
     this.socket.onopen = async () => {
+      console.info("WebSocket connected successfully");
       this.isConnecting = false;
+      this.reconnectAttempts = 0; // Reset on successful connection
+
+      // Clear any existing reconnect timeout
+      if (this.reconnectTimeoutId) {
+        clearTimeout(this.reconnectTimeoutId);
+        this.reconnectTimeoutId = null;
+      }
+
       this.heartbeatId && clearInterval(this.heartbeatId);
       this.heartbeatId = setInterval(() => {
         this.ping();
@@ -78,12 +91,42 @@ export class WebsocketService {
       }
     };
 
-    this.socket.onclose = () => {
+    this.socket.onclose = (event) => {
+      console.warn("WebSocket connection closed", {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean,
+      });
+
       this.isConnecting = false;
       this.heartbeatId && clearInterval(this.heartbeatId);
-      setTimeout(() => {
-        this.createNewConnection();
-      }, 1000);
+
+      // Exponential backoff with jitter for reconnection
+      if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        const baseDelay = Math.min(
+          1000 * Math.pow(2, this.reconnectAttempts),
+          30000,
+        );
+        const jitter = Math.random() * 1000; // Add up to 1 second of jitter
+        const delay = baseDelay + jitter;
+
+        console.info(
+          `Attempting to reconnect in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`,
+        );
+
+        this.reconnectTimeoutId = setTimeout(() => {
+          this.reconnectAttempts++;
+          this.createNewConnection();
+        }, delay);
+      } else {
+        console.error(
+          "Max reconnection attempts reached. Please refresh the page.",
+        );
+      }
+    };
+
+    this.socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
     };
   }
 

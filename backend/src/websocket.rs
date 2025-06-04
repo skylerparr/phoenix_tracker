@@ -15,7 +15,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::broadcast;
 use tokio::sync::Mutex;
-use tracing::debug;
+use tracing::{debug, error, info, warn};
 
 #[allow(dead_code)]
 struct WebSocketState {
@@ -219,13 +219,36 @@ pub async fn handle_socket(
             }
 
             // Handle broadcast messages from other parts of the application
-            Ok(broadcast_msg) = rx.recv() => {
-                if let Ok(event) = serde_json::from_str::<ProjectEvent>(&broadcast_msg) {
-                    let ws_state = web_socket_state.lock().await;
-                    if ws_state.subscribed_projects.contains(&event.project_id) {
-                        if let Err(_) = socket.send(Message::Text(broadcast_msg)).await {
-                            break;
+            result = rx.recv() => {
+                match result {
+                    Ok(broadcast_msg) => {
+                        debug!("Received broadcast message for user {}: {}", user_id, broadcast_msg);
+                        if let Ok(event) = serde_json::from_str::<ProjectEvent>(&broadcast_msg) {
+                            let ws_state = web_socket_state.lock().await;
+                            if ws_state.subscribed_projects.contains(&event.project_id) {
+                                info!("Forwarding {} event to user {} for project {}",
+                                      event.event_type, user_id, event.project_id);
+
+                                if let Err(send_err) = socket.send(Message::Text(broadcast_msg)).await {
+                                    error!("Failed to send event to user {}: {:?}", user_id, send_err);
+                                    break;
+                                }
+                            } else {
+                                debug!("User {} not subscribed to project {}, skipping event {}",
+                                       user_id, event.project_id, event.event_type);
+                            }
+                        } else {
+                            warn!("Failed to parse broadcast message for user {}: {}", user_id, broadcast_msg);
                         }
+                    },
+                    Err(broadcast::error::RecvError::Lagged(skipped)) => {
+                        warn!("WebSocket receiver for user {} lagged and skipped {} messages", user_id, skipped);
+                        // Continue processing, don't break the connection
+                        continue;
+                    },
+                    Err(broadcast::error::RecvError::Closed) => {
+                        error!("Broadcast channel closed for user {}, terminating WebSocket", user_id);
+                        break;
                     }
                 }
             }

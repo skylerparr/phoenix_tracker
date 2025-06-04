@@ -172,13 +172,29 @@ async fn auth_middleware(
 }
 
 fn main() {
+    // Set log level based on environment
+    let log_level = std::env::var("LOG_LEVEL")
+        .unwrap_or_else(|_| "INFO".to_string())
+        .parse::<tracing::Level>()
+        .unwrap_or(tracing::Level::INFO);
+
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::WARN)
+        .with_max_level(log_level)
         .with_file(true)
         .with_line_number(true)
         .init();
 
-    let (tx, _rx) = broadcast::channel::<String>(100);
+    // Increase buffer size for production load and add monitoring
+    let buffer_size = std::env::var("WEBSOCKET_BUFFER_SIZE")
+        .unwrap_or_else(|_| "1000".to_string())
+        .parse::<usize>()
+        .unwrap_or(1000);
+
+    info!(
+        "Initializing broadcast channel with buffer size: {}",
+        buffer_size
+    );
+    let (tx, _rx) = broadcast::channel::<String>(buffer_size);
     let tx = std::sync::Arc::new(tx);
 
     let rt = tokio::runtime::Runtime::new().unwrap();
