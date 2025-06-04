@@ -499,8 +499,12 @@ impl IssueCrud {
 
         let task_crud = TaskCrud::new(self.app_state.clone());
         task_crud.delete_all_by_issue_id(id).await?;
+
         let blocker_crud = BlockerCrud::new(self.app_state.clone());
         blocker_crud.delete_all_by_issue_id(id).await?;
+
+        let notification_crud = NotificationCrud::new(self.app_state.clone());
+        notification_crud.delete_all_for_issue(id).await?;
 
         let result = issue::Entity::delete_by_id(id)
             .exec(&self.app_state.db)

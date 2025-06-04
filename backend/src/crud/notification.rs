@@ -111,6 +111,22 @@ impl NotificationCrud {
         Ok(result)
     }
 
+    pub async fn delete_all_for_issue(&self, issue_id: i32) -> Result<DeleteResult, DbErr> {
+        debug!("Deleting all notifications for issue {}", issue_id);
+
+        let result = notification::Entity::delete_many()
+            .filter(notification::Column::IssueId.eq(issue_id))
+            .exec(&self.state.db)
+            .await?;
+
+        debug!(
+            "Deleted {} notifications for issue {}",
+            result.rows_affected, issue_id
+        );
+
+        Ok(result)
+    }
+
     pub async fn mark_as_read(&self, notification_id: i32) -> Result<notification::Model, DbErr> {
         debug!("Marking notification {} as read", notification_id);
 

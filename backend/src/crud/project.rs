@@ -1,7 +1,7 @@
 use crate::crud::issue::IssueCrud;
 use crate::crud::notification::NotificationCrud;
 use crate::crud::owner::OwnerCrud;
-use crate::crud::user_setting::UserSettingCrud;
+use crate::crud::tag::TagCrud;
 use crate::entities::issue;
 use crate::entities::project;
 use crate::entities::project_user;
@@ -169,10 +169,6 @@ impl ProjectCrud {
             return Err(DbErr::Custom("Project not found".to_owned()));
         }
 
-        let user_id = self.state.user.clone().unwrap().id;
-        let user_setting_crud = UserSettingCrud::new(self.state.db.clone());
-        user_setting_crud.update(user_id, None).await?;
-
         let issues = issue::Entity::find()
             .filter(issue::Column::ProjectId.eq(id))
             .all(&self.state.db)
@@ -186,6 +182,9 @@ impl ProjectCrud {
 
         let notification_crud = NotificationCrud::new(self.state.clone());
         notification_crud.delete_all_for_project(id).await?;
+
+        let tag_crud = TagCrud::new(self.state.clone());
+        tag_crud.delete_all_for_project(id).await?;
 
         project_user::Entity::delete_many()
             .filter(project_user::Column::ProjectId.eq(id))

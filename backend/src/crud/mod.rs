@@ -14,7 +14,5 @@ pub mod project_user;
 pub mod status;
 pub mod tag;
 pub mod task;
-pub mod token;
 pub mod user;
-pub mod user_setting;
 pub mod work_type;

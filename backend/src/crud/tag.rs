@@ -112,4 +112,14 @@ impl TagCrud {
 
         return Ok(result);
     }
+
+    pub async fn delete_all_for_project(&self, project_id: i32) -> Result<DeleteResult, DbErr> {
+        let tags = self.find_all(project_id).await?;
+
+        for tag in tags {
+            self.delete(tag.id).await?;
+        }
+
+        Ok(DeleteResult { rows_affected: 0 })
+    }
 }

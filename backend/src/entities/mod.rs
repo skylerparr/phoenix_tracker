@@ -11,6 +11,4 @@ pub mod project_note;
 pub mod project_user;
 pub mod tag;
 pub mod task;
-pub mod token;
 pub mod user;
-pub mod user_setting;

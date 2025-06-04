@@ -53,7 +53,14 @@ async fn create_tag(
     Extension(app_state): Extension<AppState>,
     Json(payload): Json<CreateTagRequest>,
 ) -> impl IntoResponse {
-    let project_id = app_state.project.clone().unwrap().id;
+    let project_id = match &app_state.project {
+        Some(project) => project.id,
+        None => {
+            info!("No project found in app state");
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    };
+
     let tag_crud = TagCrud::new(app_state);
     match tag_crud
         .create(project_id, payload.name, payload.is_epic)
@@ -69,7 +76,14 @@ async fn create_tag(
 
 #[axum::debug_handler]
 async fn get_all_tags(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
-    let project_id = app_state.project.clone().unwrap().id;
+    let project_id = match &app_state.project {
+        Some(project) => project.id,
+        None => {
+            info!("No project found in app state");
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    };
+
     let tag_crud = TagCrud::new(app_state);
     match tag_crud.find_all(project_id).await {
         Ok(tags) => Ok(Json(tags)),
@@ -82,7 +96,14 @@ async fn get_all_tags(Extension(app_state): Extension<AppState>) -> impl IntoRes
 
 #[axum::debug_handler]
 async fn get_tags_with_counts(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
-    let project_id = app_state.project.clone().unwrap().id;
+    let project_id = match &app_state.project {
+        Some(project) => project.id,
+        None => {
+            info!("No project found in app state");
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    };
+
     let tag_crud = TagCrud::new(app_state.clone());
     let issue_crud = IssueCrud::new(app_state);
 
@@ -119,6 +140,7 @@ async fn get_tags_with_counts(Extension(app_state): Extension<AppState>) -> impl
 
     Ok(Json(result))
 }
+
 #[axum::debug_handler]
 async fn get_tag(
     Extension(app_state): Extension<AppState>,

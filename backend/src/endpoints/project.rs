@@ -1,7 +1,6 @@
 use crate::crud::owner::OwnerCrud;
 use crate::crud::project::ProjectCrud;
 use crate::crud::project_user::ProjectUserCrud;
-use crate::crud::user_setting::UserSettingCrud;
 use crate::AppState;
 use axum::Extension;
 use axum::{
@@ -156,21 +155,7 @@ async fn select_project(
             let project_crud = ProjectCrud::new(app_state.clone());
             debug!("Creating ProjectCrud instance");
             match project_crud.find_by_id(id).await {
-                Ok(project) => {
-                    debug!("Project found: {:?}", project);
-                    let user_setting_crud = UserSettingCrud::new(app_state.db.clone());
-                    debug!("Creating UserSettingCrud instance");
-                    match user_setting_crud.upsert(user.id, Some(id)).await {
-                        Ok(_) => {
-                            debug!("User setting upserted successfully");
-                            Ok(Json(project))
-                        }
-                        Err(e) => {
-                            debug!("Error updating user setting: {:?}", e);
-                            Err(StatusCode::INTERNAL_SERVER_ERROR)
-                        }
-                    }
-                }
+                Ok(project) => Ok(Json(project)),
                 Err(e) => {
                     debug!("Error finding project by id {}: {:?}", id, e);
                     if e.to_string().contains("Project not found") {

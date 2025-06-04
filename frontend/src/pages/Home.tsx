@@ -40,7 +40,7 @@ import { useNotificationCount } from "../hooks/useNotificationCount";
 import { useMobile } from "../context/MobileContext";
 import { Menu as MenuIcon } from "@mui/icons-material";
 import { useLocation } from "react-router-dom";
-import { issueService } from "../services/IssueService";
+import { clearProjectCaches } from "../utils/CacheManager";
 
 // Color mapping for each button with full opacity and half opacity versions
 const buttonColors = {
@@ -304,8 +304,7 @@ const Home = () => {
     if (projectParam) {
       console.log("Project parameter changed to:", projectParam);
       // Clear service caches to force fresh data fetch
-      issueService.clearCaches();
-      // Force all components to refresh by updating key
+      clearProjectCaches();
       setProjectRefreshKey((prev) => prev + 1);
     }
   }, [location.search]);

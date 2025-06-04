@@ -1,6 +1,6 @@
 use crate::entities::{
     blocker, comment, history, issue, issue_assignee, issue_tag, owner, project, project_user, tag,
-    task, token, user, user_setting,
+    task, user,
 };
 use crate::AppState;
 use sea_orm::*;
@@ -99,20 +99,6 @@ impl ImportExportCrud {
             vec![serde_json::to_value(owners).unwrap()],
         );
 
-        // Export user setting
-        let user_setting = user_setting::Entity::find().all(&self.app_state.db).await?;
-        data.insert(
-            user_setting::Entity::table_name(&user_setting::Entity).to_string(),
-            vec![serde_json::to_value(user_setting).unwrap()],
-        );
-
-        // Export tokens
-        let tokens = token::Entity::find().all(&self.app_state.db).await?;
-        data.insert(
-            token::Entity::table_name(&token::Entity).to_string(),
-            vec![serde_json::to_value(tokens).unwrap()],
-        );
-
         Ok(data)
     }
 
@@ -141,13 +127,7 @@ impl ImportExportCrud {
         project_user::Entity::delete_many()
             .exec(&self.app_state.db)
             .await?;
-        user_setting::Entity::delete_many()
-            .exec(&self.app_state.db)
-            .await?;
         project::Entity::delete_many()
-            .exec(&self.app_state.db)
-            .await?;
-        token::Entity::delete_many()
             .exec(&self.app_state.db)
             .await?;
         owner::Entity::delete_many()
