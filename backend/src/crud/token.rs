@@ -99,6 +99,7 @@ impl TokenCrud {
 }
 
 impl TokenCrud {
+    #[allow(dead_code)]
     pub async fn find_valid_token(
         &self,
         token_str: String,

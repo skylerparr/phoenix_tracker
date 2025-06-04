@@ -27,7 +27,9 @@ export class WebsocketService {
   private static wasConnected: boolean = false;
 
   private static createNewConnection() {
-    const wsUrl = `${API_BASE_URL.replace("http", "ws")}/ws?token=${sessionStorage.getSession().user?.token}`;
+    const token = sessionStorage.getToken();
+    const cleanToken = token ? token.replace("Bearer ", "") : "";
+    const wsUrl = `${API_BASE_URL.replace("http", "ws")}/ws?token=${cleanToken}`;
     this.socket = new WebSocket(wsUrl);
 
     this.socket.onopen = async () => {
@@ -105,13 +107,32 @@ export class WebsocketService {
 
   public static async subscribe() {
     await this.ensureConnection();
-    this.socket.send(`{"command": "subscribe"}`);
+
+    // Get the current project ID from the session
+    const projectId = sessionStorage.getCurrentProjectId();
+    if (projectId) {
+      console.log("Subscribing to WebSocket events for project:", projectId);
+      this.socket.send(`{"command": "subscribe", "project_id": ${projectId}}`);
+    } else {
+      console.log("No project selected, not subscribing to WebSocket events");
+    }
     this.wasConnected = true;
   }
 
   public static async unsubscribe() {
     await this.ensureConnection();
-    this.socket.send(`{"command": "unsubscribe"}`);
+
+    // Get the current project ID from the session
+    const projectId = sessionStorage.getCurrentProjectId();
+    if (projectId) {
+      console.log(
+        "Unsubscribing from WebSocket events for project:",
+        projectId,
+      );
+      this.socket.send(
+        `{"command": "unsubscribe", "project_id": ${projectId}}`,
+      );
+    }
   }
 
   private static handleEventSubscription(

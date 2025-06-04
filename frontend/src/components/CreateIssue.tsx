@@ -57,10 +57,15 @@ const CreateIssue: React.FC = () => {
   };
 
   const handleCreateIssue = async () => {
-    const currentProject = sessionStorage.getProject();
-    const currentUser = sessionStorage.getSession().user;
+    const session = sessionStorage.getSession();
+    const hasProject = sessionStorage.hasProjectSelected();
 
-    if (!currentProject || !currentUser) return;
+    if (!hasProject || !session.user || !session.isAuthenticated) {
+      console.log(
+        "Cannot create issue: no project selected or user not authenticated",
+      );
+      return;
+    }
 
     try {
       const issue = await issueService.createIssue({

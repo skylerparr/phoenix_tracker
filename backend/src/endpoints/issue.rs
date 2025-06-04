@@ -83,7 +83,18 @@ async fn get_issues_by_user(
     Extension(app_state): Extension<AppState>,
     Path(user_id): Path<i32>,
 ) -> impl IntoResponse {
-    let project_id = app_state.project.clone().unwrap().id;
+    let project_id = match app_state.project.as_ref() {
+        Some(project) => project.id,
+        None => {
+            // No project selected - return empty list
+            // This happens when user has base token (no project_id in JWT)
+            info!(
+                "No project selected, returning empty issues list for user {}",
+                user_id
+            );
+            return Ok(Json(vec![]));
+        }
+    };
     let issue_crud = IssueCrud::new(app_state);
     match issue_crud.find_all_by_user_id(project_id, user_id).await {
         Ok(issues) => Ok(Json(issues)),
@@ -99,8 +110,14 @@ pub async fn create_issue(
     Json(payload): Json<CreateIssueRequest>,
 ) -> impl IntoResponse {
     debug!("Creating issue");
-    let user_id = app_state.user.clone().unwrap().id;
-    let project_id = app_state.project.clone().unwrap().id;
+    let user_id = match app_state.user.as_ref() {
+        Some(user) => user.id,
+        None => return Err(StatusCode::UNAUTHORIZED),
+    };
+    let project_id = match app_state.project.as_ref() {
+        Some(project) => project.id,
+        None => return Err(StatusCode::BAD_REQUEST), // No project selected
+    };
 
     let issue_crud = IssueCrud::new(app_state);
     match issue_crud
@@ -129,7 +146,10 @@ pub async fn create_issue(
 async fn get_all_issues_for_backlog(
     Extension(app_state): Extension<AppState>,
 ) -> impl IntoResponse {
-    let project_id = app_state.project.clone().unwrap().id;
+    let project_id = match app_state.project.as_ref() {
+        Some(project) => project.id,
+        None => return Err(StatusCode::BAD_REQUEST), // No project selected
+    };
     let issue_crud = IssueCrud::new(app_state);
     match issue_crud.find_all_for_backlog(project_id).await {
         Ok(issues) => Ok(Json(issues)),
@@ -141,8 +161,14 @@ async fn get_all_issues_for_backlog(
 }
 #[axum::debug_handler]
 async fn get_issues_for_me(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
-    let user_id = app_state.user.clone().unwrap().id;
-    let project_id = app_state.project.clone().unwrap().id;
+    let user_id = match app_state.user.as_ref() {
+        Some(user) => user.id,
+        None => return Err(StatusCode::UNAUTHORIZED),
+    };
+    let project_id = match app_state.project.as_ref() {
+        Some(project) => project.id,
+        None => return Err(StatusCode::BAD_REQUEST), // No project selected
+    };
     let issue_crud = IssueCrud::new(app_state);
     match issue_crud.find_all_by_user_id(project_id, user_id).await {
         Ok(issues) => Ok(Json(issues)),
@@ -329,7 +355,10 @@ async fn get_issues_by_tag(
 
 #[axum::debug_handler]
 async fn get_all_accepted(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
-    let project_id = app_state.project.clone().unwrap().id;
+    let project_id = match app_state.project.as_ref() {
+        Some(project) => project.id,
+        None => return Err(StatusCode::BAD_REQUEST), // No project selected
+    };
     let issue_crud = IssueCrud::new(app_state);
     match issue_crud.find_all_accepted(project_id).await {
         Ok(issues) => Ok(Json(issues)),
@@ -341,7 +370,10 @@ async fn get_all_accepted(Extension(app_state): Extension<AppState>) -> impl Int
 }
 #[axum::debug_handler]
 async fn get_all_icebox(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
-    let project_id = app_state.project.clone().unwrap().id;
+    let project_id = match app_state.project.as_ref() {
+        Some(project) => project.id,
+        None => return Err(StatusCode::BAD_REQUEST), // No project selected
+    };
     let issue_crud = IssueCrud::new(app_state);
     match issue_crud.find_all_icebox(project_id).await {
         Ok(issues) => Ok(Json(issues)),
@@ -354,7 +386,10 @@ async fn get_all_icebox(Extension(app_state): Extension<AppState>) -> impl IntoR
 
 #[axum::debug_handler]
 async fn get_weekly_points_average(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
-    let project_id = app_state.project.clone().unwrap().id;
+    let project_id = match app_state.project.as_ref() {
+        Some(project) => project.id,
+        None => return Err(StatusCode::BAD_REQUEST), // No project selected
+    };
     let issue_crud = IssueCrud::new(app_state);
 
     match issue_crud.calculate_weekly_points_average(project_id).await {

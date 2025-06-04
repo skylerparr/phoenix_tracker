@@ -58,7 +58,7 @@ const SettingsComponent: React.FC = () => {
   };
 
   const handleDelete = async () => {
-    const projectId = sessionStorage.getSession().project?.id;
+    const projectId = sessionStorage.getCurrentProjectId();
     if (!projectId) {
       console.error("Project ID is undefined");
       return;

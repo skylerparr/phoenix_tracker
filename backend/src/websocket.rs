@@ -1,7 +1,6 @@
 use crate::crud::project::ProjectCrud;
-use crate::crud::token::TokenCrud;
+use crate::jwt::JwtService;
 use crate::AppState;
-use crate::UserSettingCrud;
 use axum::extract::Query;
 use axum::{
     extract::{
@@ -28,12 +27,13 @@ struct WebSocketState {
 #[derive(serde::Deserialize, Debug)]
 struct SocketCommandWrapper {
     command: String,
+    project_id: Option<i32>,
 }
 
 #[derive(Debug)]
 enum SocketCommand {
-    Subscribe {},
-    Unsubscribe {},
+    Subscribe { project_id: i32 },
+    Unsubscribe { project_id: i32 },
 }
 
 #[allow(dead_code)]
@@ -52,24 +52,33 @@ pub async fn ws_handler(
     let token = params.get("token");
 
     match token {
-        Some(token) => {
-            debug!("token = {}", token);
-            let now = chrono::Utc::now();
+        Some(token_str) => {
+            debug!("token = {}", token_str);
             let rx = state.tx.subscribe();
-            let token_crud = TokenCrud::new(state.db.clone());
 
-            match token_crud
-                .find_valid_token(token.to_string(), now.into())
-                .await
-            {
-                Ok(Some(token)) => {
-                    debug!("WebSocket connection upgraded");
-                    ws.on_upgrade(move |socket| handle_socket(socket, rx, state, token.user_id))
+            // Extract Bearer token if present
+            let jwt_token = if token_str.starts_with("Bearer ") {
+                &token_str[7..]
+            } else {
+                token_str
+            };
+
+            let jwt_service = JwtService::new();
+            match jwt_service.validate_token(jwt_token) {
+                Ok(claims) => {
+                    debug!("WebSocket connection upgraded for user: {}", claims.user_id);
+                    ws.on_upgrade(move |socket| handle_socket(socket, rx, state, claims.user_id))
                 }
-                _ => StatusCode::UNAUTHORIZED.into_response(),
+                Err(e) => {
+                    debug!("WebSocket JWT validation failed: {:?}", e);
+                    StatusCode::UNAUTHORIZED.into_response()
+                }
             }
         }
-        None => StatusCode::UNAUTHORIZED.into_response(),
+        None => {
+            debug!("WebSocket token missing");
+            StatusCode::UNAUTHORIZED.into_response()
+        }
     }
 }
 
@@ -88,8 +97,6 @@ pub async fn handle_socket(
         user_id,
         last_ping_time: std::time::Instant::now(),
     }));
-
-    let user_setting_crud = UserSettingCrud::new(state.db.clone());
 
     // Create a ticker to check for stale connections periodically
     let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
@@ -143,43 +150,54 @@ pub async fn handle_socket(
                                     }
 
                                     let command = match wrapper.command.as_str() {
-                                        "subscribe" => Some(SocketCommand::Subscribe {}),
-                                        "unsubscribe" => Some(SocketCommand::Unsubscribe {}),
+                                        "subscribe" => {
+                                            if let Some(project_id) = wrapper.project_id {
+                                                Some(SocketCommand::Subscribe { project_id })
+                                            } else {
+                                                None
+                                            }
+                                        },
+                                        "unsubscribe" => {
+                                            if let Some(project_id) = wrapper.project_id {
+                                                Some(SocketCommand::Unsubscribe { project_id })
+                                            } else {
+                                                None
+                                            }
+                                        },
                                         _ => None,
                                     };
 
                                     debug!("Received command: {:?}", command);
                                     if let Some(cmd) = command {
                                         match cmd {
-                                            SocketCommand::Subscribe { .. } => {
-                                                if let Ok(user_setting) = user_setting_crud.find_by_user_id(user_id).await {
-                                                    if let Some(project_id) = user_setting.project_id {
-                                                        let project_crud = ProjectCrud::new(state.clone());
-                                                        if let Ok(project_users) = project_crud.find_users_by_project_id(project_id).await {
-                                                            if project_users.iter().any(|pu| pu.user_id == user_id) {
-                                                                let mut ws_state = web_socket_state.lock().await;
-                                                                ws_state.subscribed_projects.insert(project_id);
-                                                                debug!("Subscribed to project {}", project_id);
-                                                                let response = format!("{{\"event\": \"subscribed\", \"project_id\": {}}}", project_id);
-                                                                if let Err(_) = socket.send(Message::Text(response)).await {
-                                                                    break;
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            },
-                                            SocketCommand::Unsubscribe { .. } => {
-                                                if let Ok(user_setting) = user_setting_crud.find_by_user_id(user_id).await {
-                                                    if let Some(project_id) = user_setting.project_id {
+                                            SocketCommand::Subscribe { project_id } => {
+                                                // Verify user has access to this project
+                                                let project_crud = ProjectCrud::new(state.clone());
+                                                if let Ok(project_users) = project_crud.find_users_by_project_id(project_id).await {
+                                                    if project_users.iter().any(|pu| pu.user_id == user_id) {
                                                         let mut ws_state = web_socket_state.lock().await;
-                                                        ws_state.subscribed_projects.remove(&project_id);
-                                                        debug!("Unsubscribed from project {}", project_id);
-                                                        let response = format!("{{\"event\": \"unsubscribed\", \"project_id\": {}}}", project_id);
+                                                        ws_state.subscribed_projects.insert(project_id);
+                                                        debug!("Subscribed to project {}", project_id);
+                                                        let response = format!("{{\"event\": \"subscribed\", \"project_id\": {}}}", project_id);
+                                                        if let Err(_) = socket.send(Message::Text(response)).await {
+                                                            break;
+                                                        }
+                                                    } else {
+                                                        debug!("User {} does not have access to project {}", user_id, project_id);
+                                                        let response = format!("{{\"event\": \"error\", \"message\": \"Access denied to project {}\"}}", project_id);
                                                         if let Err(_) = socket.send(Message::Text(response)).await {
                                                             break;
                                                         }
                                                     }
+                                                }
+                                            },
+                                            SocketCommand::Unsubscribe { project_id } => {
+                                                let mut ws_state = web_socket_state.lock().await;
+                                                ws_state.subscribed_projects.remove(&project_id);
+                                                debug!("Unsubscribed from project {}", project_id);
+                                                let response = format!("{{\"event\": \"unsubscribed\", \"project_id\": {}}}", project_id);
+                                                if let Err(_) = socket.send(Message::Text(response)).await {
+                                                    break;
                                                 }
                                             }
                                         }

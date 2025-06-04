@@ -1,7 +1,6 @@
 use crate::crud::project::ProjectCrud;
-use crate::crud::token::TokenCrud;
 use crate::crud::user::UserCrud;
-use crate::crud::user_setting::UserSettingCrud;
+use crate::jwt::JwtService;
 use axum::body::Body;
 use axum::extract::Request;
 use axum::http::header::AUTHORIZATION;
@@ -35,6 +34,7 @@ use tracing::{debug, info, warn};
 mod crud;
 mod endpoints;
 mod entities;
+mod jwt;
 mod websocket;
 
 #[derive(Clone)]
@@ -66,8 +66,56 @@ async fn auth_middleware(
     mut req: Request<Body>,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    if req.uri().path().starts_with("/api/auth") || req.uri().path().starts_with("/ws") {
-        info!("Skipping auth middleware for /api/auth and /ws route");
+    if req.uri().path().starts_with("/api/auth")
+        || req.uri().path().starts_with("/ws")
+        || req.uri().path().starts_with("/api/projects")
+        || req.uri().path().starts_with("/api/users")
+    {
+        info!("Skipping project validation for auth, ws, projects, and users routes");
+        // Still validate user authentication for non-auth routes
+        if !req.uri().path().starts_with("/api/auth") && !req.uri().path().starts_with("/ws") {
+            let auth_header = req
+                .headers()
+                .get(AUTHORIZATION)
+                .and_then(|value| value.to_str().ok());
+
+            if let Some(auth_header_value) = auth_header {
+                if let Some(token) = JwtService::extract_bearer_token(auth_header_value) {
+                    let jwt_service = JwtService::new();
+                    match jwt_service.validate_token(token) {
+                        Ok(claims) => {
+                            let user_crud = UserCrud::new(app_state.clone());
+                            if let Ok(Some(user)) = user_crud.find_by_id(claims.user_id).await {
+                                req.extensions_mut().insert(app_state.clone());
+                                req.extensions_mut().get_mut::<AppState>().unwrap().user =
+                                    Some(user.clone());
+
+                                // Also extract project from JWT if present (for routes like /api/users)
+                                if let Some(project_id) = claims.project_id {
+                                    let project_crud = ProjectCrud::new(app_state.clone());
+                                    if let Ok(Some(project)) =
+                                        project_crud.find_by_id(project_id).await
+                                    {
+                                        req.extensions_mut()
+                                            .get_mut::<AppState>()
+                                            .unwrap()
+                                            .project = Some(project.clone());
+                                        debug!(
+                                            "Project ID from JWT for protected route: {:?}",
+                                            project.id
+                                        );
+                                    }
+                                }
+
+                                return Ok(next.run(req).await);
+                            }
+                        }
+                        Err(_) => return Err(StatusCode::UNAUTHORIZED),
+                    }
+                }
+            }
+            return Err(StatusCode::UNAUTHORIZED);
+        }
         return Ok(next.run(req).await);
     }
 
@@ -76,41 +124,46 @@ async fn auth_middleware(
         .get(AUTHORIZATION)
         .and_then(|value| value.to_str().ok());
 
-    if let Some(token) = auth_header {
-        debug!("Authorization header value: {}", token);
-        let token_crud = TokenCrud::new(app_state.db.clone());
-        let now = chrono::Utc::now();
+    if let Some(auth_header_value) = auth_header {
+        debug!("Authorization header value: {}", auth_header_value);
 
-        match token_crud
-            .find_valid_token(token.to_string(), now.into())
-            .await
-        {
-            Ok(Some(token_model)) => {
-                debug!("Valid token found, proceeding with request");
-                let user_crud = UserCrud::new(app_state.clone());
-                if let Ok(Some(user)) = user_crud.find_by_id(token_model.user_id).await {
-                    debug!("Found user id: {:?}", user.id);
-                    req.extensions_mut().insert(app_state.clone());
-                    req.extensions_mut().get_mut::<AppState>().unwrap().user = Some(user.clone());
+        if let Some(token) = JwtService::extract_bearer_token(auth_header_value) {
+            let jwt_service = JwtService::new();
 
-                    let user_settings_crud = UserSettingCrud::new(app_state.db.clone());
-                    if let Ok(user_settings) = user_settings_crud.find_by_user_id(user.id).await {
-                        if let Some(project_id) = user_settings.project_id {
+            match jwt_service.validate_token(token) {
+                Ok(claims) => {
+                    debug!("Valid JWT found, user_id: {}", claims.user_id);
+                    let user_crud = UserCrud::new(app_state.clone());
+
+                    if let Ok(Some(user)) = user_crud.find_by_id(claims.user_id).await {
+                        debug!("Found user id: {:?}", user.id);
+                        req.extensions_mut().insert(app_state.clone());
+                        req.extensions_mut().get_mut::<AppState>().unwrap().user =
+                            Some(user.clone());
+
+                        // Get project from JWT claims (allows multiple projects per user simultaneously)
+                        if let Some(project_id) = claims.project_id {
                             let project_crud = ProjectCrud::new(app_state.clone());
                             if let Ok(Some(project)) = project_crud.find_by_id(project_id).await {
                                 req.extensions_mut().get_mut::<AppState>().unwrap().project =
                                     Some(project.clone());
-                                debug!("Project ID: {:?}", project.id);
+                                debug!("Project ID from JWT: {:?}", project.id);
                             }
                         }
+                        return Ok(next.run(req).await);
+                    } else {
+                        warn!("User not found for JWT user_id: {}", claims.user_id);
+                        return Err(StatusCode::UNAUTHORIZED);
                     }
-                    return Ok(next.run(req).await);
+                }
+                Err(e) => {
+                    warn!("Invalid JWT token: {:?}", e);
+                    return Err(StatusCode::UNAUTHORIZED);
                 }
             }
-            _ => {
-                warn!("Invalid or expired token provided");
-                return Err(StatusCode::UNAUTHORIZED);
-            }
+        } else {
+            warn!("Invalid authorization header format");
+            return Err(StatusCode::UNAUTHORIZED);
         }
     }
 

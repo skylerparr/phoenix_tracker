@@ -179,6 +179,12 @@ export class IssueService extends BaseService<Issue> {
   async getIssuesByUser(userId: number): Promise<Issue[]> {
     return this.get<Issue[]>(`/user/${userId}`);
   }
+
+  // Clear caches when project changes
+  clearCaches(): void {
+    this.issuesCache = null;
+    this.myIssuesCache = null;
+  }
 }
 
 export const issueService = new IssueService();

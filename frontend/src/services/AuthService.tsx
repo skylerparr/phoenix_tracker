@@ -16,6 +16,10 @@ interface AuthResponse {
   project_id: number;
 }
 
+interface SwitchProjectRequest {
+  projectId: number;
+}
+
 export class AuthService {
   private baseUrl = `${API_BASE_URL}/api/auth`;
 
@@ -52,6 +56,22 @@ export class AuthService {
       body: JSON.stringify({ user_id: userId }),
     });
     if (!response.ok) throw new Error("Failed to logout");
+  }
+
+  async switchProject(
+    request: SwitchProjectRequest,
+    token: string,
+  ): Promise<AuthResponse> {
+    const response = await fetch(`${this.baseUrl}/switch-project`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token,
+      },
+      body: JSON.stringify(request),
+    });
+    if (!response.ok) throw new Error("Failed to switch project");
+    return response.json();
   }
 }
 

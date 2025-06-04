@@ -10,12 +10,14 @@ import {
   Box,
   CircularProgress,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import RequireAuth from "../components/RequireAuth";
 import { projectService } from "../services/ProjectService";
 import { Project } from "../models/Project";
 import { sessionStorage } from "../store/Session";
 
 const ProjectsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [newProjectName, setNewProjectName] = useState("");
   const [isCreatingProject, setIsCreatingProject] = useState(false);
@@ -51,9 +53,18 @@ const ProjectsPage: React.FC = () => {
   };
 
   const handleProjectClick = async (project: Project) => {
-    await projectService.selectProject(project.id);
-    sessionStorage.setProject(project);
-    window.location.href = "/home";
+    try {
+      // Use the new JWT-based project switching
+      await projectService.switchToProject(project.id);
+      // Navigate to home with project ID in URL to force component refresh
+      navigate(`/home?project=${project.id}`);
+    } catch (error) {
+      console.error("Failed to switch to project:", error);
+      // Fallback to old method if needed
+      await projectService.selectProject(project.id);
+      sessionStorage.setProject(project);
+      navigate(`/home?project=${project.id}`);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

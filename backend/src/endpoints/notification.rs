@@ -35,8 +35,14 @@ async fn get_notifications_for_project(
     Extension(app_state): Extension<AppState>,
     Query(params): Query<GetNotificationsQuery>,
 ) -> impl IntoResponse {
-    let user_id = app_state.user.clone().unwrap().id;
-    let project_id = app_state.project.clone().unwrap().id;
+    let user_id = match app_state.user.as_ref() {
+        Some(user) => user.id,
+        None => return Err(StatusCode::UNAUTHORIZED),
+    };
+    let project_id = match app_state.project.as_ref() {
+        Some(project) => project.id,
+        None => return Err(StatusCode::BAD_REQUEST), // No project selected
+    };
 
     let notification_crud = NotificationCrud::new(app_state);
 
@@ -84,8 +90,16 @@ async fn mark_notification_as_read(
 async fn get_notification_count_for_project(
     Extension(app_state): Extension<AppState>,
 ) -> impl IntoResponse {
-    let user_id = app_state.user.clone().unwrap().id;
-    let project_id = app_state.project.clone().unwrap().id;
+    let user_id = match app_state.user.as_ref() {
+        Some(user) => user.id,
+        None => return Err(StatusCode::UNAUTHORIZED),
+    };
+
+    // If no project is selected, return 0 count
+    let project_id = match app_state.project.as_ref() {
+        Some(project) => project.id,
+        None => return Ok(Json(0)), // Return 0 when no project is selected
+    };
 
     let notification_crud = NotificationCrud::new(app_state);
 

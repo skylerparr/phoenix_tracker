@@ -51,8 +51,15 @@ async fn remove_user(
     Extension(app_state): Extension<AppState>,
     Path(user_id): Path<i32>,
 ) -> impl IntoResponse {
-    let current_user = app_state.user.clone().unwrap();
-    let project_id = app_state.project.clone().unwrap().id;
+    let current_user = match app_state.user.clone() {
+        Some(user) => user,
+        None => return StatusCode::UNAUTHORIZED,
+    };
+
+    let project_id = match app_state.project.clone() {
+        Some(project) => project.id,
+        None => return StatusCode::BAD_REQUEST,
+    };
 
     let project_user_crud = ProjectUserCrud::new(app_state.clone());
 
@@ -81,8 +88,16 @@ async fn invite_user(
     Json(payload): Json<InviteUserRequest>,
 ) -> impl IntoResponse {
     let user_crud = UserCrud::new(app_state.clone());
-    let current_user = app_state.user.clone().unwrap();
-    let project_id = app_state.project.clone().unwrap().id;
+    let current_user = match app_state.user.clone() {
+        Some(user) => user,
+        None => return Err(StatusCode::UNAUTHORIZED),
+    };
+
+    let project_id = match app_state.project.clone() {
+        Some(project) => project.id,
+        None => return Err(StatusCode::BAD_REQUEST),
+    };
+
     let project_user_crud = ProjectUserCrud::new(app_state.clone());
 
     match project_user_crud
@@ -128,7 +143,15 @@ async fn create_user(
 
 #[axum::debug_handler]
 async fn get_all_users(Extension(app_state): Extension<AppState>) -> impl IntoResponse {
-    let project_id = app_state.project.clone().unwrap().id;
+    let project_id = match app_state.project.clone() {
+        Some(project) => project.id,
+        None => {
+            // No project selected - return empty list
+            // This happens when user has base token (no project_id in JWT)
+            info!("No project selected, returning empty user list");
+            return Ok(Json(vec![]));
+        }
+    };
 
     let project_users_crud = ProjectUserCrud::new(app_state.clone());
     let project_users = project_users_crud.get_users_for_project(project_id).await;

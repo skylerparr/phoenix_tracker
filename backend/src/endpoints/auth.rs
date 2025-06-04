@@ -1,6 +1,5 @@
-use crate::crud::token::TokenCrud;
 use crate::crud::user::UserCrud;
-use crate::crud::user_setting::UserSettingCrud;
+use crate::jwt::JwtService;
 use crate::AppState;
 use axum::body::Body;
 use axum::http::StatusCode;
@@ -28,11 +27,18 @@ pub struct RegisterRequest {
     email: String,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SwitchProjectRequest {
+    project_id: i32,
+}
+
 pub fn auth_routes() -> Router<AppState> {
     Router::new()
         .route("/auth/login", post(login))
         .route("/auth/register", post(register))
         .route("/auth/logout", post(logout))
+        .route("/auth/switch-project", post(switch_project))
 }
 #[axum::debug_handler]
 async fn login(
@@ -67,39 +73,37 @@ async fn register(
     create_token(app_state, user.id).await
 }
 
-async fn create_token(app_state: AppState, user_id: i32) -> Response<Body> {
-    debug!("Creating TokenCrud instance");
-    let token_crud = TokenCrud::new(app_state.db.clone());
+async fn create_token(_app_state: AppState, user_id: i32) -> Response<Body> {
+    debug!("Creating JWT service instance");
+    let jwt_service = JwtService::new();
 
-    debug!("Calculating expiration time for token");
-    let expires_at = chrono::Utc::now()
-        .checked_add_signed(chrono::Duration::days(7))
-        .unwrap()
-        .into();
+    debug!(
+        "Creating JWT token for user ID: {} with no initial project",
+        user_id
+    );
+    // Users start with no project selected - they must choose one using switch-project
+    let project_id = None;
 
-    debug!("Creating UserSettingCrud instance");
-    let user_setting_crud = UserSettingCrud::new(app_state.db.clone());
-    debug!("Fetching project ID for user ID: {}", user_id);
-    let project_id = user_setting_crud
-        .find_by_user_id(user_id)
-        .await
-        .map(|settings| settings.project_id)
-        .unwrap_or(None);
-
-    debug!("Creating token for user ID: {}", user_id);
-    match token_crud.create(user_id, expires_at).await {
+    match jwt_service.create_token(user_id, project_id) {
         Ok(token) => {
-            debug!("Token created successfully: {:?}", token);
+            debug!("JWT token created successfully for user: {}", user_id);
+            let expires_at = chrono::Utc::now()
+                .checked_add_signed(chrono::Duration::days(7))
+                .unwrap();
+
             Json(json!({
                 "user_id": user_id,
-                "token": token.token,
-                "expires_at": token.expires_at,
+                "token": format!("Bearer {}", token),
+                "expires_at": expires_at,
                 "project_id": project_id
             }))
             .into_response()
         }
-        Err(_) => {
-            debug!("Failed to create token for user ID: {}", user_id);
+        Err(e) => {
+            debug!(
+                "Failed to create JWT token for user ID: {}, error: {:?}",
+                user_id, e
+            );
             (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create token").into_response()
         }
     }
@@ -107,19 +111,93 @@ async fn create_token(app_state: AppState, user_id: i32) -> Response<Body> {
 #[axum::debug_handler]
 async fn logout(
     State(mut app_state): State<AppState>,
-    Json(payload): Json<LogoutRequest>,
+    Json(_payload): Json<LogoutRequest>,
 ) -> impl IntoResponse {
-    let token_crud = TokenCrud::new(app_state.db.clone());
-    match token_crud.delete_by_user_id(payload.user_id).await {
-        Ok(_) => {
-            app_state.user = None;
-            StatusCode::OK.into_response()
+    // With JWT tokens, logout is handled client-side by removing the token
+    // No server-side cleanup needed since tokens are stateless
+    app_state.user = None;
+    StatusCode::OK.into_response()
+}
+
+#[axum::debug_handler]
+async fn switch_project(
+    State(_app_state): State<AppState>,
+    req: axum::extract::Request<axum::body::Body>,
+) -> impl IntoResponse {
+    // Extract headers before consuming the body
+    let auth_header = req
+        .headers()
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .map(|s| s.to_string()); // Clone the header value
+
+    // Extract the JSON payload from the request body
+    let body_bytes = match axum::body::to_bytes(req.into_body(), usize::MAX).await {
+        Ok(bytes) => bytes,
+        Err(_) => return (StatusCode::BAD_REQUEST, "Failed to read request body").into_response(),
+    };
+
+    let payload: SwitchProjectRequest = match serde_json::from_slice(&body_bytes) {
+        Ok(payload) => payload,
+        Err(_) => return (StatusCode::BAD_REQUEST, "Invalid JSON payload").into_response(),
+    };
+
+    if let Some(auth_header_value) = auth_header {
+        if let Some(token) = JwtService::extract_bearer_token(&auth_header_value) {
+            let jwt_service = JwtService::new();
+            match jwt_service.validate_token(token) {
+                Ok(claims) => {
+                    create_token_with_project(claims.user_id, Some(payload.project_id)).await
+                }
+                Err(_) => (StatusCode::UNAUTHORIZED, "Invalid token").into_response(),
+            }
+        } else {
+            (
+                StatusCode::UNAUTHORIZED,
+                "Invalid authorization header format",
+            )
+                .into_response()
         }
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    } else {
+        (StatusCode::UNAUTHORIZED, "No authorization token provided").into_response()
+    }
+}
+
+async fn create_token_with_project(user_id: i32, project_id: Option<i32>) -> Response<Body> {
+    debug!("Creating JWT service instance");
+    let jwt_service = JwtService::new();
+
+    debug!(
+        "Creating JWT token for user ID: {} with project ID: {:?}",
+        user_id, project_id
+    );
+    match jwt_service.create_token(user_id, project_id) {
+        Ok(token) => {
+            debug!(
+                "JWT token created successfully for user: {} with project: {:?}",
+                user_id, project_id
+            );
+            let expires_at = chrono::Utc::now()
+                .checked_add_signed(chrono::Duration::days(7))
+                .unwrap();
+
+            Json(json!({
+                "user_id": user_id,
+                "token": format!("Bearer {}", token),
+                "expires_at": expires_at,
+                "project_id": project_id
+            }))
+            .into_response()
+        }
+        Err(e) => {
+            debug!(
+                "Failed to create JWT token for user ID: {}, error: {:?}",
+                user_id, e
+            );
+            (StatusCode::INTERNAL_SERVER_ERROR, "Failed to create token").into_response()
+        }
     }
 }
 
 #[derive(Deserialize)]
-struct LogoutRequest {
-    user_id: i32,
-}
+struct LogoutRequest {}

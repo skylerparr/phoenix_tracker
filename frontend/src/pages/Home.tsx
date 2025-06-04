@@ -39,6 +39,8 @@ import NotificationsComponent from "../components/NotificationsComponent";
 import { useNotificationCount } from "../hooks/useNotificationCount";
 import { useMobile } from "../context/MobileContext";
 import { Menu as MenuIcon } from "@mui/icons-material";
+import { useLocation } from "react-router-dom";
+import { issueService } from "../services/IssueService";
 
 // Color mapping for each button with full opacity and half opacity versions
 const buttonColors = {
@@ -230,7 +232,9 @@ const Home = () => {
     });
     return paramMap;
   };
+  const location = useLocation();
   const [queryParams, setQueryParams] = useState(() => createParamMap());
+  const [projectRefreshKey, setProjectRefreshKey] = useState(0);
 
   useEffect(() => {
     const handleLocationChange = () => {
@@ -292,6 +296,19 @@ const Home = () => {
   useEffect(() => {
     sessionStorage.setActiveButtons(activeButtons);
   }, [activeButtons]);
+
+  // Watch for project parameter changes to force component refresh
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const projectParam = params.get("project");
+    if (projectParam) {
+      console.log("Project parameter changed to:", projectParam);
+      // Clear service caches to force fresh data fetch
+      issueService.clearCaches();
+      // Force all components to refresh by updating key
+      setProjectRefreshKey((prev) => prev + 1);
+    }
+  }, [location.search]);
 
   const handleButtonClick = (buttonId: string) => {
     setActiveButtons((prevButtons: string[]) => {
@@ -602,7 +619,9 @@ const Home = () => {
                 {toolbarButtons.map((button) => {
                   if (button.id === buttonId) {
                     const Component = button.component;
-                    return <Component key={button.id} />;
+                    return (
+                      <Component key={`${button.id}-${projectRefreshKey}`} />
+                    );
                   }
                   return null;
                 })}

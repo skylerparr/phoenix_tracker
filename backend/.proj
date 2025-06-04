@@ -14,3 +14,7 @@ function migrate_create() {
 function cargo_add() {
     docker exec -it `container` cargo add $1
 }
+
+function cargo_build() {
+    docker exec -it `container` cargo build --bin phoenix_tracker
+}

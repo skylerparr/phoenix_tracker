@@ -9,9 +9,10 @@ export abstract class BaseService<R> {
   protected abstract createInstance(data: any): R;
 
   protected getHeaders(): HeadersInit {
+    const token = sessionStorage.getToken();
     return {
       "Content-Type": "application/json",
-      Authorization: `${sessionStorage.getSession().user?.token}`,
+      Authorization: token || "",
     };
   }
 
