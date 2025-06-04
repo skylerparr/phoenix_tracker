@@ -226,13 +226,27 @@ export class IssueService extends BaseService<Issue> {
 
   private ensureWebSocketSubscriptions(): void {
     if (this.websocketSubscriptions.size === 0) {
-      const refreshAllData = this.refreshAllCacheData.bind(this);
+      const handleIssueCreated = (issue: Issue) => {
+        this.refreshAllCacheData();
+      };
 
-      WebsocketService.subscribeToIssueCreateEvent(refreshAllData);
-      WebsocketService.subscribeToIssueUpdatedEvent(refreshAllData);
-      WebsocketService.subscribeToIssueDeletedEvent(refreshAllData);
+      const handleIssueUpdated = (issue: Issue) => {
+        this.refreshAllCacheData();
+      };
 
-      this.websocketSubscriptions.add(refreshAllData);
+      const handleIssueDeleted = (data: { id: number }) => {
+        this.refreshAllCacheData();
+      };
+
+      WebsocketService.subscribeToIssueCreateEvent(handleIssueCreated);
+      WebsocketService.subscribeToIssueUpdatedEvent(handleIssueUpdated);
+      WebsocketService.subscribeToIssueDeletedEvent(handleIssueDeleted);
+
+      this.websocketSubscriptions.add(async () => {
+        WebsocketService.unsubscribeToIssueCreateEvent(handleIssueCreated);
+        WebsocketService.unsubscribeToIssueUpdatedEvent(handleIssueUpdated);
+        WebsocketService.unsubscribeToIssueDeletedEvent(handleIssueDeleted);
+      });
     }
   }
 
@@ -258,12 +272,12 @@ export class IssueService extends BaseService<Issue> {
   }
 
   // Cleanup method
-  destroy(): void {
-    // Unsubscribe from all WebSocket events
-    const refreshAllData = this.refreshAllCacheData.bind(this);
-    WebsocketService.unsubscribeToIssueCreateEvent(refreshAllData);
-    WebsocketService.unsubscribeToIssueUpdatedEvent(refreshAllData);
-    WebsocketService.unsubscribeToIssueDeletedEvent(refreshAllData);
+  async destroy(): Promise<void> {
+    // Unsubscribe from all WebSocket events using stored references
+    const unsubscribeFunctions = Array.from(this.websocketSubscriptions);
+    for (const unsubscribe of unsubscribeFunctions) {
+      await unsubscribe();
+    }
 
     this.websocketSubscriptions.clear();
     this.clearCaches();
