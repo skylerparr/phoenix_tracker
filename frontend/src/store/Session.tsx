@@ -129,8 +129,8 @@ class SessionStorage {
       isAuthenticated: true,
       user: {
         id: claims.user_id,
-        name: "User", // Will be populated from API calls
-        email: "user@example.com", // Will be populated from API calls
+        name: "",
+        email: "",
       },
       activeButtons,
       hasProject: !!claims.project_id,
@@ -185,14 +185,6 @@ class SessionStorage {
     return claims?.project_id || null;
   }
 
-  // Legacy methods for compatibility
-  public getProject(): any {
-    return null; // Projects are now handled via JWT
-  }
-
-  public setProject(project: any): void {
-    // No-op - projects are now handled via JWT
-  }
 }
 
 export const sessionStorage = SessionStorage.getInstance();

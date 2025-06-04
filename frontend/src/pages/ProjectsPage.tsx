@@ -62,7 +62,6 @@ const ProjectsPage: React.FC = () => {
       console.error("Failed to switch to project:", error);
       // Fallback to old method if needed
       await projectService.selectProject(project.id);
-      sessionStorage.setProject(project);
       navigate(`/home?project=${project.id}`);
     }
   };

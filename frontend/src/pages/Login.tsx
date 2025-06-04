@@ -27,8 +27,6 @@ const Login = () => {
       });
 
       if (response.project_id) {
-        const project = await projectService.getProject(response.project_id);
-        sessionStorage.setProject(project);
         navigate("/home");
       } else {
         navigate("/projects");
