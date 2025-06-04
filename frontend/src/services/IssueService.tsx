@@ -285,12 +285,17 @@ export class IssueService extends BaseService<Issue> {
     console.log('Starting cache refresh...');
 
     try {
-      const cacheKeys = IssueCacheManager.getKeys();
-      console.log('Refreshing cache keys:', cacheKeys);
+      const subscribedKeys = IssueCacheManager.getSubscribedKeys();
+      console.log('Refreshing subscribed cache keys:', subscribedKeys);
+
+      if (subscribedKeys.length === 0) {
+        console.log('No active subscriptions, skipping cache refresh');
+        return;
+      }
 
       const refreshPromises = [];
 
-      for (const key of cacheKeys) {
+      for (const key of subscribedKeys) {
         if (key === CacheKeys.ISSUES.ALL) {
           refreshPromises.push(this.refreshCacheData(key, () => this.fetchIssues(false)));
         } else if (key === CacheKeys.ISSUES.MY_ISSUES) {
@@ -299,12 +304,24 @@ export class IssueService extends BaseService<Issue> {
           refreshPromises.push(this.refreshCacheData(key, () => this.get<Issue[]>("/accepted")));
         } else if (key === CacheKeys.ISSUES.ICEBOX) {
           refreshPromises.push(this.refreshCacheData(key, () => this.get<Issue[]>("/icebox")));
+        } else if (key.startsWith('issues:tag:')) {
+          // Extract tag ID from cache key like "issues:tag:123"
+          const tagId = parseInt(key.split(':')[2]);
+          if (!isNaN(tagId)) {
+            refreshPromises.push(this.refreshCacheData(key, () => this.get<Issue[]>(`/tag/${tagId}`)));
+          }
+        } else if (key.startsWith('issues:user:')) {
+          // Extract user ID from cache key like "issues:user:456"
+          const userId = parseInt(key.split(':')[2]);
+          if (!isNaN(userId)) {
+            refreshPromises.push(this.refreshCacheData(key, () => this.get<Issue[]>(`/user/${userId}`)));
+          }
         }
       }
 
       // Wait for all cache refreshes to complete
       await Promise.all(refreshPromises);
-      console.log('Cache refresh completed successfully');
+      console.log(`Cache refresh completed successfully for ${refreshPromises.length} subscriptions`);
     } catch (error) {
       console.error('Error during cache refresh:', error);
     } finally {

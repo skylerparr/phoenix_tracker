@@ -84,6 +84,13 @@ export class CacheManager<T> {
   }
 
   /**
+   * Get all keys that have active subscriptions (callbacks)
+   */
+  getSubscribedKeys(): string[] {
+    return Array.from(this.callbacks.keys());
+  }
+
+  /**
    * Get cache size
    */
   size(): number {
