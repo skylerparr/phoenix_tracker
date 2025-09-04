@@ -84,6 +84,7 @@ impl CommentCrud {
     pub async fn find_by_issue_id(&self, issue_id: i32) -> Result<Vec<comment::Model>, DbErr> {
         comment::Entity::find()
             .filter(comment::Column::IssueId.eq(issue_id))
+            .order_by(comment::Column::CreatedAt, Order::Asc)
             .all(&self.app_state.db)
             .await
     }
