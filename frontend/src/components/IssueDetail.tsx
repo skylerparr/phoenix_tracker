@@ -63,7 +63,9 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
 import { PARAM_HISTORY_ISSUE_ID } from "./SearchComponent";
 import IssueComments from "./IssueComments";
-import ReactMarkdown from "react-markdown";
+import MDEditor from "@uiw/react-md-editor";
+import remarkGfm from "remark-gfm";
+import MarkdownEditor from "./common/MarkdownEditor";
 
 const lightTheme = createTheme({
   palette: {
@@ -994,24 +996,12 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         </Tabs>
       </Box>
       <Box sx={{ display: activeTab === 1 ? "block" : "none" }}>
-        <TextField
-          multiline
-          rows={4}
-          fullWidth
-          placeholder="Add a description"
+        <MarkdownEditor
           value={issue.description}
-          sx={{
-            bgcolor: "white",
-            "& .MuiInputBase-input": { color: "black" },
-            "& .MuiInputBase-root": {
-              resize: "vertical",
-              minHeight: "100px",
-              "& textarea": {
-                resize: "vertical",
-              },
-            },
-          }}
-          onChange={(e) => handleDescriptionUpdate(e.target.value)}
+          onChange={handleDescriptionUpdate}
+          height={240}
+          placeholder="Add a description"
+          withTabs={false}
         />
       </Box>
       <Box
@@ -1027,7 +1017,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         }}
       >
         {issue.description ? (
-          <ReactMarkdown>{issue.description}</ReactMarkdown>
+          <MDEditor.Markdown source={issue.description} remarkPlugins={[remarkGfm]} />
         ) : (
           <Typography sx={{ color: "#999", fontStyle: "italic" }}>
             Nothing to preview

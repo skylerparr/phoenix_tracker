@@ -21,7 +21,9 @@ import {
   CreateProjectNoteRequest,
 } from "../services/ProjectNoteService";
 import { ProjectNote } from "../models/ProjectNote";
-import ReactMarkdown from "react-markdown";
+import MDEditor from "@uiw/react-md-editor";
+import remarkGfm from "remark-gfm";
+import MarkdownEditor from "./common/MarkdownEditor";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -283,43 +285,22 @@ export const ProjectNotesComponent: React.FC = () => {
                         overflowY: "auto",
                       }}
                     >
-                      <ReactMarkdown>{editDetail}</ReactMarkdown>
+                      <MDEditor.Markdown source={editDetail} remarkPlugins={[remarkGfm]} />
                     </Box>
                   ) : (
-                    <Box sx={{}}>
-                      <TextField
-                        multiline
-                        fullWidth
-                        placeholder="Add a comment"
-                        sx={{
-                          bgcolor: "white",
-                          "& .MuiInputBase-input": { color: "black" },
-                          "& .MuiInputBase-root": {
-                            resize: "vertical",
-                            minHeight: "100px",
-                            "& textarea": {
-                              resize: "none",
-                              overflow: "hidden",
-                              minHeight: "100px",
-                            },
-                          },
-                        }}
+                    <Box>
+                      <MarkdownEditor
                         value={editDetail}
-                        onChange={(e) => {
-                          e.target.style.height = "auto";
-                          e.target.style.height = e.target.scrollHeight + "px";
-                          setEditDetail(e.target.value);
-
-                          // Add debounced auto-save when text changes
+                        onChange={(v: string) => {
+                          setEditDetail(v);
                           debouncedUpdate(async () => {
                             if (expandedNoteId === null) return;
-                            await saveProjectNote(
-                              expandedNoteId,
-                              editTitle,
-                              e.target.value,
-                            );
+                            await saveProjectNote(expandedNoteId, editTitle, v);
                           });
                         }}
+                        height={240}
+                        placeholder="Update note details..."
+                        withTabs={false}
                       />
                     </Box>
                   )}
