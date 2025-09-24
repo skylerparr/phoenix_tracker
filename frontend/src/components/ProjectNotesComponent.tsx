@@ -39,6 +39,7 @@ export const ProjectNotesComponent: React.FC = () => {
   const [editDetail, setEditDetail] = useState<string>("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const { debouncedUpdate } = useDebounce();
+  const [filter, setFilter] = useState<string>("");
 
   useEffect(() => {
     const fetchNotes = async () => {
@@ -172,6 +173,15 @@ export const ProjectNotesComponent: React.FC = () => {
     setActiveTab(tab);
   };
 
+  const filteredNotes = React.useMemo(() => {
+    if (!filter.trim()) return notes;
+    const safe = filter.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(safe, "i");
+    return notes.filter(
+      (n: ProjectNote) => regex.test(n.title) || regex.test(n.detail || ""),
+    );
+  }, [notes, filter]);
+
   return (
     <Box>
       <Box
@@ -196,6 +206,18 @@ export const ProjectNotesComponent: React.FC = () => {
         >
           Create new note
         </Button>
+        <TextField
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          size="small"
+          placeholder="Filter notes..."
+          sx={{
+            ml: 2,
+            width: 300,
+            backgroundColor: "#ffffff",
+            "& .MuiInputBase-input": { color: "#000000" },
+          }}
+        />
       </Box>
 
       {loading ? (
@@ -208,7 +230,7 @@ export const ProjectNotesComponent: React.FC = () => {
         </Typography>
       ) : (
         <Stack spacing={1}>
-          {notes.map((note: ProjectNote) => (
+          {filteredNotes.map((note: ProjectNote) => (
             <Paper
               key={note.id}
               elevation={1}
