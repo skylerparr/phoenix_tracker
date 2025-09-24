@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  Typography,
-  Stack,
-  Button,
-  Box,
-  IconButton,
-} from "@mui/material";
+import { Typography, Stack, Button, Box, IconButton } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
@@ -39,7 +33,6 @@ const IssueComments: React.FC<IssueCommentsProps> = ({
     });
     setComment("");
   };
-
 
   const handleEditComment = (commentToEdit: Comment) => {
     setEditingCommentId(commentToEdit.id);
@@ -114,7 +107,9 @@ const IssueComments: React.FC<IssueCommentsProps> = ({
                   height={200}
                 />
 
-                <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                <Box
+                  sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}
+                >
                   <Button
                     variant="outlined"
                     startIcon={<CancelIcon />}
@@ -135,7 +130,10 @@ const IssueComments: React.FC<IssueCommentsProps> = ({
               </Stack>
             ) : (
               <Box sx={{ color: "#333" }}>
-                <MDEditor.Markdown source={comment.content} remarkPlugins={[remarkGfm]} />
+                <MDEditor.Markdown
+                  source={comment.content}
+                  remarkPlugins={[remarkGfm]}
+                />
               </Box>
             )}
           </Stack>

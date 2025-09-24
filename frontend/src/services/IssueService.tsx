@@ -229,17 +229,17 @@ export class IssueService extends BaseService<Issue> {
   private ensureWebSocketSubscriptions(): void {
     if (this.websocketSubscriptions.size === 0) {
       const handleIssueCreated = (issue: Issue) => {
-        console.log('WebSocket: Issue created', issue);
+        console.log("WebSocket: Issue created", issue);
         this.debouncedRefreshAllCacheData();
       };
 
       const handleIssueUpdated = (issue: Issue) => {
-        console.log('WebSocket: Issue updated', issue);
+        console.log("WebSocket: Issue updated", issue);
         this.debouncedRefreshAllCacheData();
       };
 
       const handleIssueDeleted = (data: { id: number }) => {
-        console.log('WebSocket: Issue deleted', data);
+        console.log("WebSocket: Issue deleted", data);
         this.debouncedRefreshAllCacheData();
       };
 
@@ -263,33 +263,33 @@ export class IssueService extends BaseService<Issue> {
 
     // If already refreshing, skip this request
     if (this.isRefreshing) {
-      console.log('Cache refresh already in progress, skipping...');
+      console.log("Cache refresh already in progress, skipping...");
       return;
     }
 
     // Set a timeout to refresh after 500ms of no new requests
     this.refreshTimeoutId = setTimeout(() => {
-      this.refreshAllCacheData().catch(error => {
-        console.error('Failed to refresh cache data:', error);
+      this.refreshAllCacheData().catch((error) => {
+        console.error("Failed to refresh cache data:", error);
       });
     }, 500);
   }
 
   private async refreshAllCacheData(): Promise<void> {
     if (this.isRefreshing) {
-      console.log('Cache refresh already in progress, aborting...');
+      console.log("Cache refresh already in progress, aborting...");
       return;
     }
 
     this.isRefreshing = true;
-    console.log('Starting cache refresh...');
+    console.log("Starting cache refresh...");
 
     try {
       const subscribedKeys = IssueCacheManager.getSubscribedKeys();
-      console.log('Refreshing subscribed cache keys:', subscribedKeys);
+      console.log("Refreshing subscribed cache keys:", subscribedKeys);
 
       if (subscribedKeys.length === 0) {
-        console.log('No active subscriptions, skipping cache refresh');
+        console.log("No active subscriptions, skipping cache refresh");
         return;
       }
 
@@ -297,33 +297,51 @@ export class IssueService extends BaseService<Issue> {
 
       for (const key of subscribedKeys) {
         if (key === CacheKeys.ISSUES.ALL) {
-          refreshPromises.push(this.refreshCacheData(key, () => this.fetchIssues(false)));
+          refreshPromises.push(
+            this.refreshCacheData(key, () => this.fetchIssues(false)),
+          );
         } else if (key === CacheKeys.ISSUES.MY_ISSUES) {
-          refreshPromises.push(this.refreshCacheData(key, () => this.fetchIssues(true)));
+          refreshPromises.push(
+            this.refreshCacheData(key, () => this.fetchIssues(true)),
+          );
         } else if (key === CacheKeys.ISSUES.ACCEPTED) {
-          refreshPromises.push(this.refreshCacheData(key, () => this.get<Issue[]>("/accepted")));
+          refreshPromises.push(
+            this.refreshCacheData(key, () => this.get<Issue[]>("/accepted")),
+          );
         } else if (key === CacheKeys.ISSUES.ICEBOX) {
-          refreshPromises.push(this.refreshCacheData(key, () => this.get<Issue[]>("/icebox")));
-        } else if (key.startsWith('issues:tag:')) {
+          refreshPromises.push(
+            this.refreshCacheData(key, () => this.get<Issue[]>("/icebox")),
+          );
+        } else if (key.startsWith("issues:tag:")) {
           // Extract tag ID from cache key like "issues:tag:123"
-          const tagId = parseInt(key.split(':')[2]);
+          const tagId = parseInt(key.split(":")[2]);
           if (!isNaN(tagId)) {
-            refreshPromises.push(this.refreshCacheData(key, () => this.get<Issue[]>(`/tag/${tagId}`)));
+            refreshPromises.push(
+              this.refreshCacheData(key, () =>
+                this.get<Issue[]>(`/tag/${tagId}`),
+              ),
+            );
           }
-        } else if (key.startsWith('issues:user:')) {
+        } else if (key.startsWith("issues:user:")) {
           // Extract user ID from cache key like "issues:user:456"
-          const userId = parseInt(key.split(':')[2]);
+          const userId = parseInt(key.split(":")[2]);
           if (!isNaN(userId)) {
-            refreshPromises.push(this.refreshCacheData(key, () => this.get<Issue[]>(`/user/${userId}`)));
+            refreshPromises.push(
+              this.refreshCacheData(key, () =>
+                this.get<Issue[]>(`/user/${userId}`),
+              ),
+            );
           }
         }
       }
 
       // Wait for all cache refreshes to complete
       await Promise.all(refreshPromises);
-      console.log(`Cache refresh completed successfully for ${refreshPromises.length} subscriptions`);
+      console.log(
+        `Cache refresh completed successfully for ${refreshPromises.length} subscriptions`,
+      );
     } catch (error) {
-      console.error('Error during cache refresh:', error);
+      console.error("Error during cache refresh:", error);
     } finally {
       this.isRefreshing = false;
       this.refreshTimeoutId = null;

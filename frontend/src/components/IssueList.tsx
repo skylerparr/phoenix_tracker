@@ -254,26 +254,6 @@ const IssueList: React.FC<IssueListProps> = ({
       <DragDropContext onDragEnd={handleDragEnd}>
         {groupedIssues.map(([weekNum, weekIssues]) => (
           <Box key={weekNum}>
-            {/* Add any release bars for this week */}
-            {releaseCompletionWeeks.has(weekNum) &&
-              releaseCompletionWeeks.get(weekNum)!.map((releaseInfo, idx) => (
-                <Box
-                  key={`release-bar-${releaseInfo.release.id}-week-${weekNum}-${idx}`}
-                  sx={{
-                    zIndex: 10,
-                    position: "relative",
-                  }}
-                >
-                  <ReleaseStatusBar
-                    release={releaseInfo.release}
-                    totalPoints={releaseInfo.totalPoints}
-                    weeksUntilRelease={releaseInfo.weeksUntilRelease}
-                    expectedPointsCapacity={releaseInfo.expectedPointsCapacity}
-                    willComplete={releaseInfo.willComplete}
-                  />
-                </Box>
-              ))}
-
             <Droppable droppableId={`week-${weekNum}`} direction="vertical">
               {(provided) => (
                 <Box {...provided.droppableProps} ref={provided.innerRef}>
@@ -302,6 +282,26 @@ const IssueList: React.FC<IssueListProps> = ({
                 </Box>
               )}
             </Droppable>
+            {/* Add any release bars for this week */}
+            {releaseCompletionWeeks.has(weekNum) &&
+              releaseCompletionWeeks.get(weekNum)!.map((releaseInfo, idx) => (
+                <Box
+                  key={`release-bar-${releaseInfo.release.id}-week-${weekNum}-${idx}`}
+                  sx={{
+                    zIndex: 10,
+                    position: "relative",
+                  }}
+                >
+                  <ReleaseStatusBar
+                    release={releaseInfo.release}
+                    totalPoints={releaseInfo.totalPoints}
+                    weeksUntilRelease={releaseInfo.weeksUntilRelease}
+                    expectedPointsCapacity={releaseInfo.expectedPointsCapacity}
+                    willComplete={releaseInfo.willComplete}
+                  />
+                </Box>
+              ))}
+
             {enableGrouping && (
               <IssueGroup weeksFromNow={weekNum} issues={weekIssues} />
             )}

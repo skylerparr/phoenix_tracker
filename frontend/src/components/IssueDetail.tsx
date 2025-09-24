@@ -1017,7 +1017,10 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         }}
       >
         {issue.description ? (
-          <MDEditor.Markdown source={issue.description} remarkPlugins={[remarkGfm]} />
+          <MDEditor.Markdown
+            source={issue.description}
+            remarkPlugins={[remarkGfm]}
+          />
         ) : (
           <Typography sx={{ color: "#999", fontStyle: "italic" }}>
             Nothing to preview

@@ -285,7 +285,10 @@ export const ProjectNotesComponent: React.FC = () => {
                         overflowY: "auto",
                       }}
                     >
-                      <MDEditor.Markdown source={editDetail} remarkPlugins={[remarkGfm]} />
+                      <MDEditor.Markdown
+                        source={editDetail}
+                        remarkPlugins={[remarkGfm]}
+                      />
                     </Box>
                   ) : (
                     <Box>
