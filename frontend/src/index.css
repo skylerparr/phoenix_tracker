@@ -15,3 +15,43 @@ code {
 iframe#webpack-dev-server-client-overlay {
   display: none !important;
 }
+
+/* UIW Markdown editor overrides */
+.wmde-markdown {
+  background: transparent !important;
+  color: #4a4a4a !important;
+}
+
+.w-md-editor {
+  background: transparent !important;
+  color: #4a4a4a !important;
+}
+
+/* UIW Markdown editor overrides */
+.wmde-markdown {
+  background: transparent !important;
+  color: #666666 !important;
+}
+
+.w-md-editor {
+  background: transparent !important;
+  color: #666666 !important;
+}
+
+/* UIW Markdown editor text color override */
+.wmde-markdown,
+.w-md-editor {
+  color: #121212 !important;
+}
+
+/* UIW Markdown editor background color override */
+.wmde-markdown,
+.w-md-editor {
+  background: #d9d9d3 !important;
+}
+
+/* UIW Markdown editor <pre> override */
+.wmde-markdown pre {
+  background-color: darkgray !important;
+  border-color: black !important;
+}
