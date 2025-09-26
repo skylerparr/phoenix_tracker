@@ -1,5 +1,6 @@
 pub mod blocker;
 pub mod comment;
+pub mod comment_file_upload;
 pub mod event_broadcaster;
 pub mod history;
 pub mod import_export;
@@ -16,3 +17,4 @@ pub mod tag;
 pub mod task;
 pub mod user;
 pub mod work_type;
+pub mod file_upload;
