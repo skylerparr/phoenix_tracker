@@ -86,7 +86,13 @@ impl JwtService {
         if auth_header.starts_with("Bearer ") {
             Some(&auth_header[7..])
         } else {
-            None
+            // Accept raw JWT tokens without the "Bearer " prefix as well
+            // Heuristic: JWTs have three segments separated by dots
+            if auth_header.split('.').count() == 3 {
+                Some(auth_header)
+            } else {
+                None
+            }
         }
     }
 }

@@ -42,14 +42,16 @@ async fn upload_for_issue(
     Path(issue_id): Path<i32>,
     mut multipart: Multipart,
 ) -> impl IntoResponse {
-    let user_id = match app_state.user.as_ref() {
-        Some(u) => u.id,
-        None => return Err(StatusCode::UNAUTHORIZED),
-    };
-    let project_id = match app_state.project.as_ref() {
-        Some(p) => p.id,
-        None => return Err(StatusCode::BAD_REQUEST), // No project selected
-    };
+    let user_id = app_state
+        .user
+        .as_ref()
+        .expect("user must be set by middleware")
+        .id;
+    let project_id = app_state
+        .project
+        .as_ref()
+        .expect("project must be set by middleware")
+        .id;
 
     // Verify issue belongs to current project
     let issue_crud = IssueCrud::new(app_state.clone());
@@ -152,10 +154,11 @@ async fn upload_for_project_note(
     Path(note_id): Path<i32>,
     mut multipart: Multipart,
 ) -> impl IntoResponse {
-    let user_id = match app_state.user.as_ref() {
-        Some(u) => u.id,
-        None => return Err(StatusCode::UNAUTHORIZED),
-    };
+    let user_id = app_state
+        .user
+        .as_ref()
+        .expect("user must be set by middleware")
+        .id;
     // Ensure project is selected and note exists within it
     let project_note_crud = ProjectNoteCrud::new(app_state.clone());
     let _note = match project_note_crud.find_by_id(note_id).await {
@@ -203,10 +206,11 @@ async fn list_for_issue(
     Path(issue_id): Path<i32>,
 ) -> impl IntoResponse {
     // Verify issue belongs to current project
-    let project_id = match app_state.project.as_ref() {
-        Some(p) => p.id,
-        None => return Err(StatusCode::BAD_REQUEST),
-    };
+    let project_id = app_state
+        .project
+        .as_ref()
+        .expect("project must be set by middleware")
+        .id;
     let issue_crud = IssueCrud::new(app_state.clone());
     let issue = match issue_crud.find_by_id(issue_id).await {
         Ok(Some(i)) => i,
@@ -266,14 +270,12 @@ async fn download_upload(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
-    // Require auth and project selection (membership is enforced via ownership checks)
-    if app_state.user.is_none() {
-        return Err(StatusCode::UNAUTHORIZED);
-    }
-    let project_id = match app_state.project.as_ref() {
-        Some(p) => p.id,
-        None => return Err(StatusCode::BAD_REQUEST),
-    };
+    // Middleware enforces auth and project selection
+    let project_id = app_state
+        .project
+        .as_ref()
+        .expect("project must be set by middleware")
+        .id;
 
     let crud = FileUploadCrud::new(app_state.clone());
     let upload = match crud.find_by_id(id).await {
@@ -346,13 +348,11 @@ async fn delete_upload(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
-    if app_state.user.is_none() {
-        return Err(StatusCode::UNAUTHORIZED);
-    }
-    let project_id = match app_state.project.as_ref() {
-        Some(p) => p.id,
-        None => return Err(StatusCode::BAD_REQUEST),
-    };
+    let project_id = app_state
+        .project
+        .as_ref()
+        .expect("project must be set by middleware")
+        .id;
 
     // Anti-enumeration: check association before deleting
     let crud = FileUploadCrud::new(app_state.clone());

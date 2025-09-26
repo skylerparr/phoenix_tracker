@@ -66,59 +66,14 @@ async fn auth_middleware(
     mut req: Request<Body>,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    if req.uri().path().starts_with("/api/auth")
-        || req.uri().path().starts_with("/ws")
-        || req.uri().path().starts_with("/api/projects")
-        || req.uri().path().starts_with("/api/users")
-    {
-        info!("Skipping project validation for auth, ws, projects, and users routes");
-        // Still validate user authentication for non-auth routes
-        if !req.uri().path().starts_with("/api/auth") && !req.uri().path().starts_with("/ws") {
-            let auth_header = req
-                .headers()
-                .get(AUTHORIZATION)
-                .and_then(|value| value.to_str().ok());
+    let path = req.uri().path();
 
-            if let Some(auth_header_value) = auth_header {
-                if let Some(token) = JwtService::extract_bearer_token(auth_header_value) {
-                    let jwt_service = JwtService::new();
-                    match jwt_service.validate_token(token) {
-                        Ok(claims) => {
-                            let user_crud = UserCrud::new(app_state.clone());
-                            if let Ok(Some(user)) = user_crud.find_by_id(claims.user_id).await {
-                                req.extensions_mut().insert(app_state.clone());
-                                req.extensions_mut().get_mut::<AppState>().unwrap().user =
-                                    Some(user.clone());
-
-                                // Also extract project from JWT if present (for routes like /api/users)
-                                if let Some(project_id) = claims.project_id {
-                                    let project_crud = ProjectCrud::new(app_state.clone());
-                                    if let Ok(Some(project)) =
-                                        project_crud.find_by_id(project_id).await
-                                    {
-                                        req.extensions_mut()
-                                            .get_mut::<AppState>()
-                                            .unwrap()
-                                            .project = Some(project.clone());
-                                        debug!(
-                                            "Project ID from JWT for protected route: {:?}",
-                                            project.id
-                                        );
-                                    }
-                                }
-
-                                return Ok(next.run(req).await);
-                            }
-                        }
-                        Err(_) => return Err(StatusCode::UNAUTHORIZED),
-                    }
-                }
-            }
-            return Err(StatusCode::UNAUTHORIZED);
-        }
+    // Allow unauthenticated routes
+    if path.starts_with("/api/auth") || path.starts_with("/ws") {
         return Ok(next.run(req).await);
     }
 
+    // All other routes require a valid JWT. We set the user for all, and set project if present in claims.
     let auth_header = req
         .headers()
         .get(AUTHORIZATION)
@@ -129,41 +84,40 @@ async fn auth_middleware(
 
         if let Some(token) = JwtService::extract_bearer_token(auth_header_value) {
             let jwt_service = JwtService::new();
-
             match jwt_service.validate_token(token) {
                 Ok(claims) => {
                     debug!("Valid JWT found, user_id: {}", claims.user_id);
+
+                    // Load user
                     let user_crud = UserCrud::new(app_state.clone());
+                    let user = match user_crud.find_by_id(claims.user_id).await {
+                        Ok(Some(u)) => u,
+                        _ => return Err(StatusCode::UNAUTHORIZED),
+                    };
 
-                    if let Ok(Some(user)) = user_crud.find_by_id(claims.user_id).await {
-                        debug!("Found user id: {:?}", user.id);
-                        req.extensions_mut().insert(app_state.clone());
-                        req.extensions_mut().get_mut::<AppState>().unwrap().user =
-                            Some(user.clone());
+                    // Attach to request extensions with user
+                    req.extensions_mut().insert(app_state.clone());
+                    if let Some(state) = req.extensions_mut().get_mut::<AppState>() {
+                        state.user = Some(user);
+                    }
 
-                        // Get project from JWT claims (allows multiple projects per user simultaneously)
-                        if let Some(project_id) = claims.project_id {
-                            let project_crud = ProjectCrud::new(app_state.clone());
-                            if let Ok(Some(project)) = project_crud.find_by_id(project_id).await {
-                                req.extensions_mut().get_mut::<AppState>().unwrap().project =
-                                    Some(project.clone());
-                                debug!("Project ID from JWT: {:?}", project.id);
+                    // Optionally load project if present in JWT claims
+                    if let Some(project_id) = claims.project_id {
+                        let project_crud = ProjectCrud::new(app_state.clone());
+                        if let Ok(Some(project)) = project_crud.find_by_id(project_id).await {
+                            if let Some(state) = req.extensions_mut().get_mut::<AppState>() {
+                                state.project = Some(project);
                             }
                         }
-                        return Ok(next.run(req).await);
-                    } else {
-                        warn!("User not found for JWT user_id: {}", claims.user_id);
-                        return Err(StatusCode::UNAUTHORIZED);
                     }
+
+                    return Ok(next.run(req).await);
                 }
                 Err(e) => {
                     warn!("Invalid JWT token: {:?}", e);
                     return Err(StatusCode::UNAUTHORIZED);
                 }
             }
-        } else {
-            warn!("Invalid authorization header format");
-            return Err(StatusCode::UNAUTHORIZED);
         }
     }
 
