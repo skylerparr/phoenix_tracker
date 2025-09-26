@@ -1,7 +1,6 @@
 use crate::sea_orm::DatabaseBackend;
 use sea_orm;
 use sea_orm_migration::prelude::*;
-use sea_query;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -693,21 +692,6 @@ impl MigrationTrait for Migration {
             .await?;
         match manager.get_database_backend() {
             DatabaseBackend::Postgres => {
-                manager
-                    .exec_stmt(
-                        sea_query::Table::create()
-                            .table(Alias::new("dummy"))
-                            .if_not_exists()
-                            .col(
-                                ColumnDef::new(Alias::new("id"))
-                                    .integer()
-                                    .not_null()
-                                    .primary_key(),
-                            )
-                            .to_owned(),
-                    )
-                    .await?;
-
                 manager
                     .get_connection()
                     .execute(sea_orm::Statement::from_string(
