@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod blocker;
 pub mod comment;
+pub mod file_upload;
 pub mod history;
 pub mod import_export;
 pub mod issue;

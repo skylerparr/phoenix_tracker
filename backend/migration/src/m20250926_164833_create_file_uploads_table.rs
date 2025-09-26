@@ -23,12 +23,28 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(FileUpload::IssueId).integer())
                     .col(ColumnDef::new(FileUpload::ProjectNoteId).integer())
-                    .col(ColumnDef::new(FileUpload::UploaderUserId).integer().not_null())
-                    .col(ColumnDef::new(FileUpload::OriginalFilename).string().not_null())
-                    .col(ColumnDef::new(FileUpload::FinalFilename).string().not_null())
+                    .col(
+                        ColumnDef::new(FileUpload::UploaderUserId)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(FileUpload::OriginalFilename)
+                            .string()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(FileUpload::FinalFilename)
+                            .string()
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(FileUpload::Path).string().not_null())
                     .col(ColumnDef::new(FileUpload::MimeType).string().not_null())
-                    .col(ColumnDef::new(FileUpload::SizeBytes).big_integer().not_null())
+                    .col(
+                        ColumnDef::new(FileUpload::SizeBytes)
+                            .big_integer()
+                            .not_null(),
+                    )
                     .col(
                         ColumnDef::new(FileUpload::UploadedAt)
                             .timestamp_with_time_zone()
@@ -125,8 +141,16 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(CommentFileUpload::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(CommentFileUpload::CommentId).integer().not_null())
-                    .col(ColumnDef::new(CommentFileUpload::FileUploadId).integer().not_null())
+                    .col(
+                        ColumnDef::new(CommentFileUpload::CommentId)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(CommentFileUpload::FileUploadId)
+                            .integer()
+                            .not_null(),
+                    )
                     .col(
                         ColumnDef::new(CommentFileUpload::CreatedAt)
                             .timestamp_with_time_zone()

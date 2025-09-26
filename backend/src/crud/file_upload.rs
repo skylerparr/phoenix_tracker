@@ -64,10 +64,7 @@ impl FileUploadCrud {
             .await
     }
 
-    pub async fn find_by_issue_id(
-        &self,
-        issue_id: i32,
-    ) -> Result<Vec<file_upload::Model>, DbErr> {
+    pub async fn find_by_issue_id(&self, issue_id: i32) -> Result<Vec<file_upload::Model>, DbErr> {
         file_upload::Entity::find()
             .filter(file_upload::Column::IssueId.eq(issue_id))
             .order_by_asc(file_upload::Column::UploadedAt)
@@ -89,10 +86,7 @@ impl FileUploadCrud {
     // Delete: remove object from store and DB
     pub async fn delete(&self, id: i32) -> Result<(), DbErr> {
         let txn = self.app_state.db.begin().await?;
-        let Some(model) = file_upload::Entity::find_by_id(id)
-            .one(&txn)
-            .await?
-        else {
+        let Some(model) = file_upload::Entity::find_by_id(id).one(&txn).await? else {
             return Ok(()); // idempotent
         };
 
@@ -132,7 +126,9 @@ impl FileUploadCrud {
     ) -> Result<file_upload::Model, DbErr> {
         // Validation
         if bytes.is_empty() {
-            return Err(DbErr::Custom("Empty file uploads are not allowed".to_string()));
+            return Err(DbErr::Custom(
+                "Empty file uploads are not allowed".to_string(),
+            ));
         }
         let max_mb: i64 = env::var("MAX_UPLOAD_SIZE_MB")
             .ok()
@@ -209,8 +205,9 @@ enum FileStoreInner {
 
 impl FileStore {
     fn from_env() -> Result<Self, DbErr> {
-        let scheme = env::var("FILE_STORE_SCHEME")
-            .map_err(|_| DbErr::Custom("FILE_STORE_SCHEME must be set to 'local' or 'aws'".into()))?;
+        let scheme = env::var("FILE_STORE_SCHEME").map_err(|_| {
+            DbErr::Custom("FILE_STORE_SCHEME must be set to 'local' or 'aws'".into())
+        })?;
         match scheme.as_str() {
             "local" => {
                 let base = env::var("BASE_FILE_PATH").map_err(|_| {
@@ -222,7 +219,9 @@ impl FileStore {
                     }),
                 })
             }
-            "aws" => Ok(Self { inner: FileStoreInner::Aws }),
+            "aws" => Ok(Self {
+                inner: FileStoreInner::Aws,
+            }),
             other => Err(DbErr::Custom(format!(
                 "Unsupported FILE_STORE_SCHEME: {} (expected 'local' or 'aws')",
                 other
@@ -354,6 +353,7 @@ fn derive_extension(original_filename: &str, mime_type: &str) -> String {
     // Fallback from mime
     match mime_type {
         "application/pdf" => "pdf".into(),
+        "application/json" => "json".into(),
         "text/plain" => "txt".into(),
         "image/png" => "png".into(),
         "image/jpeg" => "jpg".into(),
@@ -368,7 +368,7 @@ fn derive_extension(original_filename: &str, mime_type: &str) -> String {
 }
 
 fn sanitize_ext(ext: &str) -> String {
-    let e = ext.trim().trim_start_matches('.') .to_ascii_lowercase();
+    let e = ext.trim().trim_start_matches('.').to_ascii_lowercase();
     if e.chars().all(|c| c.is_ascii_alphanumeric()) {
         e
     } else {

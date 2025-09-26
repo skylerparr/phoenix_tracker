@@ -14,9 +14,9 @@ use axum::{
     Router,
 };
 use endpoints::{
-    auth::auth_routes, blocker::blocker_routes, comment::comment_routes, history::history_routes,
-    import_export::import_export_routes, issue::issue_routes,
-    issue_assignee::issue_assignee_routes, issue_tag::issue_tag_routes,
+    auth::auth_routes, blocker::blocker_routes, comment::comment_routes,
+    file_upload::file_upload_routes, history::history_routes, import_export::import_export_routes,
+    issue::issue_routes, issue_assignee::issue_assignee_routes, issue_tag::issue_tag_routes,
     notification::notification_routes, owner::owner_routes, project::project_routes,
     project_note::project_note_routes, tag::tag_routes, task::task_routes, user::user_routes,
 };
@@ -238,6 +238,7 @@ fn main() {
             .merge(task_routes())
             .merge(blocker_routes())
             .merge(import_export_routes())
+            .merge(file_upload_routes())
             .merge(history_routes())
             .merge(notification_routes())
             .merge(project_note_routes());

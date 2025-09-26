@@ -180,10 +180,7 @@ impl CommentFileUploadCrud {
         Ok(result)
     }
 
-    pub async fn delete_all_by_comment_id(
-        &self,
-        comment_id: i32,
-    ) -> Result<DeleteResult, DbErr> {
+    pub async fn delete_all_by_comment_id(&self, comment_id: i32) -> Result<DeleteResult, DbErr> {
         comment_file_upload::Entity::delete_many()
             .filter(comment_file_upload::Column::CommentId.eq(comment_id))
             .exec(&self.app_state.db)
