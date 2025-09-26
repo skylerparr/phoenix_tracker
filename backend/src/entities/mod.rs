@@ -1,5 +1,7 @@
 pub mod blocker;
 pub mod comment;
+pub mod comment_file_upload;
+pub mod file_upload;
 pub mod history;
 pub mod issue;
 pub mod issue_assignee;
