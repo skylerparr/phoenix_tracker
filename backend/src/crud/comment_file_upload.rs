@@ -132,6 +132,22 @@ impl CommentFileUploadCrud {
             .await
     }
 
+    // New helper: return FileUpload models for a given comment id
+    pub async fn find_uploads_by_comment_id(
+        &self,
+        comment_id: i32,
+    ) -> Result<Vec<file_upload::Model>, DbErr> {
+        file_upload::Entity::find()
+            .join(
+                JoinType::InnerJoin,
+                file_upload::Relation::CommentFileUpload.def(),
+            )
+            .filter(comment_file_upload::Column::CommentId.eq(comment_id))
+            .order_by_asc(file_upload::Column::UploadedAt)
+            .all(&self.app_state.db)
+            .await
+    }
+
     pub async fn delete(
         &self,
         comment_id: i32,

@@ -1,4 +1,6 @@
 use crate::crud::comment::CommentCrud;
+use crate::crud::comment_file_upload::CommentFileUploadCrud;
+use crate::entities::{comment, file_upload};
 use crate::AppState;
 use axum::Extension;
 use axum::{
@@ -8,7 +10,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tracing::debug;
 
 #[derive(Deserialize)]
@@ -22,6 +24,13 @@ pub struct CreateCommentRequest {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateCommentRequest {
     content: String,
+}
+
+#[derive(Serialize)]
+pub struct CommentResponse {
+    #[serde(flatten)]
+    pub comment: comment::Model,
+    pub uploads: Vec<file_upload::Model>,
 }
 
 pub fn comment_routes() -> Router<AppState> {
@@ -41,12 +50,22 @@ async fn create_comment(
     Json(payload): Json<CreateCommentRequest>,
 ) -> impl IntoResponse {
     let user_id = app_state.user.as_ref().unwrap().id;
-    let comment_crud = CommentCrud::new(app_state);
+    let comment_crud = CommentCrud::new(app_state.clone());
+    let upload_crud = CommentFileUploadCrud::new(app_state);
     match comment_crud
         .create(payload.content, payload.issue_id, user_id)
         .await
     {
-        Ok(comment) => Ok(Json(comment)),
+        Ok(comment) => match upload_crud.find_uploads_by_comment_id(comment.id).await {
+            Ok(uploads) => Ok(Json(CommentResponse { comment, uploads })),
+            Err(e) => {
+                debug!("Error loading uploads for new comment: {:?}", e);
+                Ok(Json(CommentResponse {
+                    comment,
+                    uploads: vec![],
+                }))
+            }
+        },
         Err(e) => {
             debug!("Error creating comment: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
@@ -59,9 +78,19 @@ async fn get_comment(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
-    let comment_crud = CommentCrud::new(app_state);
+    let comment_crud = CommentCrud::new(app_state.clone());
+    let upload_crud = CommentFileUploadCrud::new(app_state);
     match comment_crud.find_by_id(id).await {
-        Ok(Some(comment)) => Ok(Json(comment)),
+        Ok(Some(comment)) => match upload_crud.find_uploads_by_comment_id(comment.id).await {
+            Ok(uploads) => Ok(Json(CommentResponse { comment, uploads })),
+            Err(e) => {
+                debug!("Error loading uploads for comment {}: {:?}", id, e);
+                Ok(Json(CommentResponse {
+                    comment,
+                    uploads: vec![],
+                }))
+            }
+        },
         Ok(None) => Err(StatusCode::NOT_FOUND),
         Err(e) => {
             debug!("Error getting comment {}: {:?}", id, e);
@@ -75,9 +104,28 @@ async fn get_comments_by_issue(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
-    let comment_crud = CommentCrud::new(app_state);
+    let comment_crud = CommentCrud::new(app_state.clone());
+    let upload_crud = CommentFileUploadCrud::new(app_state);
     match comment_crud.find_by_issue_id(id).await {
-        Ok(comments) => Ok(Json(comments)),
+        Ok(comments) => {
+            let mut enriched: Vec<CommentResponse> = Vec::with_capacity(comments.len());
+            for c in comments {
+                match upload_crud.find_uploads_by_comment_id(c.id).await {
+                    Ok(uploads) => enriched.push(CommentResponse {
+                        comment: c,
+                        uploads,
+                    }),
+                    Err(e) => {
+                        debug!("Error loading uploads for comment {}: {:?}", c.id, e);
+                        enriched.push(CommentResponse {
+                            comment: c,
+                            uploads: vec![],
+                        });
+                    }
+                }
+            }
+            Ok(Json(enriched))
+        }
         Err(e) => {
             debug!("Error getting comments for issue {}: {:?}", id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
@@ -90,9 +138,28 @@ async fn get_comments_by_user(
     Extension(app_state): Extension<AppState>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
-    let comment_crud = CommentCrud::new(app_state);
+    let comment_crud = CommentCrud::new(app_state.clone());
+    let upload_crud = CommentFileUploadCrud::new(app_state);
     match comment_crud.find_by_user_id(id).await {
-        Ok(comments) => Ok(Json(comments)),
+        Ok(comments) => {
+            let mut enriched: Vec<CommentResponse> = Vec::with_capacity(comments.len());
+            for c in comments {
+                match upload_crud.find_uploads_by_comment_id(c.id).await {
+                    Ok(uploads) => enriched.push(CommentResponse {
+                        comment: c,
+                        uploads,
+                    }),
+                    Err(e) => {
+                        debug!("Error loading uploads for comment {}: {:?}", c.id, e);
+                        enriched.push(CommentResponse {
+                            comment: c,
+                            uploads: vec![],
+                        });
+                    }
+                }
+            }
+            Ok(Json(enriched))
+        }
         Err(e) => {
             debug!("Error getting comments for user {}: {:?}", id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
@@ -106,9 +173,19 @@ async fn update_comment(
     Path(id): Path<i32>,
     Json(payload): Json<UpdateCommentRequest>,
 ) -> impl IntoResponse {
-    let comment_crud = CommentCrud::new(app_state);
+    let comment_crud = CommentCrud::new(app_state.clone());
+    let upload_crud = CommentFileUploadCrud::new(app_state);
     match comment_crud.update(id, payload.content).await {
-        Ok(comment) => Ok(Json(comment)),
+        Ok(comment) => match upload_crud.find_uploads_by_comment_id(comment.id).await {
+            Ok(uploads) => Ok(Json(CommentResponse { comment, uploads })),
+            Err(e) => {
+                debug!("Error loading uploads for comment {}: {:?}", id, e);
+                Ok(Json(CommentResponse {
+                    comment,
+                    uploads: vec![],
+                }))
+            }
+        },
         Err(e) => {
             debug!("Error updating comment {}: {:?}", id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
