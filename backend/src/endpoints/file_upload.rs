@@ -2,17 +2,16 @@ use crate::crud::comment_file_upload::CommentFileUploadCrud;
 use crate::crud::file_upload::FileUploadCrud;
 use crate::crud::issue::IssueCrud;
 use crate::crud::project_note::ProjectNoteCrud;
-use crate::entities::file_upload;
 use crate::AppState;
 use axum::extract::{Multipart, Path};
 use axum::http::header::CONTENT_TYPE;
 use axum::http::{HeaderValue, StatusCode};
 use axum::response::IntoResponse;
-use axum::routing::{delete, get, post};
+use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use std::env;
 use std::path::PathBuf;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 pub fn file_upload_routes() -> Router<AppState> {
     Router::new()
@@ -31,6 +30,11 @@ pub fn file_upload_routes() -> Router<AppState> {
         .route(
             "/comments/:comment_id/uploads/:file_upload_id",
             post(attach_upload_to_comment).delete(detach_upload_from_comment),
+        )
+        // File upload perspective: attach an existing upload to a comment
+        .route(
+            "/uploads/:file_upload_id/comments/:comment_id",
+            post(file_upload_attach_to_comment),
         )
         // Single upload actions
         .route("/uploads/:id", get(download_upload).delete(delete_upload))
@@ -141,6 +145,24 @@ async fn detach_upload_from_comment(
         Err(e) => {
             warn!(
                 "Error detaching upload {} from comment {}: {:?}",
+                file_upload_id, comment_id, e
+            );
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+#[axum::debug_handler]
+async fn file_upload_attach_to_comment(
+    Extension(app_state): Extension<AppState>,
+    Path((file_upload_id, comment_id)): Path<(i32, i32)>,
+) -> impl IntoResponse {
+    let crud = CommentFileUploadCrud::new(app_state);
+    match crud.create(comment_id, file_upload_id).await {
+        Ok(mapping) => Ok(Json(mapping)),
+        Err(e) => {
+            warn!(
+                "Error attaching upload {} to comment {} via uploads route: {:?}",
                 file_upload_id, comment_id, e
             );
             Err(StatusCode::INTERNAL_SERVER_ERROR)

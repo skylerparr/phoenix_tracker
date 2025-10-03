@@ -1,5 +1,15 @@
 import React, { useState, useRef } from "react";
-import { Typography, Stack, Button, Box, IconButton, Alert, Chip, CircularProgress, Paper } from "@mui/material";
+import {
+  Typography,
+  Stack,
+  Button,
+  Box,
+  IconButton,
+  Alert,
+  Chip,
+  CircularProgress,
+  Paper,
+} from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
@@ -10,10 +20,12 @@ import CloseIcon from "@mui/icons-material/Close";
 import { Comment } from "../models/Comment";
 import { User } from "../models/User";
 import { commentService } from "../services/CommentService";
+import { uploadService } from "../services/UploadService";
 import MarkdownEditor from "./common/MarkdownEditor";
 import MDEditor from "@uiw/react-md-editor";
 import remarkGfm from "remark-gfm";
 import { useDragDropUpload } from "../hooks/useDragDropUpload";
+import { FileUpload } from "../models/FileUpload";
 
 interface IssueCommentsProps {
   issueId: number;
@@ -45,21 +57,37 @@ const IssueComments: React.FC<IssueCommentsProps> = ({
     removeUploadedFile,
   } = useDragDropUpload({
     issueId,
-    onUploadSuccess: (files) => {
+    onUploadSuccess: (files: FileUpload[]) => {
       // You can add logic here to handle successful uploads
-      console.log('Files uploaded successfully:', files);
+      console.log("Files uploaded successfully:", files);
     },
     onUploadError: (error) => {
-      console.error('Upload error:', error);
+      console.error("Upload error:", error);
     },
   });
 
   const handlePostComment = async () => {
-    await commentService.createComment({
-      issueId: issueId,
-      content: comment,
-    });
-    setComment("");
+    try {
+      const newComment = await commentService.createComment({
+        issueId: issueId,
+        content: comment,
+      });
+
+      if (uploadedFiles.length > 0) {
+        // Attach each uploaded file to the newly created comment
+        await Promise.all(
+          uploadedFiles.map((file) =>
+            uploadService.attachToComment(newComment.id, file.id),
+          ),
+        );
+        // Optionally clear attached files from the UI after successful attachment
+        uploadedFiles.forEach((file) => removeUploadedFile(file.id));
+      }
+
+      setComment("");
+    } catch (err) {
+      console.error("Failed to post comment or attach files:", err);
+    }
   };
 
   const handleEditComment = (commentToEdit: Comment) => {
@@ -175,32 +203,34 @@ const IssueComments: React.FC<IssueCommentsProps> = ({
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         sx={{
-          position: 'relative',
-          border: isDragging ? '2px dashed #1976d2' : '2px dashed transparent',
-          borderRadius: '4px',
-          padding: isDragging ? '8px' : '0',
-          backgroundColor: isDragging ? 'rgba(25, 118, 210, 0.05)' : 'transparent',
-          transition: 'all 0.3s ease',
+          position: "relative",
+          border: isDragging ? "2px dashed #1976d2" : "2px dashed transparent",
+          borderRadius: "4px",
+          padding: isDragging ? "8px" : "0",
+          backgroundColor: isDragging
+            ? "rgba(25, 118, 210, 0.05)"
+            : "transparent",
+          transition: "all 0.3s ease",
         }}
       >
         {isDragging && (
           <Paper
             sx={{
-              position: 'absolute',
+              position: "absolute",
               top: 0,
               left: 0,
               right: 0,
               bottom: 0,
               zIndex: 10,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              borderRadius: '4px',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "rgba(255, 255, 255, 0.95)",
+              borderRadius: "4px",
             }}
           >
             <Stack alignItems="center" spacing={2}>
-              <CloudUploadIcon sx={{ fontSize: 48, color: '#1976d2' }} />
+              <CloudUploadIcon sx={{ fontSize: 48, color: "#1976d2" }} />
               <Typography variant="h6" color="primary">
                 Drop files here to upload
               </Typography>
@@ -223,9 +253,9 @@ const IssueComments: React.FC<IssueCommentsProps> = ({
       {errors.length > 0 && (
         <Box sx={{ mt: 2 }}>
           {errors.map((error, index) => (
-            <Alert 
-              key={index} 
-              severity="error" 
+            <Alert
+              key={index}
+              severity="error"
               onClose={clearErrors}
               sx={{ mb: 1 }}
             >
@@ -238,7 +268,7 @@ const IssueComments: React.FC<IssueCommentsProps> = ({
       {/* Uploaded files display */}
       {uploadedFiles.length > 0 && (
         <Box sx={{ mt: 2 }}>
-          <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>
+          <Typography variant="body2" sx={{ mb: 1, fontWeight: "bold" }}>
             Attached Files:
           </Typography>
           <Stack direction="row" flexWrap="wrap" gap={1}>
@@ -258,27 +288,36 @@ const IssueComments: React.FC<IssueCommentsProps> = ({
       )}
 
       {/* File input and buttons */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mt: 2,
+        }}
+      >
         <Box>
           <input
             ref={fileInputRef}
             type="file"
             multiple
-            style={{ display: 'none' }}
+            style={{ display: "none" }}
             onChange={(e) => handleFileSelect(e.target.files)}
             accept=".pdf,.txt,.png,.jpg,.jpeg,.svg,.docx,.doc,.xlsx,.xls,.json,.md"
           />
           <Button
             variant="outlined"
-            startIcon={isUploading ? <CircularProgress size={16} /> : <AttachFileIcon />}
+            startIcon={
+              isUploading ? <CircularProgress size={16} /> : <AttachFileIcon />
+            }
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            sx={{ color: 'black', borderColor: 'black' }}
+            sx={{ color: "black", borderColor: "black" }}
           >
-            {isUploading ? 'Uploading...' : 'Attach Files'}
+            {isUploading ? "Uploading..." : "Attach Files"}
           </Button>
         </Box>
-        
+
         <Button
           variant="contained"
           disabled={!comment || comment.length < 2 || isUploading}

@@ -153,7 +153,7 @@ export class UploadService extends BaseService<FileUpload> {
     fileUploadId: number,
   ): Promise<CommentFileUploadMapping> {
     const response = await fetch(
-      `${API_BASE_URL}/api/comments/${commentId}/uploads/${fileUploadId}`,
+      `${API_BASE_URL}/api/uploads/${fileUploadId}/comments/${commentId}`,
       {
         method: "POST",
         headers: this.getHeaders(),
