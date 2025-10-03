@@ -26,14 +26,13 @@ import MDEditor from "@uiw/react-md-editor";
 import remarkGfm from "remark-gfm";
 import { useDragDropUpload } from "../hooks/useDragDropUpload";
 import { FileUpload } from "../models/FileUpload";
+import UploadItem from "./UploadItem";
 
-const formatBytes = (bytes: number): string => {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
-};
+interface IssueCommentsProps {
+  issueId: number;
+  comments: Comment[];
+  users: User[];
+}
 
 interface IssueCommentsProps {
   issueId: number;
@@ -205,51 +204,12 @@ const IssueComments: React.FC<IssueCommentsProps> = ({
               <Box sx={{ mt: 1 }}>
                 <Stack direction="row" gap={2} flexWrap="wrap">
                   {comment.uploads.map((u) => (
-                    <Box key={u.id} sx={{ width: 160 }}>
-                      <Box
-                        sx={{
-                          border: "1px solid #ddd",
-                          borderRadius: "8px",
-                          p: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          minHeight: 64,
-                          backgroundColor: "#fafafa",
-                        }}
-                      >
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "#555",
-                            textAlign: "center",
-                            wordBreak: "break-word",
-                          }}
-                        >
-                          {u.mimeType}
-                        </Typography>
-                      </Box>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          mt: 0.5,
-                          fontWeight: 500,
-                          color: "#333",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {u.originalFilename}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: "#666" }}>
-                        {formatBytes(u.sizeBytes)}
-                      </Typography>
-                    </Box>
+                    <UploadItem key={u.id} upload={u} />
                   ))}
                 </Stack>
               </Box>
             )}
           </Stack>
-          <hr />
         </React.Fragment>
       ))}
 
