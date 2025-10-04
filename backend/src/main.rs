@@ -21,6 +21,7 @@ use endpoints::{
     project_note::project_note_routes, tag::tag_routes, task::task_routes, user::user_routes,
 };
 use sea_orm::{Database, DatabaseConnection};
+use serde::Deserialize;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Instant;
@@ -74,15 +75,33 @@ async fn auth_middleware(
     }
 
     // All other routes require a valid JWT. We set the user for all, and set project if present in claims.
-    let auth_header = req
+    let mut auth_header: Option<String> = req
         .headers()
         .get(AUTHORIZATION)
-        .and_then(|value| value.to_str().ok());
+        .and_then(|value| value.to_str().ok())
+        .map(|s| s.to_string());
+
+    if path.starts_with("/api/uploads/assets") {
+        let query = req.uri().query();
+        if let Some(query_str) = query {
+            #[derive(Deserialize)]
+            struct QueryParams {
+                token: Option<String>,
+            }
+
+            let params: QueryParams =
+                serde_urlencoded::from_str(query_str).map_err(|_| StatusCode::UNAUTHORIZED)?;
+
+            auth_header = Some(format!("Bearer {}", params.token.unwrap()));
+        }
+    }
 
     if let Some(auth_header_value) = auth_header {
         debug!("Authorization header value: {}", auth_header_value);
 
-        if let Some(token) = JwtService::extract_bearer_token(auth_header_value) {
+        if let Some(token) = JwtService::extract_bearer_token(&auth_header_value) {
+            debug!("Authorization header value: {}", auth_header_value);
+
             let jwt_service = JwtService::new();
             match jwt_service.validate_token(token) {
                 Ok(claims) => {

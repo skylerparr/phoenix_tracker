@@ -1,4 +1,5 @@
 use crate::crud::event_broadcaster::{EventBroadcaster, ISSUE_UPDATED};
+use crate::crud::file_upload::FileUploadCrud;
 use crate::crud::history::HistoryCrud;
 use crate::entities::{comment, comment_file_upload, file_upload};
 use crate::AppState;
@@ -137,7 +138,7 @@ impl CommentFileUploadCrud {
         &self,
         comment_id: i32,
     ) -> Result<Vec<file_upload::Model>, DbErr> {
-        file_upload::Entity::find()
+        let mut uploads = file_upload::Entity::find()
             .join(
                 JoinType::InnerJoin,
                 file_upload::Relation::CommentFileUpload.def(),
@@ -145,7 +146,17 @@ impl CommentFileUploadCrud {
             .filter(comment_file_upload::Column::CommentId.eq(comment_id))
             .order_by_asc(file_upload::Column::UploadedAt)
             .all(&self.app_state.db)
-            .await
+            .await?;
+
+        // Populate browser-accessible URLs
+        let file_crud = FileUploadCrud::new(self.app_state.clone());
+        for u in &mut uploads {
+            if u.full_url.is_none() {
+                u.full_url = Some(file_crud.generate_browser_url(u).await?);
+            }
+        }
+
+        Ok(uploads)
     }
 
     pub async fn delete(

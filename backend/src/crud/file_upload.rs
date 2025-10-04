@@ -17,6 +17,39 @@ impl FileUploadCrud {
         Self { app_state }
     }
 
+    // Generate a browser-accessible URL for a given upload.
+    // - local: backend serves the file via authorized endpoint
+    // - aws: TODO implement presigned S3 URL
+    pub async fn generate_browser_url(&self, upload: &file_upload::Model) -> Result<String, DbErr> {
+        let scheme = env::var("FILE_STORE_SCHEME").unwrap_or_else(|_| "local".to_string());
+        match scheme.as_str() {
+            "local" => {
+                // Construct full URL if PUBLIC_BASE_URL provided; otherwise use http://localhost:{PORT}
+                let base = env::var("PUBLIC_BASE_URL").unwrap_or_else(|_| {
+                    let port = env::var("PORT")
+                        .ok()
+                        .and_then(|p| p.parse::<u16>().ok())
+                        .unwrap_or(3001);
+                    format!("http://localhost:{}", port)
+                });
+                // Serve the actual asset via the public API route; include final filename for nicer URLs
+                Ok(format!(
+                    "{}/api/uploads/assets/{}/{}",
+                    base.trim_end_matches('/'),
+                    upload.id,
+                    upload.final_filename
+                ))
+            }
+            "aws" => Err(DbErr::Custom(
+                "TODO: implement AWS presigned URL generation".to_string(),
+            )),
+            other => Err(DbErr::Custom(format!(
+                "Unsupported FILE_STORE_SCHEME for URL generation: {}",
+                other
+            ))),
+        }
+    }
+
     // Create for Issue using in-memory bytes (multipart should assemble into bytes before calling)
     pub async fn create_for_issue_from_bytes(
         &self,
@@ -59,28 +92,46 @@ impl FileUploadCrud {
 
     // Finders
     pub async fn find_by_id(&self, id: i32) -> Result<Option<file_upload::Model>, DbErr> {
-        file_upload::Entity::find_by_id(id)
+        let mut result = file_upload::Entity::find_by_id(id)
             .one(&self.app_state.db)
-            .await
+            .await?;
+        if let Some(ref mut model) = result {
+            if model.full_url.is_none() {
+                model.full_url = Some(self.generate_browser_url(model).await?);
+            }
+        }
+        Ok(result)
     }
 
     pub async fn find_by_issue_id(&self, issue_id: i32) -> Result<Vec<file_upload::Model>, DbErr> {
-        file_upload::Entity::find()
+        let mut items = file_upload::Entity::find()
             .filter(file_upload::Column::IssueId.eq(issue_id))
             .order_by_asc(file_upload::Column::UploadedAt)
             .all(&self.app_state.db)
-            .await
+            .await?;
+        for m in &mut items {
+            if m.full_url.is_none() {
+                m.full_url = Some(self.generate_browser_url(m).await?);
+            }
+        }
+        Ok(items)
     }
 
     pub async fn find_by_project_note_id(
         &self,
         project_note_id: i32,
     ) -> Result<Vec<file_upload::Model>, DbErr> {
-        file_upload::Entity::find()
+        let mut items = file_upload::Entity::find()
             .filter(file_upload::Column::ProjectNoteId.eq(project_note_id))
             .order_by_asc(file_upload::Column::UploadedAt)
             .all(&self.app_state.db)
-            .await
+            .await?;
+        for m in &mut items {
+            if m.full_url.is_none() {
+                m.full_url = Some(self.generate_browser_url(m).await?);
+            }
+        }
+        Ok(items)
     }
 
     // Delete: remove object from store and DB
@@ -186,7 +237,11 @@ impl FileUploadCrud {
         })?;
 
         txn.commit().await?;
-        Ok(result)
+
+        // Populate browser URL before returning
+        let mut model = result;
+        model.full_url = Some(self.generate_browser_url(&model).await?);
+        Ok(model)
     }
 }
 
@@ -200,7 +255,7 @@ struct FileStore {
 #[derive(Clone)]
 enum FileStoreInner {
     Local(LocalFileStore),
-    Aws, // stub only; returns errors until implemented
+    Aws, // stub only; not implemented yet
 }
 
 impl FileStore {
@@ -234,7 +289,7 @@ impl FileStore {
             FileStoreInner::Local(s) => s.exists(storage_key).await,
             FileStoreInner::Aws => Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
-                "AWS store not enabled in this build",
+                "AWS exists() not implemented",
             )),
         }
     }
@@ -251,7 +306,7 @@ impl FileStore {
             FileStoreInner::Local(s) => s.put(storage_key, bytes).await,
             FileStoreInner::Aws => Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
-                "AWS store not enabled in this build",
+                "AWS put() not implemented",
             )),
         }
     }
@@ -261,7 +316,7 @@ impl FileStore {
             FileStoreInner::Local(s) => s.delete(storage_key).await,
             FileStoreInner::Aws => Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
-                "AWS store not enabled in this build",
+                "AWS delete() not implemented",
             )),
         }
     }

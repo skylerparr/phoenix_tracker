@@ -4,7 +4,7 @@ use crate::crud::issue::IssueCrud;
 use crate::crud::project_note::ProjectNoteCrud;
 use crate::AppState;
 use axum::extract::{Multipart, Path};
-use axum::http::header::CONTENT_TYPE;
+use axum::http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
 use axum::http::{HeaderValue, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
@@ -38,6 +38,8 @@ pub fn file_upload_routes() -> Router<AppState> {
         )
         // Single upload actions
         .route("/uploads/:id", get(download_upload).delete(delete_upload))
+        // Named file route for nicer URLs (filename is ignored for lookup)
+        .route("/uploads/assets/:id/:filename", get(download_upload_named))
 }
 
 #[axum::debug_handler]
@@ -349,7 +351,11 @@ async fn download_upload(
                 Ok(bytes) => {
                     let ct = HeaderValue::from_str(&upload.mime_type)
                         .unwrap_or(HeaderValue::from_static("application/octet-stream"));
-                    Ok(([(CONTENT_TYPE, ct)], bytes).into_response())
+                    // Suggest inline display with a sensible filename
+                    let cd_val = format!("inline; filename=\"{}\"", upload.final_filename);
+                    let cd = HeaderValue::from_str(&cd_val)
+                        .unwrap_or(HeaderValue::from_static("inline"));
+                    Ok(([(CONTENT_TYPE, ct), (CONTENT_DISPOSITION, cd)], bytes).into_response())
                 }
                 Err(e) => {
                     warn!("Failed to read local file for upload {}: {:?}", id, e);
@@ -363,6 +369,16 @@ async fn download_upload(
         }
         _ => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
+}
+
+#[axum::debug_handler]
+async fn download_upload_named(
+    Extension(app_state): Extension<AppState>,
+    Path((id, _filename)): Path<(i32, String)>,
+) -> impl IntoResponse {
+    // Reuse the same logic as download_upload by delegating to it semantically
+    // This duplication ensures predictable handler signatures for Axum
+    download_upload(Extension(app_state), Path(id)).await
 }
 
 #[axum::debug_handler]

@@ -15,6 +15,10 @@ pub struct Model {
     pub mime_type: String,
     pub size_bytes: i64,
     pub uploaded_at: DateTimeWithTimeZone,
+
+    // Full browser-accessible URL (local: backend download route; aws: presigned S3 URL)
+    #[sea_orm(ignore)]
+    pub full_url: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
