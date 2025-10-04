@@ -9,6 +9,7 @@ export class FileUpload {
   mimeType: string;
   sizeBytes: number;
   uploadedAt: Date;
+  fullUrl: string;
 
   constructor(data: any) {
     this.id = data.id;
@@ -21,5 +22,6 @@ export class FileUpload {
     this.mimeType = data.mime_type;
     this.sizeBytes = data.size_bytes;
     this.uploadedAt = new Date(data.uploaded_at);
+    this.fullUrl = data.full_url;
   }
 }

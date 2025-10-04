@@ -15,6 +15,8 @@ interface UploadItemProps {
 }
 
 const UploadItem: React.FC<UploadItemProps> = ({ upload: u }) => {
+  const isImage = u.mimeType.startsWith("image/");
+
   return (
     <Box sx={{ width: 160 }}>
       <Box
@@ -27,14 +29,31 @@ const UploadItem: React.FC<UploadItemProps> = ({ upload: u }) => {
           justifyContent: "center",
           minHeight: 64,
           backgroundColor: "#fafafa",
+          overflow: "hidden",
         }}
       >
-        <Typography
-          variant="caption"
-          sx={{ color: "#555", textAlign: "center", wordBreak: "break-word" }}
-        >
-          {u.mimeType}
-        </Typography>
+        {isImage && u.fullUrl ? (
+          <Box
+            component="img"
+            src={u.fullUrl}
+            alt={u.originalFilename}
+            loading="lazy"
+            sx={{
+              maxWidth: "100%",
+              maxHeight: 64,
+              objectFit: "contain",
+              borderRadius: "4px",
+              display: "block",
+            }}
+          />
+        ) : (
+          <Typography
+            variant="caption"
+            sx={{ color: "#555", textAlign: "center", wordBreak: "break-word" }}
+          >
+            {u.mimeType}
+          </Typography>
+        )}
       </Box>
       <Typography
         variant="body2"

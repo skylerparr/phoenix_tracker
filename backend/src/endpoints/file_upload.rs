@@ -437,7 +437,7 @@ async fn delete_upload(
 async fn extract_file_from_multipart(
     multipart: &mut Multipart,
 ) -> Result<(Vec<u8>, String, String), StatusCode> {
-    while let Some(field) = multipart
+    while let Some(mut field) = multipart
         .next_field()
         .await
         .map_err(|_| StatusCode::BAD_REQUEST)?
@@ -464,19 +464,18 @@ async fn extract_file_from_multipart(
 }
 
 fn is_allowed_mime(mime: &str) -> bool {
+    // Allow all common MIME types per MDN by permitting standard top-level types
+    // See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/MIME_types/Common_types
+    // We accept any value with a known top-level type and a non-empty subtype.
+    let main = mime.split(';').next().unwrap_or("").trim();
+    let mut parts = main.split('/');
+    let top = parts.next().unwrap_or("").trim().to_ascii_lowercase();
+    let sub = parts.next().unwrap_or("").trim();
+    if sub.is_empty() {
+        return false;
+    }
     matches!(
-        mime,
-        "application/pdf"
-            | "text/plain"
-            | "image/png"
-            | "image/jpeg"
-            | "image/jpg"
-            | "image/svg+xml"
-            | "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            | "application/msword"
-            | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            | "application/vnd.ms-excel"
-            | "application/json"
-            | "text/markdown"
+        top.as_str(),
+        "application" | "audio" | "font" | "image" | "model" | "text" | "video"
     )
 }

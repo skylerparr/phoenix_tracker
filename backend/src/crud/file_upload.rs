@@ -406,19 +406,82 @@ fn derive_extension(original_filename: &str, mime_type: &str) -> String {
             return e;
         }
     }
-    // Fallback from mime
+    // Fallback from mime (best-effort mapping of common MDN types)
     match mime_type {
-        "application/pdf" => "pdf".into(),
-        "application/json" => "json".into(),
+        // Text
         "text/plain" => "txt".into(),
+        "text/markdown" => "md".into(),
+        "text/html" => "html".into(),
+        "text/css" => "css".into(),
+        "text/csv" => "csv".into(),
+        "text/xml" => "xml".into(),
+        "application/xml" => "xml".into(),
+        "application/json" => "json".into(),
+        "application/javascript" | "text/javascript" => "js".into(),
+
+        // Images
         "image/png" => "png".into(),
-        "image/jpeg" => "jpg".into(),
-        "image/jpg" => "jpg".into(),
+        "image/jpeg" | "image/jpg" => "jpg".into(),
+        "image/gif" => "gif".into(),
+        "image/webp" => "webp".into(),
+        "image/bmp" => "bmp".into(),
+        "image/tiff" => "tiff".into(),
         "image/svg+xml" => "svg".into(),
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => "docx".into(),
+        "image/x-icon" | "image/vnd.microsoft.icon" => "ico".into(),
+        "image/avif" => "avif".into(),
+
+        // Audio
+        "audio/mpeg" => "mp3".into(),
+        "audio/ogg" => "ogg".into(),
+        "audio/wav" | "audio/wave" | "audio/x-wav" => "wav".into(),
+        "audio/webm" => "webm".into(),
+        "audio/aac" => "aac".into(),
+        "audio/midi" | "audio/x-midi" => "mid".into(),
+
+        // Video
+        "video/mp4" => "mp4".into(),
+        "video/webm" => "webm".into(),
+        "video/ogg" => "ogv".into(),
+        "video/x-msvideo" => "avi".into(),
+        "video/quicktime" => "mov".into(),
+        "video/x-matroska" => "mkv".into(),
+
+        // Documents
+        "application/pdf" => "pdf".into(),
         "application/msword" => "doc".into(),
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => "xlsx".into(),
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => "docx".into(),
         "application/vnd.ms-excel" => "xls".into(),
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => "xlsx".into(),
+        "application/vnd.ms-powerpoint" => "ppt".into(),
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation" => {
+            "pptx".into()
+        }
+        "application/rtf" => "rtf".into(),
+        "application/vnd.oasis.opendocument.text" => "odt".into(),
+        "application/vnd.oasis.opendocument.spreadsheet" => "ods".into(),
+        "application/vnd.oasis.opendocument.presentation" => "odp".into(),
+
+        // Archives and binaries
+        "application/zip" => "zip".into(),
+        "application/gzip" => "gz".into(),
+        "application/x-7z-compressed" => "7z".into(),
+        "application/x-rar-compressed" | "application/vnd.rar" => "rar".into(),
+        "application/x-tar" => "tar".into(),
+        "application/x-bzip" => "bz".into(),
+        "application/x-bzip2" => "bz2".into(),
+        "application/octet-stream" => "bin".into(),
+
+        // Fonts
+        "font/ttf" => "ttf".into(),
+        "font/otf" => "otf".into(),
+        "font/woff" => "woff".into(),
+        "font/woff2" => "woff2".into(),
+
+        // 3D/model
+        "model/3mf" => "3mf".into(),
+        "model/gltf+json" => "gltf".into(),
+        "model/gltf-binary" => "glb".into(),
+
         _ => "bin".into(),
     }
 }

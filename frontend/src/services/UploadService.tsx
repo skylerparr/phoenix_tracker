@@ -228,24 +228,24 @@ export class UploadService extends BaseService<FileUpload> {
 
   /**
    * Helper method to validate file MIME type before upload
+   * Allow all common MDN MIME types by accepting any standard top-level type with a non-empty subtype.
+   * Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/MIME_types/Common_types
    */
   isAllowedMimeType(mimeType: string): boolean {
-    const allowedTypes = [
-      "application/pdf",
-      "text/plain",
-      "image/png",
-      "image/jpeg",
-      "image/jpg",
-      "image/svg+xml",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/vnd.ms-excel",
-      "application/json",
-      "text/markdown",
-    ];
-
-    return allowedTypes.includes(mimeType);
+    if (!mimeType || typeof mimeType !== "string") return false;
+    const main = mimeType.split(";")[0].trim();
+    const [top, sub] = main.split("/");
+    if (!top || !sub) return false;
+    const allowedTop = new Set([
+      "application",
+      "audio",
+      "font",
+      "image",
+      "model",
+      "text",
+      "video",
+    ]);
+    return allowedTop.has(top.toLowerCase()) && sub.trim().length > 0;
   }
 
   /**

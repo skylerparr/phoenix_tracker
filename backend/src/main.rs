@@ -2,6 +2,7 @@ use crate::crud::project::ProjectCrud;
 use crate::crud::user::UserCrud;
 use crate::jwt::JwtService;
 use axum::body::Body;
+use axum::extract::DefaultBodyLimit;
 use axum::extract::Request;
 use axum::http::header::AUTHORIZATION;
 use axum::http::StatusCode;
@@ -203,6 +204,7 @@ fn main() {
         };
 
         let api_routes = Router::new()
+            .layer(DefaultBodyLimit::disable())
             .merge(auth_routes())
             .merge(user_routes())
             .merge(issue_routes())
@@ -234,11 +236,13 @@ fn main() {
                 auth_middleware,
             ))
             .layer(cors.clone())
+            .layer(DefaultBodyLimit::disable())
             .with_state(app_state.clone());
 
         let app = Router::new()
             .merge(api_router)
             .fallback_service(static_router.clone())
+            .layer(DefaultBodyLimit::disable())
             .layer(middleware::from_fn(logging_middleware))
             .layer(cors.clone());
 
