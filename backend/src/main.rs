@@ -44,6 +44,7 @@ pub struct AppState {
     pub tx: Arc<broadcast::Sender<String>>,
     pub user: Option<entities::user::Model>,
     pub project: Option<entities::project::Model>,
+    pub bearer_token: Option<String>,
 }
 
 async fn logging_middleware(req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
@@ -63,7 +64,7 @@ async fn logging_middleware(req: Request<Body>, next: Next) -> Result<Response, 
     Ok(response)
 }
 async fn auth_middleware(
-    State(app_state): State<AppState>,
+    State(mut app_state): State<AppState>,
     mut req: Request<Body>,
     next: Next,
 ) -> Result<Response, StatusCode> {
@@ -106,6 +107,8 @@ async fn auth_middleware(
             match jwt_service.validate_token(token) {
                 Ok(claims) => {
                     debug!("Valid JWT found, user_id: {}", claims.user_id);
+
+                    app_state.bearer_token = Some(token.to_string());
 
                     // Load user
                     let user_crud = UserCrud::new(app_state.clone());
@@ -196,6 +199,7 @@ fn main() {
             tx: tx.clone(),
             user: None,
             project: None,
+            bearer_token: None,
         };
 
         let api_routes = Router::new()

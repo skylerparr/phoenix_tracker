@@ -34,10 +34,11 @@ impl FileUploadCrud {
                 });
                 // Serve the actual asset via the public API route; include final filename for nicer URLs
                 Ok(format!(
-                    "{}/api/uploads/assets/{}/{}",
+                    "{}/api/uploads/assets/{}/{}?token={}",
                     base.trim_end_matches('/'),
                     upload.id,
-                    upload.final_filename
+                    upload.final_filename,
+                    self.app_state.bearer_token.clone().unwrap()
                 ))
             }
             "aws" => Err(DbErr::Custom(
