@@ -6,6 +6,7 @@ import { styled } from "@mui/material/styles";
 import Sidebar from "./navigation/Sidebar";
 import { MobileProvider } from "./context/MobileContext";
 import "./styles/mobile.css";
+import { PreviewOverlayProvider } from "./context/PreviewOverlayContext";
 
 const theme = createTheme({
   palette: {
@@ -42,17 +43,19 @@ const App: React.FC = () => {
       <CssBaseline />
       <GlobalStyles />
       <MobileProvider>
-        <Container
-          maxWidth={false}
-          disableGutters
-          sx={{
-            height: "100vh",
-            overflow: "hidden",
-            width: "100%",
-          }}
-        >
-          <Sidebar />
-        </Container>
+        <PreviewOverlayProvider>
+          <Container
+            maxWidth={false}
+            disableGutters
+            sx={{
+              height: "100vh",
+              overflow: "hidden",
+              width: "100%",
+            }}
+          >
+            <Sidebar />
+          </Container>
+        </PreviewOverlayProvider>
       </MobileProvider>
     </ThemeProvider>
   );

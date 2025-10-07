@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Typography, IconButton, Tooltip } from "@mui/material";
 import { FileUpload } from "../models/FileUpload";
 import { uploadService } from "../services/UploadService";
+import { usePreviewOverlay } from "../context/PreviewOverlayContext";
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return "0 B";
@@ -18,6 +19,33 @@ interface UploadItemProps {
 
 const UploadItem: React.FC<UploadItemProps> = ({ upload: u, onDeleted }) => {
   const isImage = u.mimeType.startsWith("image/");
+
+  const getExt = (name?: string) => {
+    if (!name) return "";
+    const idx = name.lastIndexOf(".");
+    return idx >= 0 ? name.substring(idx + 1).toLowerCase() : "";
+  };
+
+  const ext = getExt(u.originalFilename);
+  const isSvg = u.mimeType === "image/svg+xml" || ext === "svg";
+  const isMarkdown =
+    /markdown/.test(u.mimeType) || ext === "md" || ext === "markdown";
+  const isText =
+    u.mimeType.startsWith("text/") ||
+    ["json", "csv", "log", "txt"].includes(ext);
+  const isPreviewable =
+    Boolean(u.fullUrl) && (isImage || isSvg || isMarkdown || isText);
+
+  const { openPreview } = usePreviewOverlay();
+
+  const handleOpenPreview = () => {
+    if (!isPreviewable || !u.fullUrl) return;
+    openPreview({
+      url: u.fullUrl,
+      mimeType: u.mimeType,
+      filename: u.originalFilename,
+    });
+  };
 
   const handleDelete = async () => {
     const ok = window.confirm(
@@ -60,6 +88,7 @@ const UploadItem: React.FC<UploadItemProps> = ({ upload: u, onDeleted }) => {
   return (
     <Box sx={{ width: 160 }}>
       <Box
+        onClick={handleOpenPreview}
         sx={{
           border: "1px solid #ddd",
           borderRadius: "8px",
@@ -71,6 +100,7 @@ const UploadItem: React.FC<UploadItemProps> = ({ upload: u, onDeleted }) => {
           backgroundColor: "#fafafa",
           overflow: "hidden",
           position: "relative",
+          cursor: isPreviewable ? "pointer" : "default",
           "&:hover .delete-btn": {
             opacity: 1,
             transform: "translateY(0)",
@@ -110,7 +140,10 @@ const UploadItem: React.FC<UploadItemProps> = ({ upload: u, onDeleted }) => {
             className="download-btn"
             aria-label="Download attachment"
             size="small"
-            onClick={handleDownload}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownload();
+            }}
             sx={{
               position: "absolute",
               right: 36,
@@ -141,7 +174,10 @@ const UploadItem: React.FC<UploadItemProps> = ({ upload: u, onDeleted }) => {
             className="delete-btn"
             aria-label="Delete upload"
             size="small"
-            onClick={handleDelete}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete();
+            }}
             sx={{
               position: "absolute",
               right: 6,
@@ -184,6 +220,8 @@ const UploadItem: React.FC<UploadItemProps> = ({ upload: u, onDeleted }) => {
       <Typography variant="caption" sx={{ color: "#666" }}>
         {formatBytes(u.sizeBytes)}
       </Typography>
+
+      {/* Preview overlay is now global via PreviewOverlayProvider */}
     </Box>
   );
 };

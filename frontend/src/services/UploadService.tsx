@@ -256,7 +256,7 @@ export class UploadService extends BaseService<FileUpload> {
       return { valid: false, error: "File is empty" };
     }
 
-    if (!this.isAllowedMimeType(file.type)) {
+    if (!this.isAllowedMimeType(file.type) && !file.name.endsWith(".md")) {
       return {
         valid: false,
         error: `File type ${file.type} is not allowed`,
