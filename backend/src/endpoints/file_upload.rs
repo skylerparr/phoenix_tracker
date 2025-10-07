@@ -445,7 +445,7 @@ async fn delete_upload(
 async fn extract_file_from_multipart(
     multipart: &mut Multipart,
 ) -> Result<(Vec<u8>, String, String), StatusCode> {
-    while let Some(mut field) = multipart
+    while let Some(field) = multipart
         .next_field()
         .await
         .map_err(|_| StatusCode::BAD_REQUEST)?
