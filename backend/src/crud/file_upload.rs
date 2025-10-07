@@ -254,14 +254,6 @@ impl FileUploadCrud {
         Ok(())
     }
 
-    pub async fn delete_all_by_project_note_id(&self, project_note_id: i32) -> Result<(), DbErr> {
-        let uploads = self.find_by_project_note_id(project_note_id).await?;
-        for u in uploads {
-            self.delete(u.id).await?;
-        }
-        Ok(())
-    }
-
     // Internal create implementation per spec
     async fn create_impl(
         &self,

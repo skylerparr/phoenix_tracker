@@ -122,18 +122,6 @@ impl CommentFileUploadCrud {
             .await
     }
 
-    pub async fn find_by_file_upload_id(
-        &self,
-        file_upload_id: i32,
-    ) -> Result<Vec<comment_file_upload::Model>, DbErr> {
-        comment_file_upload::Entity::find()
-            .filter(comment_file_upload::Column::FileUploadId.eq(file_upload_id))
-            .order_by_asc(comment_file_upload::Column::CreatedAt)
-            .all(&self.app_state.db)
-            .await
-    }
-
-    // New helper: return FileUpload models for a given comment id
     pub async fn find_uploads_by_comment_id(
         &self,
         comment_id: i32,
@@ -205,13 +193,6 @@ impl CommentFileUploadCrud {
         }
 
         Ok(result)
-    }
-
-    pub async fn delete_all_by_comment_id(&self, comment_id: i32) -> Result<DeleteResult, DbErr> {
-        comment_file_upload::Entity::delete_many()
-            .filter(comment_file_upload::Column::CommentId.eq(comment_id))
-            .exec(&self.app_state.db)
-            .await
     }
 
     // Delete all mappings for a given file upload within an existing transaction
