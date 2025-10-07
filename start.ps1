@@ -7,7 +7,9 @@ $Env:DATABASE_URL="postgresql://postgres:postgres@postgres:5432/phoenix_tracker"
 $Env:FRONTEND_URL="http://localhost:4000"
 $Env:REACT_APP_API_BASE_URL="http://localhost:3001"
 $Env:FILE_STORE_SCHEME="local"
-$Env:BASE_FILE_PATH="/tmp"
+$Env:BASE_FILE_PATH="/phoenix-file-uploads"
+
+mkdir $Env:BASE_FILE_PATH
 
 # Print environment variables for debugging
 Write-Host "Environment variables set:"

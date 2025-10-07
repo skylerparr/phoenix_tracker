@@ -7,6 +7,7 @@ services:
     volumes:
       - ./backend:/app
       - ./data:/data
+      - ./phoenix-file-uploads:${BASE_FILE_PATH}
       - cargo-target:/app/target
       - cargo-registry:/usr/local/cargo/registry
     ports:

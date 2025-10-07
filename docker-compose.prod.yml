@@ -6,6 +6,7 @@ services:
       no_cache: true
     volumes:
       - ./backend/static:/usr/local/bin/static
+      - ./phoenix-file-uploads:${BASE_FILE_PATH}
     ports:
       - "3001:3001"
     environment:
@@ -16,3 +17,5 @@ services:
       - PORT=3001
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - WEBSOCKET_BUFFER_SIZE=${WEBSOCKET_BUFFER_SIZE:-1000}
+      - FILE_STORE_SCHEME=${FILE_STORE_SCHEME}
+      - BASE_FILE_PATH=${BASE_FILE_PATH}
