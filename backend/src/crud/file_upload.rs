@@ -1,5 +1,7 @@
+use crate::crud::comment_file_upload::CommentFileUploadCrud;
 use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::ISSUE_UPDATED;
+use crate::crud::history::HistoryCrud;
 use crate::crud::issue::IssueCrud;
 use crate::entities::file_upload;
 use crate::environment;
@@ -137,13 +139,37 @@ impl FileUploadCrud {
             return Ok(());
         };
 
+        // Remove any comment-file associations first to avoid FK issues
+        let cfu_crud = CommentFileUploadCrud::new(self.app_state.clone());
+        cfu_crud.delete_all_by_file_upload_id_txn(id, &txn).await?;
+
+        // Delete the DB record for the file upload
         file_upload::Entity::delete_by_id(id).exec(&txn).await?;
 
+        // Delete the underlying object from storage
         let store = FileStore::from_env()?;
         store.delete(&model.path).await.map_err(to_db_err)?;
 
+        // Commit the transaction
         txn.commit().await?;
 
+        // Create a history record for issue-scoped uploads
+        if let (Some(issue_id), Some(current_user_id)) =
+            (model.issue_id, self.app_state.user.as_ref().map(|u| u.id))
+        {
+            let history_crud = HistoryCrud::new(self.app_state.db.clone());
+            let _ = history_crud
+                .create(
+                    current_user_id,
+                    Some(issue_id),
+                    None,
+                    None,
+                    format!("deleted attachment '{}'", model.original_filename),
+                )
+                .await;
+        }
+
+        // Broadcast an issue update if applicable
         let project = self.app_state.project.clone();
         let project_id = project.unwrap().id;
 

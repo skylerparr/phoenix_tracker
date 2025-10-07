@@ -213,4 +213,16 @@ impl CommentFileUploadCrud {
             .exec(&self.app_state.db)
             .await
     }
+
+    // Delete all mappings for a given file upload within an existing transaction
+    pub async fn delete_all_by_file_upload_id_txn(
+        &self,
+        file_upload_id: i32,
+        txn: &DatabaseTransaction,
+    ) -> Result<DeleteResult, DbErr> {
+        comment_file_upload::Entity::delete_many()
+            .filter(comment_file_upload::Column::FileUploadId.eq(file_upload_id))
+            .exec(txn)
+            .await
+    }
 }
