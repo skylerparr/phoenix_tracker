@@ -1,3 +1,6 @@
+use crate::crud::event_broadcaster::EventBroadcaster;
+use crate::crud::event_broadcaster::ISSUE_UPDATED;
+use crate::crud::issue::IssueCrud;
 use crate::entities::file_upload;
 use crate::environment;
 use crate::AppState;
@@ -6,7 +9,6 @@ use sea_orm::*;
 use std::path::{Path, PathBuf};
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
-
 #[derive(Clone)]
 pub struct FileUploadCrud {
     app_state: AppState,
@@ -129,18 +131,32 @@ impl FileUploadCrud {
         Ok(items)
     }
 
-    // Delete: remove object from store and DB
     pub async fn delete(&self, id: i32) -> Result<(), DbErr> {
         let txn = self.app_state.db.begin().await?;
         let Some(model) = file_upload::Entity::find_by_id(id).one(&txn).await? else {
-            return Ok(()); // idempotent
+            return Ok(());
         };
+
+        file_upload::Entity::delete_by_id(id).exec(&txn).await?;
 
         let store = FileStore::from_env()?;
         store.delete(&model.path).await.map_err(to_db_err)?;
 
-        file_upload::Entity::delete_by_id(id).exec(&txn).await?;
         txn.commit().await?;
+
+        let project = self.app_state.project.clone();
+        let project_id = project.unwrap().id;
+
+        if let Some(issue_id) = model.issue_id {
+            if let Some(issue) = IssueCrud::new(self.app_state.clone())
+                .find_by_id(issue_id)
+                .await?
+            {
+                let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+                broadcaster.broadcast_event(project_id, ISSUE_UPDATED, serde_json::json!(issue));
+            }
+        }
+
         Ok(())
     }
 
