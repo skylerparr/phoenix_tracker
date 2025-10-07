@@ -2,6 +2,7 @@ use crate::crud::blocker::BlockerCrud;
 use crate::crud::comment::CommentCrud;
 use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::{ISSUE_CREATED, ISSUE_DELETED, ISSUE_UPDATED};
+use crate::crud::file_upload::FileUploadCrud;
 use crate::crud::history::HistoryCrud;
 use crate::crud::issue_assignee::IssueAssigneeCrud;
 use crate::crud::issue_tag::IssueTagCrud;
@@ -505,6 +506,10 @@ impl IssueCrud {
 
         let notification_crud = NotificationCrud::new(self.app_state.clone());
         notification_crud.delete_all_for_issue(id).await?;
+
+        // Delete all file uploads and their comment-file mappings for this issue
+        let file_upload_crud = FileUploadCrud::new(self.app_state.clone());
+        file_upload_crud.delete_all_by_issue_id(id).await?;
 
         let result = issue::Entity::delete_by_id(id)
             .exec(&self.app_state.db)

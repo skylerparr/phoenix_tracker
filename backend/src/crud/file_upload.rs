@@ -187,10 +187,38 @@ impl FileUploadCrud {
     }
 
     pub async fn delete_all_by_issue_id(&self, issue_id: i32) -> Result<(), DbErr> {
-        let uploads = self.find_by_issue_id(issue_id).await?;
-        for u in uploads {
-            self.delete(u.id).await?;
+        // Replicate core delete() behavior for each upload, but omit history creation
+        // and event broadcasting. Use a single transaction and reuse the file store.
+        let txn = self.app_state.db.begin().await?;
+
+        // Load all uploads for this issue within the transaction
+        let uploads = file_upload::Entity::find()
+            .filter(file_upload::Column::IssueId.eq(issue_id))
+            .all(&txn)
+            .await?;
+
+        if uploads.is_empty() {
+            txn.commit().await?;
+            return Ok(());
         }
+
+        let cfu_crud = CommentFileUploadCrud::new(self.app_state.clone());
+        let store = FileStore::from_env()?;
+
+        for u in uploads {
+            // Remove comment-file mappings for this upload
+            cfu_crud
+                .delete_all_by_file_upload_id_txn(u.id, &txn)
+                .await?;
+
+            // Delete upload record
+            file_upload::Entity::delete_by_id(u.id).exec(&txn).await?;
+
+            // Delete the underlying stored file
+            store.delete(&u.path).await.map_err(to_db_err)?;
+        }
+
+        txn.commit().await?;
         Ok(())
     }
 
