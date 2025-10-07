@@ -2,10 +2,10 @@ use crate::entities::file_upload;
 use crate::AppState;
 use rand::{distributions::Alphanumeric, Rng};
 use sea_orm::*;
-use std::env;
 use std::path::{Path, PathBuf};
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
+use crate::environment;
 
 #[derive(Clone)]
 pub struct FileUploadCrud {
@@ -21,17 +21,11 @@ impl FileUploadCrud {
     // - local: backend serves the file via authorized endpoint
     // - aws: TODO implement presigned S3 URL
     pub async fn generate_browser_url(&self, upload: &file_upload::Model) -> Result<String, DbErr> {
-        let scheme = env::var("FILE_STORE_SCHEME").unwrap_or_else(|_| "local".to_string());
-        match scheme.as_str() {
+        let scheme = environment::file_store_scheme();
+        match scheme {
             "local" => {
-                // Construct full URL if PUBLIC_BASE_URL provided; otherwise use http://localhost:{PORT}
-                let base = env::var("PUBLIC_BASE_URL").unwrap_or_else(|_| {
-                    let port = env::var("PORT")
-                        .ok()
-                        .and_then(|p| p.parse::<u16>().ok())
-                        .unwrap_or(3001);
-                    format!("http://localhost:{}", port)
-                });
+                // Construct full URL using PUBLIC_BASE_URL or default http://localhost:{PORT}
+                let base = environment::public_base_url().to_string();
                 // Serve the actual asset via the public API route; include final filename for nicer URLs
                 Ok(format!(
                     "{}/api/uploads/assets/{}/{}?token={}",
@@ -182,10 +176,7 @@ impl FileUploadCrud {
                 "Empty file uploads are not allowed".to_string(),
             ));
         }
-        let max_mb: i64 = env::var("MAX_UPLOAD_SIZE_MB")
-            .ok()
-            .and_then(|v| v.parse::<i64>().ok())
-            .unwrap_or(10);
+        let max_mb: i64 = environment::max_upload_size_mb();
         let max_bytes = max_mb * 1024 * 1024;
         if (bytes.len() as i64) > max_bytes {
             return Err(DbErr::Custom(format!(
@@ -261,18 +252,14 @@ enum FileStoreInner {
 
 impl FileStore {
     fn from_env() -> Result<Self, DbErr> {
-        let scheme = env::var("FILE_STORE_SCHEME").map_err(|_| {
-            DbErr::Custom("FILE_STORE_SCHEME must be set to 'local' or 'aws'".into())
-        })?;
+        let scheme = environment::file_store_scheme().to_string();
         match scheme.as_str() {
             "local" => {
-                let base = env::var("BASE_FILE_PATH").map_err(|_| {
+                let base = environment::base_file_path().cloned().ok_or_else(|| {
                     DbErr::Custom("BASE_FILE_PATH must be set for local file store".into())
                 })?;
                 Ok(Self {
-                    inner: FileStoreInner::Local(LocalFileStore {
-                        base_path: PathBuf::from(base),
-                    }),
+                    inner: FileStoreInner::Local(LocalFileStore { base_path: base }),
                 })
             }
             "aws" => Ok(Self {

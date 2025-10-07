@@ -1,0 +1,103 @@
+use lazy_static::lazy_static;
+use std::env;
+use std::path::PathBuf;
+use tracing::Level;
+
+// Centralized environment configuration with defaults where appropriate.
+// Values are loaded once at startup (first access) and cached.
+
+lazy_static! {
+    // Security
+    static ref JWT_SECRET: String = env::var("JWT_SECRET")
+        .unwrap_or_else(|_| "default_secret_key_change_in_production".to_string());
+
+    // Logging
+    static ref LOG_LEVEL: Level = env::var("LOG_LEVEL")
+        .unwrap_or_else(|_| "INFO".to_string())
+        .parse::<Level>()
+        .unwrap_or(Level::INFO);
+
+    // Server
+    static ref PORT: u16 = env::var("PORT")
+        .unwrap_or_else(|_| "3001".to_string())
+        .parse::<u16>()
+        .unwrap_or(3001);
+
+    // Websocket settings
+    static ref WEBSOCKET_BUFFER_SIZE: usize = env::var("WEBSOCKET_BUFFER_SIZE")
+        .unwrap_or_else(|_| "1000".to_string())
+        .parse::<usize>()
+        .unwrap_or(1000);
+
+    // Database
+    static ref DATABASE_URL: String = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+
+    // CORS / Frontend
+    static ref FRONTEND_URL: String = env::var("FRONTEND_URL")
+        .unwrap_or_else(|_| "http://localhost:3000".to_string());
+
+    // Public base URL used in generating asset links
+    static ref PUBLIC_BASE_URL: String = env::var("PUBLIC_BASE_URL")
+        .unwrap_or_else(|_| format!("http://localhost:{}", *PORT));
+
+    // File store configuration
+    // We default the scheme to "local" if not set.
+    static ref FILE_STORE_SCHEME: String = env::var("FILE_STORE_SCHEME")
+        .unwrap_or_else(|_| "local".to_string());
+
+    // For local file storage, base path is required by parts of the system; keep as Option here
+    // and let call sites enforce requirements with custom errors.
+    static ref BASE_FILE_PATH: Option<PathBuf> = env::var("BASE_FILE_PATH").ok().map(PathBuf::from);
+
+    // Upload constraints
+    static ref MAX_UPLOAD_SIZE_MB: i64 = env::var("MAX_UPLOAD_SIZE_MB")
+        .ok()
+        .and_then(|v| v.parse::<i64>().ok())
+        .unwrap_or(10);
+}
+
+// ---- Public accessors (static-style) ----
+
+pub fn jwt_secret() -> &'static str {
+    &JWT_SECRET
+}
+
+pub fn log_level() -> Level {
+    *LOG_LEVEL
+}
+
+pub fn websocket_buffer_size() -> usize {
+    *WEBSOCKET_BUFFER_SIZE
+}
+
+pub fn database_url() -> &'static str {
+    &DATABASE_URL
+}
+
+pub fn frontend_url() -> &'static str {
+    &FRONTEND_URL
+}
+
+pub fn port() -> u16 {
+    *PORT
+}
+
+pub fn public_base_url() -> &'static str {
+    &PUBLIC_BASE_URL
+}
+
+pub fn file_store_scheme() -> &'static str {
+    &FILE_STORE_SCHEME
+}
+
+pub fn base_file_path() -> Option<&'static PathBuf> {
+    BASE_FILE_PATH.as_ref()
+}
+
+pub fn max_upload_size_mb() -> i64 {
+    *MAX_UPLOAD_SIZE_MB
+}
+
+pub fn max_upload_size_bytes() -> usize {
+    max_upload_size_mb() as usize * 1024 * 1024
+}

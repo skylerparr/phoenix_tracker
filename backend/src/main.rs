@@ -38,6 +38,7 @@ mod endpoints;
 mod entities;
 mod jwt;
 mod websocket;
+mod environment;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -150,10 +151,7 @@ async fn auth_middleware(
 
 fn main() {
     // Set log level based on environment
-    let log_level = std::env::var("LOG_LEVEL")
-        .unwrap_or_else(|_| "INFO".to_string())
-        .parse::<tracing::Level>()
-        .unwrap_or(tracing::Level::INFO);
+    let log_level = environment::log_level();
 
     tracing_subscriber::fmt()
         .with_max_level(log_level)
@@ -162,10 +160,7 @@ fn main() {
         .init();
 
     // Increase buffer size for production load and add monitoring
-    let buffer_size = std::env::var("WEBSOCKET_BUFFER_SIZE")
-        .unwrap_or_else(|_| "1000".to_string())
-        .parse::<usize>()
-        .unwrap_or(1000);
+    let buffer_size = environment::websocket_buffer_size();
 
     info!(
         "Initializing broadcast channel with buffer size: {}",
@@ -176,11 +171,10 @@ fn main() {
 
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
-        let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+        let database_url = environment::database_url();
         let conn = Database::connect(database_url).await.unwrap();
 
-        let frontend_url =
-            std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+        let frontend_url = environment::frontend_url().to_string();
 
         let cors = CorsLayer::new()
             .allow_origin(HeaderValue::from_str(&frontend_url).unwrap_or_else(|_| {
@@ -246,10 +240,7 @@ fn main() {
             .layer(middleware::from_fn(logging_middleware))
             .layer(cors.clone());
 
-        let port = std::env::var("PORT")
-            .unwrap_or_else(|_| "3001".to_string())
-            .parse::<u16>()
-            .unwrap();
+        let port = environment::port();
         let addr = SocketAddr::from(([0, 0, 0, 0], port));
         info!("Listening on {}", addr);
         let listener = TcpListener::bind(addr).await.unwrap();

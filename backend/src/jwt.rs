@@ -1,10 +1,8 @@
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
-use std::env;
+use crate::environment;
 
-const JWT_SECRET_ENV_VAR: &str = "JWT_SECRET";
-const DEFAULT_JWT_SECRET: &str = "default_secret_key_change_in_production";
 const TOKEN_EXPIRATION_DAYS: i64 = 7;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -42,9 +40,9 @@ impl JwtService {
         Self
     }
 
-    /// Get the JWT secret from environment or use default
+    /// Get the JWT secret from centralized environment
     fn get_secret() -> String {
-        env::var(JWT_SECRET_ENV_VAR).unwrap_or_else(|_| DEFAULT_JWT_SECRET.to_string())
+        environment::jwt_secret().to_string()
     }
 
     /// Create a new JWT token with user_id and optional project_id

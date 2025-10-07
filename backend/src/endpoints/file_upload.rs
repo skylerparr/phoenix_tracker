@@ -3,27 +3,35 @@ use crate::crud::file_upload::FileUploadCrud;
 use crate::crud::issue::IssueCrud;
 use crate::crud::project_note::ProjectNoteCrud;
 use crate::AppState;
-use axum::extract::{Multipart, Path};
+use axum::extract::{Multipart, Path, DefaultBodyLimit};
 use axum::http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
 use axum::http::{HeaderValue, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
-use std::env;
 use std::path::PathBuf;
 use tracing::{info, warn};
+use crate::environment;
 
 pub fn file_upload_routes() -> Router<AppState> {
     Router::new()
         // Issue uploads
         .route(
             "/issues/:id/uploads",
-            post(upload_for_issue).get(list_for_issue),
+            post(upload_for_issue).layer(DefaultBodyLimit::max(environment::max_upload_size_bytes()),
+        ))
+        .route(
+            "/issues/:id/uploads",
+            get(list_for_issue),
         )
         // Project note uploads
         .route(
             "/project-notes/:id/uploads",
-            post(upload_for_project_note).get(list_for_project_note),
+            post(upload_for_project_note).layer(DefaultBodyLimit::max(environment::max_upload_size_bytes())),
+        )
+        .route(
+            "/project-notes/:id/uploads",
+            get(list_for_project_note),
         )
         // Comment attachments (associate existing file to a comment)
         .route("/comments/:id/uploads", get(list_for_comment))
@@ -340,13 +348,13 @@ async fn download_upload(
     }
 
     // Only local backend download is implemented here per current store implementation
-    match env::var("FILE_STORE_SCHEME") {
-        Ok(scheme) if scheme == "local" => {
-            let base = match env::var("BASE_FILE_PATH") {
-                Ok(b) => b,
-                Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+    match environment::file_store_scheme() {
+        "local" => {
+            let base = match environment::base_file_path() {
+                Some(p) => p.clone(),
+                None => return Err(StatusCode::INTERNAL_SERVER_ERROR),
             };
-            let full_path: PathBuf = PathBuf::from(&base).join(&upload.path);
+            let full_path: PathBuf = base.join(&upload.path);
             match tokio::fs::read(full_path).await {
                 Ok(bytes) => {
                     let ct = HeaderValue::from_str(&upload.mime_type)
@@ -363,7 +371,7 @@ async fn download_upload(
                 }
             }
         }
-        Ok(scheme) if scheme == "aws" => {
+        "aws" => {
             // AWS presign not implemented in current FileStore; return 501 for now
             Err(StatusCode::NOT_IMPLEMENTED)
         }
