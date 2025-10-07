@@ -2,8 +2,9 @@ use crate::crud::comment_file_upload::CommentFileUploadCrud;
 use crate::crud::file_upload::FileUploadCrud;
 use crate::crud::issue::IssueCrud;
 use crate::crud::project_note::ProjectNoteCrud;
+use crate::environment;
 use crate::AppState;
-use axum::extract::{Multipart, Path, DefaultBodyLimit};
+use axum::extract::{DefaultBodyLimit, Multipart, Path};
 use axum::http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
 use axum::http::{HeaderValue, StatusCode};
 use axum::response::IntoResponse;
@@ -11,28 +12,23 @@ use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
 use std::path::PathBuf;
 use tracing::{info, warn};
-use crate::environment;
 
 pub fn file_upload_routes() -> Router<AppState> {
     Router::new()
         // Issue uploads
         .route(
             "/issues/:id/uploads",
-            post(upload_for_issue).layer(DefaultBodyLimit::max(environment::max_upload_size_bytes()),
-        ))
-        .route(
-            "/issues/:id/uploads",
-            get(list_for_issue),
+            post(upload_for_issue)
+                .layer(DefaultBodyLimit::max(environment::max_upload_size_bytes())),
         )
+        .route("/issues/:id/uploads", get(list_for_issue))
         // Project note uploads
         .route(
             "/project-notes/:id/uploads",
-            post(upload_for_project_note).layer(DefaultBodyLimit::max(environment::max_upload_size_bytes())),
+            post(upload_for_project_note)
+                .layer(DefaultBodyLimit::max(environment::max_upload_size_bytes())),
         )
-        .route(
-            "/project-notes/:id/uploads",
-            get(list_for_project_note),
-        )
+        .route("/project-notes/:id/uploads", get(list_for_project_note))
         // Comment attachments (associate existing file to a comment)
         .route("/comments/:id/uploads", get(list_for_comment))
         .route(

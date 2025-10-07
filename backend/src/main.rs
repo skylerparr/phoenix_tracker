@@ -35,9 +35,9 @@ use tracing::{debug, info, warn};
 mod crud;
 mod endpoints;
 mod entities;
+mod environment;
 mod jwt;
 mod websocket;
-mod environment;
 
 #[derive(Clone)]
 pub struct AppState {

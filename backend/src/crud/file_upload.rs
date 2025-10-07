@@ -1,11 +1,11 @@
 use crate::entities::file_upload;
+use crate::environment;
 use crate::AppState;
 use rand::{distributions::Alphanumeric, Rng};
 use sea_orm::*;
 use std::path::{Path, PathBuf};
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
-use crate::environment;
 
 #[derive(Clone)]
 pub struct FileUploadCrud {

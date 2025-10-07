@@ -1,7 +1,7 @@
+use crate::environment;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
-use crate::environment;
 
 const TOKEN_EXPIRATION_DAYS: i64 = 7;
 
