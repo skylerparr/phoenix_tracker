@@ -251,7 +251,7 @@ const IssueComments: React.FC<IssueCommentsProps> = ({
                 Drop files here to upload
               </Typography>
               <Typography variant="body2" color="textSecondary">
-                Supported formats: PDF, Images, Text, Office documents
+                Supported formats: PDF, Images, Text, Office documents, ZIP
               </Typography>
             </Stack>
           </Paper>
@@ -319,7 +319,7 @@ const IssueComments: React.FC<IssueCommentsProps> = ({
             multiple
             style={{ display: "none" }}
             onChange={(e) => handleFileSelect(e.target.files)}
-            accept=".pdf,.txt,.png,.jpg,.jpeg,.svg,.docx,.doc,.xlsx,.xls,.json,.md"
+            accept=".pdf,.txt,.png,.jpg,.jpeg,.gif,.svg,.docx,.doc,.xlsx,.xls,.json,.md,.zip"
           />
           <Button
             variant="outlined"
