@@ -22,6 +22,10 @@ pub fn file_upload_routes() -> Router<AppState> {
                 .layer(DefaultBodyLimit::max(environment::max_upload_size_bytes())),
         )
         .route("/issues/:id/uploads", get(list_for_issue))
+        .route(
+            "/issues/:id/uploads/unattached",
+            get(list_unattached_for_issue),
+        )
         // Project note uploads
         .route(
             "/project-notes/:id/uploads",
@@ -257,6 +261,46 @@ async fn list_for_issue(
         Ok(uploads) => Ok(Json(uploads)),
         Err(e) => {
             warn!("Error listing uploads for issue {}: {:?}", issue_id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+#[axum::debug_handler]
+async fn list_unattached_for_issue(
+    Extension(app_state): Extension<AppState>,
+    Path(issue_id): Path<i32>,
+) -> impl IntoResponse {
+    // Verify issue belongs to current project
+    let project_id = app_state
+        .project
+        .as_ref()
+        .expect("project must be set by middleware")
+        .id;
+    let issue_crud = IssueCrud::new(app_state.clone());
+    let issue = match issue_crud.find_by_id(issue_id).await {
+        Ok(Some(i)) => i,
+        Ok(None) => return Err(StatusCode::NOT_FOUND),
+        Err(e) => {
+            info!(
+                "Error loading issue {} for unattached uploads: {:?}",
+                issue_id, e
+            );
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+    if issue.project_id != project_id {
+        return Err(StatusCode::NOT_FOUND);
+    }
+
+    let crud = FileUploadCrud::new(app_state);
+    match crud.find_unattached_by_issue_id(issue_id).await {
+        Ok(uploads) => Ok(Json(uploads)),
+        Err(e) => {
+            warn!(
+                "Error listing unattached uploads for issue {}: {:?}",
+                issue_id, e
+            );
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }

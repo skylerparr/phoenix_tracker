@@ -57,6 +57,9 @@ import { taskService } from "../services/TaskService";
 import { Blocker } from "../models/Blocker";
 import { blockerService } from "../services/BlockerService";
 import { getBackgroundColor, updateUrlWithParam } from "./IssueComponent";
+import { FileUpload } from "../models/FileUpload";
+import { uploadService } from "../services/UploadService";
+import UploadItem from "./UploadItem";
 import { DatePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -102,6 +105,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   const [blockers, setBlockers] = useState<Blocker[]>([]);
   const [blocker, setBlocker] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<number>(0);
+  const [unattachedUploads, setUnattachedUploads] = useState<FileUpload[]>([]);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -111,6 +115,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
         fetchTasks(),
         fetchBlockers(),
         handleTagsUpdate(),
+        fetchUnattachedUploads(),
       ]);
       setIssue(originalIssue);
     };
@@ -170,6 +175,13 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   const fetchBlockers = async () => {
     const blockers = await blockerService.getBlockedIssues(originalIssue.id);
     setBlockers(blockers);
+  };
+
+  const fetchUnattachedUploads = async () => {
+    const uploads = await uploadService.listUnattachedForIssue(
+      originalIssue.id,
+    );
+    setUnattachedUploads(uploads);
   };
 
   const handleTagsUpdate = async () => {
@@ -844,6 +856,28 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
           </Stack>
         </Box>
       </Stack>
+      {unattachedUploads.length > 0 && (
+        <>
+          <Typography sx={{ color: "#666", fontWeight: "bold" }}>
+            FILES
+          </Typography>
+          <Box sx={{ mt: 1 }}>
+            <Stack direction="row" gap={2} flexWrap="wrap">
+              {unattachedUploads.map((u) => (
+                <UploadItem
+                  key={u.id}
+                  upload={u}
+                  onDeleted={(id) =>
+                    setUnattachedUploads((prev) =>
+                      prev.filter((f) => f.id !== id),
+                    )
+                  }
+                />
+              ))}
+            </Stack>
+          </Box>
+        </>
+      )}
       <Typography sx={{ color: "#666", fontWeight: "bold", mt: 2 }}>
         BLOCKERS
       </Typography>

@@ -102,6 +102,25 @@ export class UploadService extends BaseService<FileUpload> {
   }
 
   /**
+   * List uploads for an issue that are not attached to any comment
+   */
+  async listUnattachedForIssue(issueId: number): Promise<FileUpload[]> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/issues/${issueId}/uploads/unattached`,
+      {
+        headers: this.getHeaders(),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to list unattached uploads for issue ${issueId}`);
+    }
+
+    const data = await response.json();
+    return data.map((item: any) => this.createInstance(item));
+  }
+
+  /**
    * List uploads for a project note
    */
   async listForProjectNote(projectNoteId: number): Promise<FileUpload[]> {

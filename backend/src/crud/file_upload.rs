@@ -3,10 +3,11 @@ use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::ISSUE_UPDATED;
 use crate::crud::history::HistoryCrud;
 use crate::crud::issue::IssueCrud;
-use crate::entities::file_upload;
+use crate::entities::{comment_file_upload, file_upload};
 use crate::environment;
 use crate::AppState;
 use rand::{distributions::Alphanumeric, Rng};
+use sea_orm::sea_query::Expr;
 use sea_orm::*;
 use std::path::{Path, PathBuf};
 use tokio::fs;
@@ -113,6 +114,37 @@ impl FileUploadCrud {
                 m.full_url = Some(self.generate_browser_url(m).await?);
             }
         }
+        Ok(items)
+    }
+
+    // Find uploads for an issue that are not attached to any comment
+    pub async fn find_unattached_by_issue_id(
+        &self,
+        issue_id: i32,
+    ) -> Result<Vec<file_upload::Model>, DbErr> {
+        let mut items = file_upload::Entity::find()
+            .filter(file_upload::Column::IssueId.eq(issue_id))
+            .join(
+                JoinType::LeftJoin,
+                file_upload::Relation::CommentFileUpload.def(),
+            )
+            .filter(
+                Expr::col((
+                    comment_file_upload::Entity,
+                    comment_file_upload::Column::FileUploadId,
+                ))
+                .is_null(),
+            )
+            .order_by_asc(file_upload::Column::UploadedAt)
+            .all(&self.app_state.db)
+            .await?;
+
+        for m in &mut items {
+            if m.full_url.is_none() {
+                m.full_url = Some(self.generate_browser_url(m).await?);
+            }
+        }
+
         Ok(items)
     }
 
