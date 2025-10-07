@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Typography,
@@ -15,6 +15,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Alert,
+  Chip,
 } from "@mui/material";
 import {
   projectNoteService,
@@ -28,7 +30,13 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
+import CloseIcon from "@mui/icons-material/Close";
 import useDebounce from "../utils/Debounce";
+import { uploadService } from "../services/UploadService";
+import { FileUpload } from "../models/FileUpload";
+import UploadItem from "./UploadItem";
 
 export const ProjectNotesComponent: React.FC = () => {
   const [notes, setNotes] = useState<ProjectNote[]>([]);
@@ -40,6 +48,16 @@ export const ProjectNotesComponent: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const { debouncedUpdate } = useDebounce();
   const [filter, setFilter] = useState<string>("");
+
+  // Drag-and-drop and upload state (adapted from IssueComments)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<FileUpload[]>([]);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [noteUploads, setNoteUploads] = useState<Record<number, FileUpload[]>>(
+    {},
+  );
 
   useEffect(() => {
     const fetchNotes = async () => {
@@ -72,7 +90,16 @@ export const ProjectNotesComponent: React.FC = () => {
     }
   };
 
-  const handleExpandNote = (note: ProjectNote) => {
+  const fetchUploadsForNote = async (noteId: number) => {
+    try {
+      const uploads = await uploadService.listForProjectNote(noteId);
+      setNoteUploads((prev) => ({ ...prev, [noteId]: uploads }));
+    } catch (e) {
+      console.error("Failed to load uploads for note", e);
+    }
+  };
+
+  const handleExpandNote = async (note: ProjectNote) => {
     if (expandedNoteId === note.id) {
       return;
     }
@@ -80,6 +107,15 @@ export const ProjectNotesComponent: React.FC = () => {
     setActiveTab("content");
     setEditTitle(note.title);
     setEditDetail(note.detail || "");
+
+    // Reset upload UI state when switching notes
+    setUploadedFiles([]);
+    setErrors([]);
+    setIsDragging(false);
+    setIsUploading(false);
+
+    // Load existing uploads for this note
+    await fetchUploadsForNote(note.id);
   };
 
   const saveProjectNote = async (
@@ -181,6 +217,122 @@ export const ProjectNotesComponent: React.FC = () => {
       (n: ProjectNote) => regex.test(n.title) || regex.test(n.detail || ""),
     );
   }, [notes, filter]);
+
+  // Drag-and-drop handlers (adapted from useDragDropUpload)
+  const handleDragEnter = (e: React.DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    const currentTarget = e.currentTarget as HTMLElement;
+    if (!currentTarget.contains(relatedTarget)) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = "copy";
+    }
+  };
+
+  const clearErrors = () => setErrors([]);
+  const removeUploadedFile = (fileId: number) => {
+    setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
+  };
+
+  const validateFiles = (
+    files: File[],
+  ): { valid: File[]; errors: string[] } => {
+    const maxFiles = 10;
+    const maxFileSize = 10 * 1024 * 1024; // 10MB
+    const valid: File[] = [];
+    const errs: string[] = [];
+
+    if (files.length > maxFiles) {
+      errs.push(
+        `Maximum ${maxFiles} files allowed. You tried to upload ${files.length} files.`,
+      );
+      return { valid: [], errors: errs };
+    }
+
+    for (const file of files) {
+      if (file.size > maxFileSize) {
+        errs.push(
+          `${file.name}: File size exceeds maximum allowed size of ${Math.round(
+            maxFileSize / (1024 * 1024),
+          )}MB`,
+        );
+        continue;
+      }
+      const v = uploadService.validateFile(file);
+      if (!v.valid) {
+        errs.push(`${file.name}: ${v.error}`);
+        continue;
+      }
+      valid.push(file);
+    }
+
+    return { valid, errors: errs };
+  };
+
+  const uploadFiles = async (files: File[]) => {
+    if (!expandedNoteId) return;
+    const { valid, errors: vErrors } = validateFiles(files);
+    if (vErrors.length) setErrors(vErrors);
+    if (!valid.length) return;
+
+    setIsUploading(true);
+    setErrors([]);
+    try {
+      const uploaded = await uploadService.uploadMultipleForProjectNote(
+        expandedNoteId,
+        valid,
+      );
+      setUploadedFiles((prev) => [...prev, ...uploaded]);
+      setNoteUploads((prev) => ({
+        ...prev,
+        [expandedNoteId]: [...(prev[expandedNoteId] || []), ...uploaded],
+      }));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to upload files";
+      setErrors((prev) => [...prev, msg]);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      uploadFiles(Array.from(files));
+    }
+  };
+
+  const handleFileSelect = (files: FileList | null) => {
+    if (files && files.length > 0) {
+      uploadFiles(Array.from(files));
+    }
+  };
+
+  const handleUploadDeleted = (noteId: number, fileId: number) => {
+    setNoteUploads((prev) => ({
+      ...prev,
+      [noteId]: (prev[noteId] || []).filter((f) => f.id !== fileId),
+    }));
+    setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
+  };
 
   return (
     <Box>
@@ -311,25 +463,193 @@ export const ProjectNotesComponent: React.FC = () => {
                         source={editDetail}
                         remarkPlugins={[remarkGfm]}
                       />
+
+                      {noteUploads[note.id] &&
+                        noteUploads[note.id].length > 0 && (
+                          <Box sx={{ mt: 1 }}>
+                            <Stack direction="row" gap={2} flexWrap="wrap">
+                              {noteUploads[note.id].map((u) => (
+                                <UploadItem
+                                  key={u.id}
+                                  upload={u}
+                                  onDeleted={(id) =>
+                                    handleUploadDeleted(note.id, id)
+                                  }
+                                />
+                              ))}
+                            </Stack>
+                          </Box>
+                        )}
                     </Box>
                   ) : (
                     <Box>
-                      <MarkdownEditor
-                        value={editDetail}
-                        onChange={(v: string) => {
-                          setEditDetail(v);
-                          debouncedUpdate(async () => {
-                            if (expandedNoteId === null) return;
-                            await saveProjectNote(expandedNoteId, editTitle, v);
-                          });
+                      <Box
+                        onDragEnter={handleDragEnter}
+                        onDragLeave={handleDragLeave}
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                        sx={{
+                          position: "relative",
+                          border: isDragging
+                            ? "2px dashed #1976d2"
+                            : "2px dashed transparent",
+                          borderRadius: "4px",
+                          padding: isDragging ? "8px" : "0",
+                          backgroundColor: isDragging
+                            ? "rgba(25, 118, 210, 0.05)"
+                            : "transparent",
+                          transition: "all 0.3s ease",
                         }}
-                        height={240}
-                        placeholder="Update note details..."
-                        withTabs={false}
-                      />
+                      >
+                        {isDragging && (
+                          <Paper
+                            sx={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              zIndex: 10,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              backgroundColor: "rgba(255, 255, 255, 0.95)",
+                              borderRadius: "4px",
+                            }}
+                          >
+                            <Stack alignItems="center" spacing={2}>
+                              <CloudUploadIcon
+                                sx={{ fontSize: 48, color: "#1976d2" }}
+                              />
+                              <Typography variant="h6" color="primary">
+                                Drop files here to upload
+                              </Typography>
+                              <Typography variant="body2" color="textSecondary">
+                                Supported formats: PDF, Images, Text, Office
+                                documents, ZIP
+                              </Typography>
+                            </Stack>
+                          </Paper>
+                        )}
+
+                        <MarkdownEditor
+                          value={editDetail}
+                          onChange={(v: string) => {
+                            setEditDetail(v);
+                            debouncedUpdate(async () => {
+                              if (expandedNoteId === null) return;
+                              await saveProjectNote(
+                                expandedNoteId,
+                                editTitle,
+                                v,
+                              );
+                            });
+                          }}
+                          height={240}
+                          placeholder="Update note details..."
+                          withTabs={false}
+                        />
+                      </Box>
+
+                      {errors.length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                          {errors.map((error, index) => (
+                            <Alert
+                              key={index}
+                              severity="error"
+                              onClose={clearErrors}
+                              sx={{ mb: 1 }}
+                            >
+                              {error}
+                            </Alert>
+                          ))}
+                        </Box>
+                      )}
+
+                      {uploadedFiles.length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography
+                            variant="body2"
+                            sx={{ mb: 1, fontWeight: "bold" }}
+                          >
+                            Attached Files:
+                          </Typography>
+                          <Stack direction="row" flexWrap="wrap" gap={1}>
+                            {uploadedFiles.map((file) => (
+                              <Chip
+                                key={file.id}
+                                label={file.originalFilename}
+                                icon={<AttachFileIcon />}
+                                onDelete={() => removeUploadedFile(file.id)}
+                                deleteIcon={<CloseIcon />}
+                                variant="outlined"
+                                size="small"
+                              />
+                            ))}
+                          </Stack>
+                        </Box>
+                      )}
+
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          mt: 2,
+                        }}
+                      >
+                        <Box>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            multiple
+                            style={{ display: "none" }}
+                            onChange={(e) => handleFileSelect(e.target.files)}
+                            accept=".pdf,.txt,.png,.jpg,.jpeg,.gif,.svg,.docx,.doc,.xlsx,.xls,.json,.md,.zip"
+                          />
+                          <Button
+                            variant="outlined"
+                            startIcon={
+                              isUploading ? (
+                                <CircularProgress size={16} />
+                              ) : (
+                                <AttachFileIcon />
+                              )
+                            }
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading || !expandedNoteId}
+                            sx={{ color: "black", borderColor: "black" }}
+                          >
+                            {isUploading ? "Uploading..." : "Attach Files"}
+                          </Button>
+                        </Box>
+                      </Box>
+
+                      {noteUploads[note.id] &&
+                        noteUploads[note.id].length > 0 && (
+                          <Box sx={{ mt: 2 }}>
+                            <Typography
+                              variant="body2"
+                              sx={{ mb: 1, fontWeight: "bold" }}
+                            >
+                              Files on this note:
+                            </Typography>
+                            <Stack direction="row" gap={2} flexWrap="wrap">
+                              {noteUploads[note.id].map((u) => (
+                                <UploadItem
+                                  key={u.id}
+                                  upload={u}
+                                  onDeleted={(id) =>
+                                    handleUploadDeleted(note.id, id)
+                                  }
+                                />
+                              ))}
+                            </Stack>
+                          </Box>
+                        )}
                     </Box>
                   )}
-                  {/* Delete button at the bottom */}
+                  {/* Action buttons at the bottom */}
                   <Box
                     sx={{ display: "flex", justifyContent: "flex-end", p: 1 }}
                   >
