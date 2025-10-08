@@ -1,15 +1,18 @@
 services:
   backend:
+    user: "1000:1000"
     build:
       context: ./backend
       dockerfile: Dockerfile
       no_cache: true
     volumes:
       - ./backend/static:/usr/local/bin/static
-      - ./phoenix-file-uploads:${BASE_FILE_PATH}
+      - ${DISK_FILE_PATH}:/usr/local/bin/phoenix-file-uploads
     ports:
       - "3001:3001"
     environment:
+      - USER_UID=1000
+      - USER_GID=1000
       - DATABASE_URL=${DATABASE_URL}
       - FRONTEND_URL=${FRONTEND_URL}
       - FILE_STORE_SCHEME=${FILE_STORE_SCHEME}
