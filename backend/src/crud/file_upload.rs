@@ -22,6 +22,21 @@ impl FileUploadCrud {
         Self { app_state }
     }
 
+    // Internal helpers to populate full_url consistently
+    async fn ensure_full_url(&self, model: &mut file_upload::Model) -> Result<(), DbErr> {
+        if model.full_url.is_none() {
+            model.full_url = Some(self.generate_browser_url(model).await?);
+        }
+        Ok(())
+    }
+
+    async fn ensure_full_urls(&self, models: &mut [file_upload::Model]) -> Result<(), DbErr> {
+        for m in models {
+            self.ensure_full_url(m).await?;
+        }
+        Ok(())
+    }
+
     // Generate a browser-accessible URL for a given upload.
     // - local: backend serves the file via authorized endpoint
     // - aws: TODO implement presigned S3 URL
@@ -96,9 +111,7 @@ impl FileUploadCrud {
             .one(&self.app_state.db)
             .await?;
         if let Some(ref mut model) = result {
-            if model.full_url.is_none() {
-                model.full_url = Some(self.generate_browser_url(model).await?);
-            }
+            self.ensure_full_url(model).await?;
         }
         Ok(result)
     }
@@ -109,11 +122,7 @@ impl FileUploadCrud {
             .order_by_asc(file_upload::Column::UploadedAt)
             .all(&self.app_state.db)
             .await?;
-        for m in &mut items {
-            if m.full_url.is_none() {
-                m.full_url = Some(self.generate_browser_url(m).await?);
-            }
-        }
+        self.ensure_full_urls(&mut items).await?;
         Ok(items)
     }
 
@@ -139,11 +148,7 @@ impl FileUploadCrud {
             .all(&self.app_state.db)
             .await?;
 
-        for m in &mut items {
-            if m.full_url.is_none() {
-                m.full_url = Some(self.generate_browser_url(m).await?);
-            }
-        }
+        self.ensure_full_urls(&mut items).await?;
 
         Ok(items)
     }
@@ -157,11 +162,7 @@ impl FileUploadCrud {
             .order_by_asc(file_upload::Column::UploadedAt)
             .all(&self.app_state.db)
             .await?;
-        for m in &mut items {
-            if m.full_url.is_none() {
-                m.full_url = Some(self.generate_browser_url(m).await?);
-            }
-        }
+        self.ensure_full_urls(&mut items).await?;
         Ok(items)
     }
 
@@ -248,16 +249,12 @@ impl FileUploadCrud {
         Ok(())
     }
 
-    pub async fn delete_all_by_issue_id(&self, issue_id: i32) -> Result<(), DbErr> {
-        // Replicate core delete() behavior for each upload, but omit history creation
-        // and event broadcasting. Use a single transaction and reuse the file store.
+    // Internal bulk-delete helper used by various scoped deletions
+    async fn delete_all_by_condition(&self, cond: sea_orm::Condition) -> Result<(), DbErr> {
         let txn = self.app_state.db.begin().await?;
 
-        // Load all uploads for this issue within the transaction
-        let uploads = file_upload::Entity::find()
-            .filter(file_upload::Column::IssueId.eq(issue_id))
-            .all(&txn)
-            .await?;
+        // Load all uploads matching the condition within the transaction
+        let uploads = file_upload::Entity::find().filter(cond).all(&txn).await?;
 
         if uploads.is_empty() {
             txn.commit().await?;
@@ -284,40 +281,18 @@ impl FileUploadCrud {
         Ok(())
     }
 
+    pub async fn delete_all_by_issue_id(&self, issue_id: i32) -> Result<(), DbErr> {
+        self.delete_all_by_condition(
+            sea_orm::Condition::all().add(file_upload::Column::IssueId.eq(issue_id)),
+        )
+        .await
+    }
+
     pub async fn delete_all_by_project_note_id(&self, project_note_id: i32) -> Result<(), DbErr> {
-        // Replicate core delete() behavior for each upload, but omit history creation
-        // and event broadcasting. Use a single transaction and reuse the file store.
-        let txn = self.app_state.db.begin().await?;
-
-        // Load all uploads for this project note within the transaction
-        let uploads = file_upload::Entity::find()
-            .filter(file_upload::Column::ProjectNoteId.eq(project_note_id))
-            .all(&txn)
-            .await?;
-
-        if uploads.is_empty() {
-            txn.commit().await?;
-            return Ok(());
-        }
-
-        let cfu_crud = CommentFileUploadCrud::new(self.app_state.clone());
-        let store = FileStore::from_env()?;
-
-        for u in uploads {
-            // Remove comment-file mappings for this upload (should be none for project notes, but safe)
-            cfu_crud
-                .delete_all_by_file_upload_id_txn(u.id, &txn)
-                .await?;
-
-            // Delete upload record
-            file_upload::Entity::delete_by_id(u.id).exec(&txn).await?;
-
-            // Delete the underlying stored file
-            store.delete(&u.path).await.map_err(to_db_err)?;
-        }
-
-        txn.commit().await?;
-        Ok(())
+        self.delete_all_by_condition(
+            sea_orm::Condition::all().add(file_upload::Column::ProjectNoteId.eq(project_note_id)),
+        )
+        .await
     }
 
     // Internal create implementation per spec
