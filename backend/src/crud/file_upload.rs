@@ -166,54 +166,84 @@ impl FileUploadCrud {
     }
 
     pub async fn delete(&self, id: i32) -> Result<(), DbErr> {
+        // Fetch the model first so we can create history and broadcast after deletion
+        let model_opt = file_upload::Entity::find_by_id(id)
+            .one(&self.app_state.db)
+            .await?;
+
+        // Perform the deletion (DB record, related mappings, and stored file)
+        self.delete_with_no_history(id).await?;
+
+        // Create a history record for issue-scoped uploads
+        if let (Some(model), Some(current_user_id)) = (
+            model_opt.as_ref(),
+            self.app_state.user.as_ref().map(|u| u.id),
+        ) {
+            if let Some(issue_id) = model.issue_id {
+                let history_crud = HistoryCrud::new(self.app_state.db.clone());
+                let _ = history_crud
+                    .create(
+                        current_user_id,
+                        Some(issue_id),
+                        None,
+                        None,
+                        format!("deleted attachment '{}'", model.original_filename),
+                    )
+                    .await;
+            }
+        }
+
+        // Broadcast an issue update if applicable
+        if let Some(model) = model_opt {
+            if let Some(issue_id) = model.issue_id {
+                let project = self.app_state.project.clone();
+                let project_id = project.unwrap().id;
+
+                if let Some(issue) = IssueCrud::new(self.app_state.clone())
+                    .find_by_id(issue_id)
+                    .await?
+                {
+                    let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+                    broadcaster.broadcast_event(
+                        project_id,
+                        ISSUE_UPDATED,
+                        serde_json::json!(issue),
+                    );
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub async fn delete_with_no_history(&self, id: i32) -> Result<(), DbErr> {
+        // Wrapper: create a transaction and call the txn variant to perform work atomically
         let txn = self.app_state.db.begin().await?;
-        let Some(model) = file_upload::Entity::find_by_id(id).one(&txn).await? else {
+        self.delete_with_no_history_txn(id, &txn).await?;
+        txn.commit().await?;
+        Ok(())
+    }
+
+    // Transaction-aware variant used by higher-level operations that manage their own txn
+    pub async fn delete_with_no_history_txn(
+        &self,
+        id: i32,
+        txn: &DatabaseTransaction,
+    ) -> Result<(), DbErr> {
+        let Some(model) = file_upload::Entity::find_by_id(id).one(txn).await? else {
             return Ok(());
         };
 
         // Remove any comment-file associations first to avoid FK issues
         let cfu_crud = CommentFileUploadCrud::new(self.app_state.clone());
-        cfu_crud.delete_all_by_file_upload_id_txn(id, &txn).await?;
+        cfu_crud.delete_all_by_file_upload_id_txn(id, txn).await?;
 
         // Delete the DB record for the file upload
-        file_upload::Entity::delete_by_id(id).exec(&txn).await?;
+        file_upload::Entity::delete_by_id(id).exec(txn).await?;
 
         // Delete the underlying object from storage
         let store = FileStore::from_env()?;
         store.delete(&model.path).await.map_err(to_db_err)?;
-
-        // Commit the transaction
-        txn.commit().await?;
-
-        // Create a history record for issue-scoped uploads
-        if let (Some(issue_id), Some(current_user_id)) =
-            (model.issue_id, self.app_state.user.as_ref().map(|u| u.id))
-        {
-            let history_crud = HistoryCrud::new(self.app_state.db.clone());
-            let _ = history_crud
-                .create(
-                    current_user_id,
-                    Some(issue_id),
-                    None,
-                    None,
-                    format!("deleted attachment '{}'", model.original_filename),
-                )
-                .await;
-        }
-
-        // Broadcast an issue update if applicable
-        let project = self.app_state.project.clone();
-        let project_id = project.unwrap().id;
-
-        if let Some(issue_id) = model.issue_id {
-            if let Some(issue) = IssueCrud::new(self.app_state.clone())
-                .find_by_id(issue_id)
-                .await?
-            {
-                let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
-                broadcaster.broadcast_event(project_id, ISSUE_UPDATED, serde_json::json!(issue));
-            }
-        }
 
         Ok(())
     }

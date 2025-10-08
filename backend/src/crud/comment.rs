@@ -1,5 +1,7 @@
+use crate::crud::comment_file_upload::CommentFileUploadCrud;
 use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::ISSUE_UPDATED;
+use crate::crud::file_upload::FileUploadCrud;
 use crate::crud::history::HistoryCrud;
 
 use crate::crud::notification::NotificationCrud;
@@ -97,10 +99,41 @@ impl CommentCrud {
     }
 
     pub async fn delete_all_by_issue_id(&self, issue_id: i32) -> Result<DeleteResult, DbErr> {
-        comment::Entity::delete_many()
-            .filter(comment::Column::IssueId.eq(issue_id))
-            .exec(&self.app_state.db)
-            .await
+        // Load all comments for this issue, then delete each using the single-comment
+        // delete path to ensure associated uploads and mappings are cleaned up.
+        let txn = self.app_state.db.begin().await?;
+        let comments = self.find_by_issue_id(issue_id).await?;
+        let mut rows: u64 = 0;
+        for c in comments {
+            let comment_id = c.id;
+
+            // Find all uploads attached to this comment (use txn-aware variant)
+            let cfu_crud = CommentFileUploadCrud::new(self.app_state.clone());
+            let uploads = cfu_crud
+                .find_uploads_by_comment_id_txn(comment_id, &txn)
+                .await?;
+
+            // Delete each upload (record + stored file) without creating history, inside the same txn
+            let file_crud = FileUploadCrud::new(self.app_state.clone());
+            for u in uploads {
+                file_crud.delete_with_no_history_txn(u.id, &txn).await?;
+                // Also remove the specific mapping for this comment (noop if already removed by upload deletion)
+                let _ = cfu_crud.delete_txn(comment_id, u.id, &txn).await?;
+            }
+
+            // Delete all history records that reference this comment (set comment_id to NULL)
+            let history_crud = HistoryCrud::new(self.app_state.db.clone());
+            history_crud.delete_by_comment_id(comment_id).await?;
+
+            // Delete the comment
+            comment::Entity::delete_by_id(comment_id).exec(&txn).await?;
+
+            rows += 1;
+        }
+        txn.commit().await?;
+        Ok(DeleteResult {
+            rows_affected: rows,
+        })
     }
 
     pub async fn update(&self, id: i32, content: String) -> Result<comment::Model, DbErr> {
@@ -171,7 +204,19 @@ impl CommentCrud {
         let issue_id = comment_model.issue_id;
         let content = comment_model.content.clone();
 
-        // Delete all history records that reference this comment
+        // Find all uploads attached to this comment (use txn-aware variant)
+        let cfu_crud = CommentFileUploadCrud::new(self.app_state.clone());
+        let uploads = cfu_crud.find_uploads_by_comment_id_txn(id, &txn).await?;
+
+        // Delete each upload (record + stored file) without creating history, inside the same txn
+        let file_crud = FileUploadCrud::new(self.app_state.clone());
+        for u in uploads {
+            file_crud.delete_with_no_history_txn(u.id, &txn).await?;
+            // Also remove the specific mapping for this comment (noop if already removed by upload deletion)
+            let _ = cfu_crud.delete_txn(id, u.id, &txn).await?;
+        }
+
+        // Delete all history records that reference this comment (set comment_id to NULL)
         let history_crud = HistoryCrud::new(self.app_state.db.clone());
         history_crud.delete_by_comment_id(id).await?;
 

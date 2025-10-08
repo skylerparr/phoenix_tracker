@@ -9,8 +9,6 @@ $Env:REACT_APP_API_BASE_URL="http://localhost:3001"
 $Env:FILE_STORE_SCHEME="local"
 $Env:BASE_FILE_PATH="/phoenix-file-uploads"
 
-mkdir $Env:BASE_FILE_PATH
-
 # Print environment variables for debugging
 Write-Host "Environment variables set:"
 Write-Host "REACT_APP_API_BASE_URL: $Env:REACT_APP_API_BASE_URL"

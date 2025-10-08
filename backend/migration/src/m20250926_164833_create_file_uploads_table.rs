@@ -173,14 +173,12 @@ impl MigrationTrait for Migration {
                             .name("fk_comment_file_upload_comment")
                             .from(CommentFileUpload::Table, CommentFileUpload::CommentId)
                             .to(Comment::Table, Comment::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_comment_file_upload_upload")
                             .from(CommentFileUpload::Table, CommentFileUpload::FileUploadId)
                             .to(FileUpload::Table, FileUpload::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
             )

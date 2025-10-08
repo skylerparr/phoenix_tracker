@@ -147,6 +147,23 @@ impl CommentFileUploadCrud {
         Ok(uploads)
     }
 
+    // Transaction-aware variant for reading uploads by comment id
+    pub async fn find_uploads_by_comment_id_txn(
+        &self,
+        comment_id: i32,
+        txn: &DatabaseTransaction,
+    ) -> Result<Vec<file_upload::Model>, DbErr> {
+        file_upload::Entity::find()
+            .join(
+                JoinType::InnerJoin,
+                file_upload::Relation::CommentFileUpload.def(),
+            )
+            .filter(comment_file_upload::Column::CommentId.eq(comment_id))
+            .order_by_asc(file_upload::Column::UploadedAt)
+            .all(txn)
+            .await
+    }
+
     pub async fn delete(
         &self,
         comment_id: i32,
@@ -193,6 +210,20 @@ impl CommentFileUploadCrud {
         }
 
         Ok(result)
+    }
+
+    // Transaction-aware delete for a single mapping
+    pub async fn delete_txn(
+        &self,
+        comment_id: i32,
+        file_upload_id: i32,
+        txn: &DatabaseTransaction,
+    ) -> Result<DeleteResult, DbErr> {
+        comment_file_upload::Entity::delete_many()
+            .filter(comment_file_upload::Column::CommentId.eq(comment_id))
+            .filter(comment_file_upload::Column::FileUploadId.eq(file_upload_id))
+            .exec(txn)
+            .await
     }
 
     // Delete all mappings for a given file upload within an existing transaction
