@@ -2,6 +2,7 @@ use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::{
     PROJECT_NOTE_CREATED, PROJECT_NOTE_DELETED, PROJECT_NOTE_UPDATED,
 };
+use crate::crud::file_upload::FileUploadCrud;
 use crate::entities::project_note;
 use crate::AppState;
 use chrono::Utc;
@@ -124,6 +125,11 @@ impl ProjectNoteCrud {
             .await?
             .ok_or(DbErr::Custom("Project note not found".to_owned()))?;
 
+        // Delete all uploads associated with this project note
+        let file_crud = FileUploadCrud::new(self.app_state.clone());
+        file_crud.delete_all_by_project_note_id(id).await?;
+
+        // Delete the project note itself
         let result = project_note::Entity::delete_by_id(id)
             .exec(&self.app_state.db)
             .await?;
