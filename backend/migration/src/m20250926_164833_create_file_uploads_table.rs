@@ -55,15 +55,13 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk_file_upload_issue")
                             .from(FileUpload::Table, FileUpload::IssueId)
-                            .to(Issue::Table, Issue::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
+                            .to(Issue::Table, Issue::Id),
                     )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_file_upload_project_note")
                             .from(FileUpload::Table, FileUpload::ProjectNoteId)
-                            .to(ProjectNotes::Table, ProjectNotes::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
+                            .to(ProjectNotes::Table, ProjectNotes::Id),
                     )
                     .foreign_key(
                         ForeignKey::create()
@@ -172,13 +170,13 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk_comment_file_upload_comment")
                             .from(CommentFileUpload::Table, CommentFileUpload::CommentId)
-                            .to(Comment::Table, Comment::Id)
+                            .to(Comment::Table, Comment::Id),
                     )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_comment_file_upload_upload")
                             .from(CommentFileUpload::Table, CommentFileUpload::FileUploadId)
-                            .to(FileUpload::Table, FileUpload::Id)
+                            .to(FileUpload::Table, FileUpload::Id),
                     )
                     .to_owned(),
             )
@@ -195,6 +193,52 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await?;
+
+        // Ensure project_notes.project_id -> project.id uses (drop and recreate FK if needed)
+        match manager.get_database_backend() {
+            DatabaseBackend::Postgres => {
+                manager
+                    .get_connection()
+                    .execute(sea_orm::Statement::from_string(
+                        manager.get_database_backend(),
+                        r#"ALTER TABLE "project_notes" DROP CONSTRAINT IF EXISTS "fk_project_notes_project";"#
+                            .to_owned(),
+                    ))
+                    .await?;
+                manager
+                    .get_connection()
+                    .execute(sea_orm::Statement::from_string(
+                        manager.get_database_backend(),
+                        r#"ALTER TABLE "project_notes"
+                           ADD CONSTRAINT "fk_project_notes_project"
+                           FOREIGN KEY ("project_id") REFERENCES "project" ("id");"#
+                            .to_owned(),
+                    ))
+                    .await?;
+            }
+            DatabaseBackend::MySql => {
+                // MySQL requires dropping the foreign key by name, then re-adding with
+                manager
+                    .get_connection()
+                    .execute(sea_orm::Statement::from_string(
+                        manager.get_database_backend(),
+                        "ALTER TABLE project_notes DROP FOREIGN KEY fk_project_notes_project;"
+                            .to_owned(),
+                    ))
+                    .await
+                    .ok(); // ignore if it doesn't exist
+                manager
+                    .get_connection()
+                    .execute(sea_orm::Statement::from_string(
+                        manager.get_database_backend(),
+                        "ALTER TABLE project_notes ADD CONSTRAINT fk_project_notes_project FOREIGN KEY (project_id) REFERENCES project(id);".to_owned(),
+                    ))
+                    .await?;
+            }
+            DatabaseBackend::Sqlite => {
+                // SQLite cannot alter existing FKs in place; requires table rebuild. Skipping.
+            }
+        }
 
         Ok(())
     }

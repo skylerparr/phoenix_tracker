@@ -144,4 +144,26 @@ impl ProjectNoteCrud {
 
         return Ok(result);
     }
+
+    pub async fn delete_all_by_project_id(&self, project_id: i32) -> Result<(), DbErr> {
+        let current_project_id = self.app_state.project.clone().unwrap().id;
+        if current_project_id != project_id {
+            return Err(DbErr::Custom(
+                "Project id mismatch with current context".to_owned(),
+            ));
+        }
+
+        // Load all project notes for this project
+        let notes = project_note::Entity::find()
+            .filter(project_note::Column::ProjectId.eq(project_id))
+            .order_by_asc(project_note::Column::CreatedAt)
+            .all(&self.app_state.db)
+            .await?;
+
+        for n in notes {
+            // Reuse existing deletion logic (removes uploads and broadcasts)
+            self.delete(n.id).await?;
+        }
+        Ok(())
+    }
 }

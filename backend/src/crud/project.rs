@@ -1,6 +1,7 @@
 use crate::crud::issue::IssueCrud;
 use crate::crud::notification::NotificationCrud;
 use crate::crud::owner::OwnerCrud;
+use crate::crud::project_note::ProjectNoteCrud;
 use crate::crud::tag::TagCrud;
 use crate::entities::issue;
 use crate::entities::project;
@@ -185,6 +186,9 @@ impl ProjectCrud {
 
         let tag_crud = TagCrud::new(self.state.clone());
         tag_crud.delete_all_for_project(id).await?;
+
+        let project_note_crud = ProjectNoteCrud::new(self.state.clone());
+        project_note_crud.delete_all_by_project_id(id).await?;
 
         project_user::Entity::delete_many()
             .filter(project_user::Column::ProjectId.eq(id))
