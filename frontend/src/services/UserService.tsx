@@ -1,5 +1,6 @@
 import { WebSocketEnabledService } from "./base/WebSocketService";
 import { User } from "../models/User";
+import { UserCacheManager, CacheKeys } from "../utils/CacheManager";
 
 interface CreateUserRequest {
   name: string;
@@ -12,7 +13,6 @@ interface UpdateUserRequest {
 }
 
 export class UserService extends WebSocketEnabledService<User> {
-  private usersCache: User[] | null = null;
   private getAllPromisesCache: ((value: User[]) => void)[] = [];
   private loading: boolean = false;
 
@@ -29,7 +29,10 @@ export class UserService extends WebSocketEnabledService<User> {
   }
 
   async getAllUsers(): Promise<User[]> {
-    if (this.usersCache) return this.usersCache;
+    const cacheKey = CacheKeys.USERS.ALL;
+    const cached = UserCacheManager.get(cacheKey);
+    if (cached !== null) return cached as User[];
+
     if (this.loading) {
       return new Promise<User[]>((resolve) => {
         this.getAllPromisesCache.push(resolve);
@@ -43,17 +46,18 @@ export class UserService extends WebSocketEnabledService<User> {
 
     if (!response.ok) throw new Error("Failed to fetch users");
     const data = await response.json();
-    this.usersCache = data.map((item: any) => this.createInstance(item));
+    const users = data.map((item: any) => this.createInstance(item));
+    UserCacheManager.set(cacheKey, users);
 
     while (this.getAllPromisesCache.length > 0) {
       const resolve = this.getAllPromisesCache.pop();
       if (resolve) {
-        resolve(this.usersCache!);
+        resolve(users);
       }
     }
 
     this.loading = false;
-    return this.usersCache!;
+    return users;
   }
 
   async getUser(id: number): Promise<User> {
@@ -98,7 +102,8 @@ export class UserService extends WebSocketEnabledService<User> {
   }
 
   private async notifyCallbacks(): Promise<void> {
-    this.usersCache = null;
+    // Invalidate cache and refetch
+    UserCacheManager.clear(CacheKeys.USERS.ALL);
     const data = await this.getAllUsers();
     for (const callback of this.callbacks) {
       callback(data);
