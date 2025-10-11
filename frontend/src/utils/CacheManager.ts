@@ -142,6 +142,7 @@ export const IssueCacheManager = new CacheManager<any[]>();
 export const UserCacheManager = new CacheManager<any[]>();
 export const TagCacheManager = new CacheManager<any[]>();
 export const ProjectCacheManager = new CacheManager<any[]>();
+export const IssueAssigneeCacheManager = new CacheManager<any[]>();
 
 /**
  * Cache key constants to avoid magic strings
@@ -163,6 +164,9 @@ export const CacheKeys = {
   },
   PROJECTS: {
     USER_PROJECTS: "projects:user",
+  },
+  ASSIGNEES: {
+    BY_ISSUE: (issueId: number) => `assignees:issue:${issueId}`,
   },
 } as const;
 

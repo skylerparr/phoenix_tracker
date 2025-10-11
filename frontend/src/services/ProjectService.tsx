@@ -1,6 +1,8 @@
 import { BaseService } from "./base/BaseService";
 import { Project } from "../models/Project";
 import { sessionStorage } from "../store/Session";
+import { clearProjectCaches } from "../utils/CacheManager";
+import { WebsocketService } from "./WebSocketService";
 
 interface CreateProjectRequest {
   name: string;
@@ -56,6 +58,7 @@ export class ProjectService extends BaseService<Project> {
     const data = await response.json();
 
     // Update session storage with new token
+    await WebsocketService.unsubscribe();
     sessionStorage.updateUserToken(data.token);
 
     // Verify the token was set correctly multiple times to ensure it's stable
@@ -77,6 +80,10 @@ export class ProjectService extends BaseService<Project> {
 
     // Add a longer delay to ensure all async token updates are complete
     await new Promise((resolve) => setTimeout(resolve, 300));
+
+    // Clear project-scoped caches and resubscribe WebSocket to the new project
+    clearProjectCaches();
+    await WebsocketService.subscribe();
   }
 }
 

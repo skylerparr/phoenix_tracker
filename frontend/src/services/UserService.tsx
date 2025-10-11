@@ -1,5 +1,6 @@
-import { WebSocketEnabledService } from "./base/WebSocketService";
+import { BaseService } from "./base/BaseService";
 import { User } from "../models/User";
+import { WebsocketService } from "./WebSocketService";
 import { UserCacheManager, CacheKeys } from "../utils/CacheManager";
 
 interface CreateUserRequest {
@@ -12,9 +13,15 @@ interface UpdateUserRequest {
   email?: string;
 }
 
-export class UserService extends WebSocketEnabledService<User> {
+export class UserService extends BaseService<User> {
   private getAllPromisesCache: ((value: User[]) => void)[] = [];
   private loading: boolean = false;
+  private websocketSubscriptions: Set<() => Promise<void> | void> = new Set();
+  private userEventHandlers: {
+    created?: (data: { user: User }) => void;
+    updated?: (data: { user: User }) => void;
+    deleted?: (data: { id: number }) => void;
+  } = {};
 
   constructor() {
     super("/users");
@@ -25,7 +32,9 @@ export class UserService extends WebSocketEnabledService<User> {
   }
 
   async createUser(request: CreateUserRequest): Promise<User> {
-    return this.post<User>("", request);
+    const result = await this.post<User>("", request);
+    await this.refreshUsersCache();
+    return result;
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -69,44 +78,103 @@ export class UserService extends WebSocketEnabledService<User> {
   }
 
   async updateUser(id: number, request: UpdateUserRequest): Promise<User> {
-    return this.put<User>(`/${id}`, request);
+    const result = await this.put<User>(`/${id}`, request);
+    await this.refreshUsersCache();
+    return result;
   }
 
   async deleteUser(id: number): Promise<void> {
-    return this.delete(`/${id}`);
+    await this.delete(`/${id}`);
+    await this.refreshUsersCache();
   }
 
   async inviteUser(email: string): Promise<User> {
-    return this.post<User>("/invite", { email });
+    const result = await this.post<User>("/invite", { email });
+    await this.refreshUsersCache();
+    return result;
   }
   async removeUser(id: number): Promise<void> {
-    return this.delete(`/${id}/remove`);
+    await this.delete(`/${id}/remove`);
+    await this.refreshUsersCache();
   }
 
   subscribeToGetAllUsers(callback: (users: User[]) => void): void {
-    this.subscribe(callback, this.notifyCallbacks.bind(this));
-    this.setupWebSocketSubscription(this.notifyCallbacks.bind(this), [
-      "UserCreatedEvent",
-      "UserUpdatedEvent",
-      "UserDeletedEvent",
-    ]);
+    const cacheKey = CacheKeys.USERS.ALL;
+    UserCacheManager.subscribe(cacheKey, callback);
+
+    if (!UserCacheManager.has(cacheKey)) {
+      this.refreshUsersCache().catch((e) =>
+        console.error("Failed to refresh users cache:", e),
+      );
+    }
+
+    this.ensureWebSocketSubscriptions();
   }
 
   unsubscribeFromGetAllUsers(callback: (users: User[]) => void): void {
-    this.unsubscribe(callback);
-    this.cleanupWebSocketSubscription(this.notifyCallbacks.bind(this), [
-      "UserCreatedEvent",
-      "UserUpdatedEvent",
-      "UserDeletedEvent",
-    ]);
+    const cacheKey = CacheKeys.USERS.ALL;
+    UserCacheManager.unsubscribe(cacheKey, callback);
+
+    if (UserCacheManager.getSubscribedKeys().length === 0) {
+      this.teardownWebSocketSubscriptions();
+    }
   }
 
-  private async notifyCallbacks(): Promise<void> {
-    // Invalidate cache and refetch
-    UserCacheManager.clear(CacheKeys.USERS.ALL);
-    const data = await this.getAllUsers();
-    for (const callback of this.callbacks) {
-      callback(data);
+  private ensureWebSocketSubscriptions(): void {
+    if (this.websocketSubscriptions.size > 0) return;
+
+    this.userEventHandlers.created = async () => {
+      await this.refreshUsersCache();
+    };
+    this.userEventHandlers.updated = async () => {
+      await this.refreshUsersCache();
+    };
+    this.userEventHandlers.deleted = async () => {
+      await this.refreshUsersCache();
+    };
+
+    WebsocketService.subscribeToUserCreatedEvent(
+      this.userEventHandlers.created!,
+    );
+    WebsocketService.subscribeToUserUpdatedEvent(
+      this.userEventHandlers.updated!,
+    );
+    WebsocketService.subscribeToUserDeletedEvent(
+      this.userEventHandlers.deleted!,
+    );
+
+    this.websocketSubscriptions.add(async () => {
+      WebsocketService.unsubscribeToUserCreatedEvent(
+        this.userEventHandlers.created!,
+      );
+      WebsocketService.unsubscribeToUserUpdatedEvent(
+        this.userEventHandlers.updated!,
+      );
+      WebsocketService.unsubscribeToUserDeletedEvent(
+        this.userEventHandlers.deleted!,
+      );
+    });
+  }
+
+  private teardownWebSocketSubscriptions(): void {
+    this.websocketSubscriptions.forEach((unsubscribe) => {
+      const result = unsubscribe();
+      if (result && typeof (result as any).then === "function") {
+        (result as Promise<void>).catch((e) =>
+          console.error("WS unsubscribe error:", e),
+        );
+      }
+    });
+    this.websocketSubscriptions.clear();
+  }
+
+  private async refreshUsersCache(): Promise<void> {
+    const cacheKey = CacheKeys.USERS.ALL;
+    UserCacheManager.clear(cacheKey);
+    try {
+      await this.getAllUsers();
+    } catch (error) {
+      console.error("Failed to refresh users cache:", error);
     }
   }
 }
