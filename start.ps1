@@ -2,7 +2,7 @@
 Write-Host "Setting environment variables..."
 
 # Set the variables in current PowerShell environment too
-$Env:COMPOSE_PROFILES="dev,localstack"
+$Env:COMPOSE_PROFILES="dev"
 $Env:DATABASE_URL="postgresql://postgres:postgres@postgres:5432/phoenix_tracker"
 $Env:FRONTEND_URL="http://localhost:4000"
 $Env:REACT_APP_API_BASE_URL="http://localhost:3001"
@@ -15,11 +15,5 @@ Write-Host "REACT_APP_API_BASE_URL: $Env:REACT_APP_API_BASE_URL"
 Write-Host "DATABASE_URL: $Env:DATABASE_URL"
 Write-Host "FILE_STORE_SCHEME: $Env:FILE_STORE_SCHEME"
 Write-Host "BASE_FILE_PATH: $Env:BASE_FILE_PATH"
-Write-Host "COMPOSE_PROFILES: $Env:COMPOSE_PROFILES"
 
-# Run Docker Compose
-Write-Host "Starting Docker Compose with profiles: $Env:COMPOSE_PROFILES"
-
-# Start the full stack with the localstack profile enabled
-Write-Host "Bringing up the stack..."
-docker compose --profile localstack up
+docker compose up

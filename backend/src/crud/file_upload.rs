@@ -627,7 +627,13 @@ impl AwsS3FileStore {
             .presigned(conf)
             .await
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-        Ok(presigned.uri().to_string())
+        let mut url = presigned.uri().to_string();
+        if let Some(public_ep) = environment::s3_public_endpoint_url() {
+            if let Some(new_url) = replace_endpoint(&url, public_ep) {
+                url = new_url;
+            }
+        }
+        Ok(url)
     }
 }
 
@@ -784,4 +790,14 @@ fn build_storage_key(guid: &str, ext: &str) -> String {
 
 fn to_db_err(e: std::io::Error) -> DbErr {
     DbErr::Custom(format!("file store error: {}", e))
+}
+
+fn replace_endpoint(url: &str, new_base: &str) -> Option<String> {
+    let scheme_sep = "://";
+    let i = url.find(scheme_sep)?;
+    let rest = &url[i + scheme_sep.len()..];
+    let slash = rest.find('/')?;
+    let path_and_query = &rest[slash..];
+    let base = new_base.trim_end_matches('/');
+    Some(format!("{}{}", base, path_and_query))
 }

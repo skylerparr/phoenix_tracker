@@ -59,6 +59,7 @@ lazy_static! {
     static ref S3_BUCKET: Option<String> = env::var("S3_BUCKET").ok();
     static ref AWS_REGION: Option<String> = env::var("AWS_REGION").ok();
     static ref S3_ENDPOINT_URL: Option<String> = env::var("S3_ENDPOINT_URL").ok();
+    static ref S3_PUBLIC_ENDPOINT_URL: Option<String> = env::var("S3_PUBLIC_ENDPOINT_URL").ok();
     static ref S3_FORCE_PATH_STYLE: bool = env::var("S3_FORCE_PATH_STYLE")
         .ok()
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true") || v.eq_ignore_ascii_case("yes"))
@@ -127,6 +128,10 @@ pub fn s3_region() -> Option<&'static str> {
 
 pub fn s3_endpoint_url() -> Option<&'static str> {
     S3_ENDPOINT_URL.as_deref()
+}
+
+pub fn s3_public_endpoint_url() -> Option<&'static str> {
+    S3_PUBLIC_ENDPOINT_URL.as_deref()
 }
 
 pub fn s3_force_path_style() -> bool {

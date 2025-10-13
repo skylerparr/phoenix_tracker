@@ -18,9 +18,16 @@ services:
       - FILE_STORE_SCHEME=${FILE_STORE_SCHEME}
       - BASE_FILE_PATH=${BASE_FILE_PATH}
       - PORT=3001
+      # AWS/LocalStack S3 configuration
+      - S3_BUCKET=${S3_BUCKET}
+      - AWS_REGION=${AWS_REGION}
+      - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-http://localstack:4566}
+      - S3_PUBLIC_ENDPOINT_URL=${S3_PUBLIC_ENDPOINT_URL:-http://localhost:4566}
+      - S3_FORCE_PATH_STYLE=${S3_FORCE_PATH_STYLE:-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     depends_on:
       - postgres
-      - localstack
 
   frontend:
     build:
@@ -59,6 +66,8 @@ services:
       - localstack
     ports:
       - "4566:4566"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:4566/_localstack/health | grep -q '\"s3\": \"available\"'"]
     environment:
       - SERVICES=s3
       - DEBUG=1
