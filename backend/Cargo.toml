@@ -24,6 +24,8 @@ lazy_static = "1.5.0"
 serde_with = "3.12.0"
 jsonwebtoken = "9.3.0"
 serde_urlencoded = "0.7.1"
+aws-config = "1.8.8"
+aws-sdk-s3 = "1.108.0"
 
 [profile.dev]
 incremental = true

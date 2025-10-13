@@ -10,8 +10,16 @@ use rand::{distributions::Alphanumeric, Rng};
 use sea_orm::sea_query::Expr;
 use sea_orm::*;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
+
+use aws_config::BehaviorVersion;
+use aws_sdk_s3::config::Region;
+use aws_sdk_s3::presigning::PresigningConfig;
+use aws_sdk_s3::primitives::ByteStream;
+use aws_sdk_s3::Client as S3Client;
+
 #[derive(Clone)]
 pub struct FileUploadCrud {
     app_state: AppState,
@@ -39,7 +47,7 @@ impl FileUploadCrud {
 
     // Generate a browser-accessible URL for a given upload.
     // - local: backend serves the file via authorized endpoint
-    // - aws: TODO implement presigned S3 URL
+    // - aws: return a presigned S3 GET URL
     pub async fn generate_browser_url(&self, upload: &file_upload::Model) -> Result<String, DbErr> {
         let scheme = environment::file_store_scheme();
         match scheme {
@@ -55,9 +63,15 @@ impl FileUploadCrud {
                     self.app_state.bearer_token.clone().unwrap()
                 ))
             }
-            "aws" => Err(DbErr::Custom(
-                "TODO: implement AWS presigned URL generation".to_string(),
-            )),
+            "aws" => {
+                let ttl = environment::s3_presign_ttl_seconds();
+                let store = FileStore::from_env().await?;
+                let url = store
+                    .presign_get_url(&upload.path, ttl)
+                    .await
+                    .map_err(to_db_err)?;
+                Ok(url)
+            }
             other => Err(DbErr::Custom(format!(
                 "Unsupported FILE_STORE_SCHEME for URL generation: {}",
                 other
@@ -243,7 +257,7 @@ impl FileUploadCrud {
         file_upload::Entity::delete_by_id(id).exec(txn).await?;
 
         // Delete the underlying object from storage
-        let store = FileStore::from_env()?;
+        let store = FileStore::from_env().await?;
         store.delete(&model.path).await.map_err(to_db_err)?;
 
         Ok(())
@@ -262,7 +276,7 @@ impl FileUploadCrud {
         }
 
         let cfu_crud = CommentFileUploadCrud::new(self.app_state.clone());
-        let store = FileStore::from_env()?;
+        let store = FileStore::from_env().await?;
 
         for u in uploads {
             // Remove comment-file mappings for this upload
@@ -326,7 +340,7 @@ impl FileUploadCrud {
         let final_filename = format!("{}.{}", guid, ext);
         let storage_key = build_storage_key(&guid, &ext);
 
-        let store = FileStore::from_env()?;
+        let store = FileStore::from_env().await?;
 
         // Handle collisions by regenerating GUID
         let storage_key = ensure_unique_key(&store, storage_key, &ext, 5).await?;
@@ -382,11 +396,11 @@ struct FileStore {
 #[derive(Clone)]
 enum FileStoreInner {
     Local(LocalFileStore),
-    Aws, // stub only; not implemented yet
+    Aws(AwsS3FileStore),
 }
 
 impl FileStore {
-    fn from_env() -> Result<Self, DbErr> {
+    async fn from_env() -> Result<Self, DbErr> {
         let scheme = environment::file_store_scheme().to_string();
         match scheme.as_str() {
             "local" => {
@@ -397,9 +411,33 @@ impl FileStore {
                     inner: FileStoreInner::Local(LocalFileStore { base_path: base }),
                 })
             }
-            "aws" => Ok(Self {
-                inner: FileStoreInner::Aws,
-            }),
+            "aws" => {
+                let bucket = environment::s3_bucket()
+                    .ok_or_else(|| {
+                        DbErr::Custom("S3_BUCKET must be set when using aws store".into())
+                    })?
+                    .to_string();
+
+                // Build shared AWS config from env and overrides
+                let mut loader = aws_config::defaults(BehaviorVersion::latest());
+                if let Some(region) = environment::s3_region() {
+                    loader = loader.region(Region::new(region.to_string()));
+                }
+                let shared = loader.load().await;
+                let mut conf_builder = aws_sdk_s3::config::Builder::from(&shared);
+                if let Some(endpoint) = environment::s3_endpoint_url() {
+                    conf_builder = conf_builder.endpoint_url(endpoint.to_string());
+                }
+                if environment::s3_force_path_style() {
+                    conf_builder = conf_builder.force_path_style(true);
+                }
+                let conf = conf_builder.build();
+                let client = S3Client::from_conf(conf);
+
+                Ok(Self {
+                    inner: FileStoreInner::Aws(AwsS3FileStore { client, bucket }),
+                })
+            }
             other => Err(DbErr::Custom(format!(
                 "Unsupported FILE_STORE_SCHEME: {} (expected 'local' or 'aws')",
                 other
@@ -410,10 +448,7 @@ impl FileStore {
     async fn exists(&self, storage_key: &str) -> Result<bool, std::io::Error> {
         match &self.inner {
             FileStoreInner::Local(s) => s.exists(storage_key).await,
-            FileStoreInner::Aws => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "AWS exists() not implemented",
-            )),
+            FileStoreInner::Aws(s) => s.exists(storage_key).await,
         }
     }
 
@@ -424,23 +459,33 @@ impl FileStore {
         content_length: i64,
         bytes: &[u8],
     ) -> Result<(), std::io::Error> {
-        let _ = (content_type, content_length); // currently unused for Local
         match &self.inner {
             FileStoreInner::Local(s) => s.put(storage_key, bytes).await,
-            FileStoreInner::Aws => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "AWS put() not implemented",
-            )),
+            FileStoreInner::Aws(s) => {
+                s.put(storage_key, content_type, content_length, bytes)
+                    .await
+            }
         }
     }
 
     async fn delete(&self, storage_key: &str) -> Result<(), std::io::Error> {
         match &self.inner {
             FileStoreInner::Local(s) => s.delete(storage_key).await,
-            FileStoreInner::Aws => Err(std::io::Error::new(
+            FileStoreInner::Aws(s) => s.delete(storage_key).await,
+        }
+    }
+
+    async fn presign_get_url(
+        &self,
+        storage_key: &str,
+        ttl_secs: u64,
+    ) -> Result<String, std::io::Error> {
+        match &self.inner {
+            FileStoreInner::Local(_) => Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
-                "AWS delete() not implemented",
+                "presign not supported for local store",
             )),
+            FileStoreInner::Aws(s) => s.presign_get_url(storage_key, ttl_secs).await,
         }
     }
 }
@@ -448,6 +493,12 @@ impl FileStore {
 #[derive(Clone)]
 struct LocalFileStore {
     base_path: PathBuf,
+}
+
+#[derive(Clone)]
+struct AwsS3FileStore {
+    client: S3Client,
+    bucket: String,
 }
 
 impl LocalFileStore {
@@ -493,6 +544,90 @@ impl LocalFileStore {
             let _ = fs::remove_file(&full_path).await;
         }
         Ok(())
+    }
+}
+
+impl AwsS3FileStore {
+    async fn exists(&self, storage_key: &str) -> Result<bool, std::io::Error> {
+        // Try HEAD first
+        let head = self
+            .client
+            .head_object()
+            .bucket(&self.bucket)
+            .key(storage_key)
+            .send()
+            .await;
+        match head {
+            Ok(_) => Ok(true),
+            Err(_) => {
+                // Fallback to a prefix list (avoids needing to parse error codes)
+                let list = self
+                    .client
+                    .list_objects_v2()
+                    .bucket(&self.bucket)
+                    .prefix(storage_key)
+                    .max_keys(1)
+                    .send()
+                    .await
+                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+                let objs = list.contents();
+                let found = objs.iter().any(|o| match o.key() {
+                    Some(k) => k == storage_key,
+                    None => false,
+                });
+                Ok(found)
+            }
+        }
+    }
+
+    async fn put(
+        &self,
+        storage_key: &str,
+        content_type: &str,
+        content_length: i64,
+        bytes: &[u8],
+    ) -> Result<(), std::io::Error> {
+        let body = ByteStream::from(bytes.to_vec());
+        self.client
+            .put_object()
+            .bucket(&self.bucket)
+            .key(storage_key)
+            .content_type(content_type.to_string())
+            .content_length(content_length)
+            .body(body)
+            .send()
+            .await
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        Ok(())
+    }
+
+    async fn delete(&self, storage_key: &str) -> Result<(), std::io::Error> {
+        self.client
+            .delete_object()
+            .bucket(&self.bucket)
+            .key(storage_key)
+            .send()
+            .await
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        Ok(())
+    }
+
+    async fn presign_get_url(
+        &self,
+        storage_key: &str,
+        ttl_secs: u64,
+    ) -> Result<String, std::io::Error> {
+        let conf = PresigningConfig::expires_in(Duration::from_secs(ttl_secs))
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        let presigned = self
+            .client
+            .get_object()
+            .bucket(&self.bucket)
+            .key(storage_key)
+            .presigned(conf)
+            .await
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        Ok(presigned.uri().to_string())
     }
 }
 

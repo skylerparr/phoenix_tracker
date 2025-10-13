@@ -54,6 +54,19 @@ lazy_static! {
         .ok()
         .and_then(|v| v.parse::<i64>().ok())
         .unwrap_or(10);
+
+    // AWS S3 configuration (used when FILE_STORE_SCHEME=aws)
+    static ref S3_BUCKET: Option<String> = env::var("S3_BUCKET").ok();
+    static ref AWS_REGION: Option<String> = env::var("AWS_REGION").ok();
+    static ref S3_ENDPOINT_URL: Option<String> = env::var("S3_ENDPOINT_URL").ok();
+    static ref S3_FORCE_PATH_STYLE: bool = env::var("S3_FORCE_PATH_STYLE")
+        .ok()
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true") || v.eq_ignore_ascii_case("yes"))
+        .unwrap_or(false);
+    static ref S3_PRESIGN_TTL_SECONDS: u64 = env::var("S3_PRESIGN_TTL_SECONDS")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(900);
 }
 
 // ---- Public accessors (static-style) ----
@@ -100,4 +113,26 @@ pub fn max_upload_size_mb() -> i64 {
 
 pub fn max_upload_size_bytes() -> usize {
     max_upload_size_mb() as usize * 1024 * 1024
+}
+
+// ---- S3-specific accessors ----
+
+pub fn s3_bucket() -> Option<&'static str> {
+    S3_BUCKET.as_deref()
+}
+
+pub fn s3_region() -> Option<&'static str> {
+    AWS_REGION.as_deref()
+}
+
+pub fn s3_endpoint_url() -> Option<&'static str> {
+    S3_ENDPOINT_URL.as_deref()
+}
+
+pub fn s3_force_path_style() -> bool {
+    *S3_FORCE_PATH_STYLE
+}
+
+pub fn s3_presign_ttl_seconds() -> u64 {
+    *S3_PRESIGN_TTL_SECONDS
 }

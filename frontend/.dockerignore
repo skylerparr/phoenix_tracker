@@ -1,0 +1,31 @@
+# Ignore local dependencies to avoid Windows symlink issues during Docker build
+node_modules
+**/node_modules
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build artifacts
+build
+dist
+coverage
+
+# VCS and editor files
+.git
+.gitignore
+.svn
+.hg
+.DS_Store
+.idea
+.vscode
+
+# Env files
+.env
+.env.*
+
+# Docker-related but not needed in context
+Dockerfile
+Dockerfile.dev
+docker-compose.yml

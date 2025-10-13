@@ -20,6 +20,7 @@ services:
       - PORT=3001
     depends_on:
       - postgres
+      - localstack
 
   frontend:
     build:
@@ -33,7 +34,7 @@ services:
       - ./frontend/tsconfig.json:/app/tsconfig.json
       - /app/node_modules
     command: >
-      sh -c 'echo "window.ENV = { REACT_APP_API_BASE_URL: \"$$REACT_APP_API_BASE_URL\" };" > /app/public/runtime-config.js && npm start'
+      sh -c 'npm ci && echo "window.ENV = { REACT_APP_API_BASE_URL: \"$$REACT_APP_API_BASE_URL\" };" > /app/public/runtime-config.js && npm start'
     ports:
       - "4000:3000"
     environment:
@@ -52,8 +53,23 @@ services:
     ports:
       - "5432:5432"
 
+  localstack:
+    image: localstack/localstack:latest
+    profiles:
+      - localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - DEBUG=1
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+    volumes:
+      - localstack-data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+
 volumes:
   backend_data:
   cargo-target:
   cargo-registry:
   postgres_data:
+  localstack-data:
