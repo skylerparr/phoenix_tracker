@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Box, Typography, IconButton } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { notificationService } from "../services/NotificationService";
 import { Notification } from "../models/Notification";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
@@ -7,7 +7,7 @@ import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 
 const NotificationsComponent: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [notificationCount, setNotificationCount] = useState<number>(0);
+  const [, setNotificationCount] = useState<number>(0);
 
   useEffect(() => {
     loadNotifications();

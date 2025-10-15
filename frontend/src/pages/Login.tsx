@@ -3,7 +3,6 @@ import { Box, TextField, Button, Typography, Container } from "@mui/material";
 import { authService } from "../services/AuthService";
 import { sessionStorage } from "../store/Session";
 import { useNavigate } from "react-router-dom";
-import { projectService } from "../services/ProjectService";
 
 const Login = () => {
   const navigate = useNavigate();

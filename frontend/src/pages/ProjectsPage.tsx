@@ -14,7 +14,6 @@ import { useNavigate } from "react-router-dom";
 import RequireAuth from "../components/RequireAuth";
 import { projectService } from "../services/ProjectService";
 import { Project } from "../models/Project";
-import { sessionStorage } from "../store/Session";
 
 const ProjectsPage: React.FC = () => {
   const navigate = useNavigate();

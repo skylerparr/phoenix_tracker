@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography, Paper, Stack, Avatar } from "@mui/material";
+import { Box, Typography, Stack } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { User } from "../models/User";
 import { History } from "../models/History";

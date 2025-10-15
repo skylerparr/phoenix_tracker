@@ -88,7 +88,6 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   const [issue, setIssue] = useState<Issue>(originalIssue);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [assignedUsers, setAssignedUsers] = useState<User[]>([]);
-  const [comment, setComment] = useState<string>("");
   const [comments, setComments] = useState<Comment[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);

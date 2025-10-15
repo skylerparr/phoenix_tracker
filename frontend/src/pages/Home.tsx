@@ -233,7 +233,7 @@ const Home = () => {
     return paramMap;
   };
   const location = useLocation();
-  const [queryParams, setQueryParams] = useState(() => createParamMap());
+  const [, setQueryParams] = useState(() => createParamMap());
   const [projectRefreshKey, setProjectRefreshKey] = useState(0);
 
   useEffect(() => {

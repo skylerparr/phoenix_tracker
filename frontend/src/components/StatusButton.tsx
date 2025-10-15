@@ -15,7 +15,6 @@ import {
   Issue,
   POINTS,
   WORK_TYPE_CHORE,
-  WORK_TYPE_BUG,
   WORK_TYPE_FEATURE,
   WORK_TYPE_RELEASE,
 } from "../models/Issue";
