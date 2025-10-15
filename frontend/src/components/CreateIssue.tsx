@@ -112,7 +112,7 @@ const CreateIssue: React.FC = () => {
 
       setTitle("");
       setDescription("");
-      setSelectedType(null);
+      setSelectedType(WORK_TYPE_FEATURE);
       setSelectedTags([]);
       setSelectedAssignees([]);
       setSelectedPoints(null);
