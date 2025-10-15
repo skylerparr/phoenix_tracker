@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Box } from "@mui/material";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { Issue } from "../models/Issue";
+import { Issue, WORK_TYPE_RELEASE } from "../models/Issue";
 import { IssueComponent } from "./IssueComponent";
 import IssueGroup from "./IssueGroup";
 import ReleaseStatusBar from "./ReleaseStatusBar";
@@ -38,6 +38,63 @@ const IssueList: React.FC<IssueListProps> = ({
   React.useEffect(() => {
     setIssues(originalIssues);
   }, [originalIssues]);
+
+  // Include release bars for any incomplete releases even if their target date is in the past
+  const effectiveReleaseData: ReleaseData[] = React.useMemo(() => {
+    // Derive a weekly average from provided release data (if any future releases exist)
+    const baseWeeklyAverage =
+      releaseData
+        .filter((d) => d.weeksUntilRelease > 0)
+        .map((d) => d.expectedPointsCapacity / d.weeksUntilRelease)[0] ?? null;
+
+    // Only keep releases that are not completed
+    const notCompleted = releaseData.filter((d) => !d.release.acceptedAt);
+
+    const existingIds = new Set(notCompleted.map((d) => d.release.id));
+    const extras: ReleaseData[] = [];
+
+    const now = new Date();
+
+    issues.forEach((issue, idx) => {
+      if (
+        issue.workType === WORK_TYPE_RELEASE &&
+        !issue.acceptedAt &&
+        issue.targetReleaseAt &&
+        !existingIds.has(issue.id)
+      ) {
+        const totalPoints = issues
+          .slice(0, idx)
+          .reduce((sum, i) => sum + (i.points || 0), 0);
+
+        const weeksUntilRelease = Math.ceil(
+          (new Date(issue.targetReleaseAt).getTime() - now.getTime()) /
+            (7 * 24 * 60 * 60 * 1000),
+        );
+
+        const weeklyAvg = baseWeeklyAverage ?? 10;
+        const expectedPointsCapacity = weeklyAvg * weeksUntilRelease;
+
+        const predictedCompletionWeeks = Math.ceil(
+          totalPoints / (weeklyAvg || 1),
+        );
+        const predictedCompletionDate = new Date(now);
+        predictedCompletionDate.setDate(
+          predictedCompletionDate.getDate() + predictedCompletionWeeks * 7,
+        );
+
+        extras.push({
+          release: issue,
+          totalPoints,
+          weeksUntilRelease,
+          expectedPointsCapacity,
+          willComplete: expectedPointsCapacity >= totalPoints,
+          predictedCompletionDate,
+        });
+      }
+    });
+
+    return [...notCompleted, ...extras];
+  }, [issues, releaseData]);
 
   const handleExpandIssue = (issueId: number) => {
     const copyOfExpandedIssueIds = new Set(expandedIssueIds);
@@ -128,7 +185,7 @@ const IssueList: React.FC<IssueListProps> = ({
     );
 
     // Calculate the position in the list where each release would be completed
-    releaseData.forEach((data) => {
+    effectiveReleaseData.forEach((data) => {
       // Find where in the backlog the predicted completion would occur
       let totalPointsSoFar = 0;
       let insertPosition = -1;
@@ -214,9 +271,9 @@ const IssueList: React.FC<IssueListProps> = ({
     // Calculate where to place the release status bars
     const releaseCompletionWeeks = new Map<number, ReleaseData[]>();
 
-    if (releaseData.length > 0) {
+    if (effectiveReleaseData.length > 0) {
       // Calculate which week each release would be completed
-      releaseData.forEach((data) => {
+      effectiveReleaseData.forEach((data) => {
         // Calculate which week the release would be completed based on predicted completion date
         if (data.predictedCompletionDate && issues.length > 0) {
           // Try to find the closest scheduled issue to our predicted completion date

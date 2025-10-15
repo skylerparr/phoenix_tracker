@@ -17,6 +17,12 @@ const ReleaseStatusBar: React.FC<ReleaseStatusBarProps> = ({
   expectedPointsCapacity,
   willComplete,
 }: ReleaseStatusBarProps) => {
+  const isOverdue = weeksUntilRelease < 0;
+  const statusLabel = isOverdue
+    ? "Overdue"
+    : willComplete
+      ? "On Track"
+      : "At Risk";
   // Format the release date
   const formatReleaseDate = (date: Date | null) => {
     if (!date) return "Unknown";
@@ -47,16 +53,24 @@ const ReleaseStatusBar: React.FC<ReleaseStatusBarProps> = ({
           <Typography variant="body2">
             Expected Capacity: {expectedPointsCapacity.toFixed(1)} points
           </Typography>
-          <Typography variant="body2">
-            Status: {willComplete ? "On Track" : "At Risk"}
-          </Typography>
+          <Typography variant="body2">Status: {statusLabel}</Typography>
         </>
       }
       arrow
     >
       <Box
         sx={{
-          backgroundColor: willComplete ? "#000000" : "#8B0000",
+          backgroundColor: isOverdue
+            ? "#B71C1C"
+            : willComplete
+              ? "#000000"
+              : "#8B0000",
+          background: isOverdue
+            ? "repeating-linear-gradient(45deg, #ff1744, #ff1744 12px, #b71c1c 12px, #b71c1c 24px)"
+            : undefined,
+          boxShadow: isOverdue
+            ? "0 0 0 2px #b71c1c inset, 0 0 14px rgba(183,28,28,0.7)"
+            : undefined,
           color: "white",
           padding: "2px 16px",
           borderRadius: "4px",
@@ -69,9 +83,11 @@ const ReleaseStatusBar: React.FC<ReleaseStatusBarProps> = ({
           {release.title}
         </Typography>
         <Typography variant="caption">
-          {willComplete
-            ? `On Track (${totalPoints} pts / ${weeksUntilRelease} wks until target)`
-            : `At Risk (${totalPoints} pts / ${weeksUntilRelease} wks until target)`}
+          {isOverdue
+            ? `Overdue (${totalPoints} pts / ${Math.abs(weeksUntilRelease)} wks past target)`
+            : willComplete
+              ? `On Track (${totalPoints} pts / ${weeksUntilRelease} wks until target)`
+              : `At Risk (${totalPoints} pts / ${weeksUntilRelease} wks until target)`}
         </Typography>
       </Box>
     </Tooltip>
