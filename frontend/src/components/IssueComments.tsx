@@ -209,6 +209,7 @@ const IssueComments: React.FC<IssueCommentsProps> = ({
                 </Stack>
               </Box>
             )}
+            <hr />
           </Stack>
         </React.Fragment>
       ))}

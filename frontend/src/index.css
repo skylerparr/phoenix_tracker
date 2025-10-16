@@ -65,3 +65,35 @@ iframe#webpack-dev-server-client-overlay {
 .MuiBox-root.css-30jzfy {
   padding: 0 !important;
 }
+
+/* UIW Markdown theme variables override */
+.wmde-markdown,
+.wmde-markdown-var {
+  --color-canvas-default: rgb(74, 121, 192);
+  --color-canvas-subtle: #8aa2c3;
+}
+
+.wmde-markdown th {
+  background-color: #365b89;
+}
+
+.w-md-editor-toolbar {
+  background-color: #000;
+}
+
+.wmde-markdown a {
+  color: rgb(0, 0, 200);
+}
+
+.w-md-editor-text-input {
+  -webkit-text-fill-color: initial !important;
+  opacity: 1 !important;
+}
+
+.w-md-editor-text-input:empty {
+  -webkit-text-fill-color: inherit !important;
+}
+.w-md-editor-text-input:not(:empty) {
+  -webkit-text-fill-color: rgb(30, 19, 156) !important;
+  opacity: 1 !important;
+}

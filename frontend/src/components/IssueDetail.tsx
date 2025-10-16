@@ -497,7 +497,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
           }}
           sx={{
             width: "18px",
-            height: "18px",
+            height: "22px",
             color: "#000000",
             border: "1px solid #333333",
             backgroundColor: "#f5f5f5",
@@ -506,6 +506,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             alignItems: "center",
             minWidth: 0,
             padding: 0,
+            borderRadius: 0,
             "&:hover": {
               backgroundColor: "#e0e0e0",
             },

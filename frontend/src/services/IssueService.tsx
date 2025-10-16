@@ -229,17 +229,14 @@ export class IssueService extends BaseService<Issue> {
   private ensureWebSocketSubscriptions(): void {
     if (this.websocketSubscriptions.size === 0) {
       const handleIssueCreated = (issue: Issue) => {
-        console.log("WebSocket: Issue created", issue);
         this.debouncedRefreshAllCacheData();
       };
 
       const handleIssueUpdated = (issue: Issue) => {
-        console.log("WebSocket: Issue updated", issue);
         this.debouncedRefreshAllCacheData();
       };
 
       const handleIssueDeleted = (data: { id: number }) => {
-        console.log("WebSocket: Issue deleted", data);
         this.debouncedRefreshAllCacheData();
       };
 
@@ -337,9 +334,6 @@ export class IssueService extends BaseService<Issue> {
 
       // Wait for all cache refreshes to complete
       await Promise.all(refreshPromises);
-      console.log(
-        `Cache refresh completed successfully for ${refreshPromises.length} subscriptions`,
-      );
     } catch (error) {
       console.error("Error during cache refresh:", error);
     } finally {
