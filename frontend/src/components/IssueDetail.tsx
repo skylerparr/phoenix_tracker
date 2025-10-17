@@ -149,20 +149,9 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
       [],
     );
     setAssignedUsers(assignedUsersList);
-    const nameCount: Record<string, number> = {};
+    const displayNameOf = User.buildDisplayNameFormatter(users);
 
-    // Count occurrences of each name
-    users.forEach((user) => {
-      nameCount[user.name] = (nameCount[user.name] || 0) + 1;
-    });
-
-    // Map names, appending email domain for duplicates
-    const formattedUsers = assignedUsersList.map((user) => {
-      if (nameCount[user.name] > 1) {
-        return `${user.name} (${user.email.split("@")[1]})`;
-      }
-      return user.name;
-    });
+    const formattedUsers = assignedUsersList.map(displayNameOf);
 
     setSelectedUsers(formattedUsers);
 
@@ -171,13 +160,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
     );
     setRequestedBy(requestedBy || null);
 
-    // Map names, appending email domain for duplicates
-    const formattedAvailableUsers = users.map((user) => {
-      if (nameCount[user.name] > 1) {
-        return `${user.name} (${user.email.split("@")[1]})`;
-      }
-      return user.name;
-    });
+    const formattedAvailableUsers = users.map(displayNameOf);
 
     setAvailableUsers(formattedAvailableUsers);
   };
@@ -297,24 +280,10 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   };
 
   const handleSetUsers = async (names: string[]) => {
-    const nameCount: Record<string, number> = {};
+    const displayNameOf = User.buildDisplayNameFormatter(users);
 
-    // Count occurrences of each name
-    users.forEach((user) => {
-      nameCount[user.name] = (nameCount[user.name] || 0) + 1;
-    });
-
-    // Map names, appending email domain for duplicates
-    const formattedUsers = users.map((user) => {
-      if (nameCount[user.name] > 1) {
-        user.name = `${user.name} (${user.email.split("@")[1]})`;
-        return user;
-      }
-      return user;
-    });
-
-    const selectedUsers = formattedUsers.filter(
-      (user: { name: string; id: number }) => names.includes(user.name),
+    const selectedUsers = users.filter((user) =>
+      names.includes(displayNameOf(user)),
     );
     // Find users to add (in selectedUsers but not in assignedUsers)
     const usersToAdd = selectedUsers.filter(
