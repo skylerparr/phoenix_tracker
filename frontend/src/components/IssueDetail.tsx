@@ -97,6 +97,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   const [users, setUsers] = useState<User[]>([]);
   const [requestedBy, setRequestedBy] = useState<User | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<string[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [editableTaskIds, setEditableTaskIds] = useState<
     { id: number; title: string }[]
@@ -148,13 +149,37 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
       [],
     );
     setAssignedUsers(assignedUsersList);
-    const assignedUserNames = assignedUsersList.map((user) => user.name);
-    setSelectedUsers(assignedUserNames);
+    const nameCount: Record<string, number> = {};
+
+    // Count occurrences of each name
+    users.forEach((user) => {
+      nameCount[user.name] = (nameCount[user.name] || 0) + 1;
+    });
+
+    // Map names, appending email domain for duplicates
+    const formattedUsers = assignedUsersList.map((user) => {
+      if (nameCount[user.name] > 1) {
+        return `${user.name} (${user.email.split("@")[1]})`;
+      }
+      return user.name;
+    });
+
+    setSelectedUsers(formattedUsers);
 
     const requestedBy = users.find(
       (user) => user.id === originalIssue.createdById,
     );
     setRequestedBy(requestedBy || null);
+
+    // Map names, appending email domain for duplicates
+    const formattedAvailableUsers = users.map((user) => {
+      if (nameCount[user.name] > 1) {
+        return `${user.name} (${user.email.split("@")[1]})`;
+      }
+      return user.name;
+    });
+
+    setAvailableUsers(formattedAvailableUsers);
   };
 
   const fetchComments = async () => {
@@ -272,8 +297,24 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
   };
 
   const handleSetUsers = async (names: string[]) => {
-    const selectedUsers = users.filter((user: { name: string; id: number }) =>
-      names.includes(user.name),
+    const nameCount: Record<string, number> = {};
+
+    // Count occurrences of each name
+    users.forEach((user) => {
+      nameCount[user.name] = (nameCount[user.name] || 0) + 1;
+    });
+
+    // Map names, appending email domain for duplicates
+    const formattedUsers = users.map((user) => {
+      if (nameCount[user.name] > 1) {
+        user.name = `${user.name} (${user.email.split("@")[1]})`;
+        return user;
+      }
+      return user;
+    });
+
+    const selectedUsers = formattedUsers.filter(
+      (user: { name: string; id: number }) => names.includes(user.name),
     );
     // Find users to add (in selectedUsers but not in assignedUsers)
     const usersToAdd = selectedUsers.filter(
@@ -826,7 +867,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
                 }}
               >
                 <IssueAutoCompleteComponent
-                  options={users.map((user: { name: string }) => user.name)}
+                  options={availableUsers}
                   value={selectedUsers}
                   onChange={handleSetUsers}
                   inputValue={userInputValue}

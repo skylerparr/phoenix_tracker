@@ -279,14 +279,11 @@ export class IssueService extends BaseService<Issue> {
     }
 
     this.isRefreshing = true;
-    console.log("Starting cache refresh...");
 
     try {
       const subscribedKeys = IssueCacheManager.getSubscribedKeys();
-      console.log("Refreshing subscribed cache keys:", subscribedKeys);
 
       if (subscribedKeys.length === 0) {
-        console.log("No active subscriptions, skipping cache refresh");
         return;
       }
 

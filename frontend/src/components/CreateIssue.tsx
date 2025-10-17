@@ -50,7 +50,22 @@ const CreateIssue: React.FC = () => {
 
   const fetchUsers = async () => {
     const users = await userService.getAllUsers();
-    setAvailableAssignees(users.map((user) => user.name));
+    const nameCount: Record<string, number> = {};
+
+    // Count occurrences of each name
+    users.forEach((user) => {
+      nameCount[user.name] = (nameCount[user.name] || 0) + 1;
+    });
+
+    // Map names, appending email domain for duplicates
+    const formattedUsers = users.map((user) => {
+      if (nameCount[user.name] > 1) {
+        return `${user.name} (${user.email.split("@")[1]})`;
+      }
+      return user.name;
+    });
+
+    setAvailableAssignees(formattedUsers);
   };
 
   const fetchTags = (tags: Tag[]) => {
