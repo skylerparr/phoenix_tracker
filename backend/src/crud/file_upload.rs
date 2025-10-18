@@ -3,6 +3,7 @@ use crate::crud::event_broadcaster::EventBroadcaster;
 use crate::crud::event_broadcaster::ISSUE_UPDATED;
 use crate::crud::history::HistoryCrud;
 use crate::crud::issue::IssueCrud;
+use crate::crud::project_note_history::ProjectNoteHistoryCrud;
 use crate::entities::{comment_file_upload, file_upload};
 use crate::environment;
 use crate::AppState;
@@ -206,6 +207,17 @@ impl FileUploadCrud {
                     )
                     .await;
             }
+            // Create a history record for project_note-scoped uploads
+            if let Some(project_note_id) = model.project_note_id {
+                let pnh_crud = ProjectNoteHistoryCrud::new(self.app_state.db.clone());
+                let _ = pnh_crud
+                    .create(
+                        project_note_id,
+                        format!("deleted attachment '{}'", model.original_filename),
+                        Some(current_user_id),
+                    )
+                    .await;
+            }
         }
 
         // Broadcast an issue update if applicable
@@ -378,6 +390,36 @@ impl FileUploadCrud {
         })?;
 
         txn.commit().await?;
+
+        // Create a history record for issue-scoped uploads
+        if let Some(issue_id) = issue_id {
+            if let Some(current_user_id) = self.app_state.user.as_ref().map(|u| u.id) {
+                let history_crud = HistoryCrud::new(self.app_state.db.clone());
+                let _ = history_crud
+                    .create(
+                        current_user_id,
+                        Some(issue_id),
+                        None,
+                        None,
+                        format!("uploaded attachment '{}'", result.original_filename),
+                    )
+                    .await;
+            }
+        }
+
+        // Create a history record for project_note-scoped uploads
+        if let Some(pn_id) = project_note_id {
+            if let Some(current_user_id) = self.app_state.user.as_ref().map(|u| u.id) {
+                let pnh_crud = ProjectNoteHistoryCrud::new(self.app_state.db.clone());
+                let _ = pnh_crud
+                    .create(
+                        pn_id,
+                        format!("uploaded attachment '{}'", result.original_filename),
+                        Some(current_user_id),
+                    )
+                    .await;
+            }
+        }
 
         // Populate browser URL before returning
         let mut model = result;

@@ -10,6 +10,7 @@ pub mod notification;
 pub mod owner;
 pub mod project;
 pub mod project_note;
+pub mod project_note_history;
 pub mod project_user;
 pub mod tag;
 pub mod task;
