@@ -5,6 +5,7 @@ import { User } from "../models/User";
 import { History } from "../models/History";
 import { ProjectNoteHistory } from "../models/ProjectNoteHistory";
 import { historyService } from "../services/HistoryService";
+import { projectNoteHistoryService } from "../services/ProjectNoteHistoryService";
 import { userService } from "../services/UserService";
 import {
   PARAM_HISTORY_ISSUE_ID,
@@ -116,9 +117,10 @@ const HistoryComponent: React.FC = () => {
           parseInt(issueId),
         );
       } else if (projectNoteId) {
-        fetchedHistories = await historyService.getHistoryByProjectNote(
-          parseInt(projectNoteId),
-        );
+        fetchedHistories =
+          await projectNoteHistoryService.getHistoryByProjectNote(
+            parseInt(projectNoteId),
+          );
       }
 
       const userMap = new Map<number, User>();

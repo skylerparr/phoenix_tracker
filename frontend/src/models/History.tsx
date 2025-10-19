@@ -17,5 +17,7 @@ export class History {
     this.action = data.action;
     this.createdAt = new Date(data.created_at);
     this.updatedAt = new Date(data.updated_at);
+    console.log(data.created_at);
+    console.log(this);
   }
 }

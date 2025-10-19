@@ -13,5 +13,8 @@ export class ProjectNoteHistory {
     this.userId = data.user_id;
     this.createdAt = new Date(data.created_at);
     this.updatedAt = new Date(data.updated_at);
+    console.log(data);
+    console.log(data.created_at);
+    console.log(this);
   }
 }
