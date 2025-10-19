@@ -30,6 +30,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
+import AccessTime from "@mui/icons-material/AccessTime";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import CloseIcon from "@mui/icons-material/Close";
@@ -37,6 +38,8 @@ import useDebounce from "../utils/Debounce";
 import { uploadService } from "../services/UploadService";
 import { FileUpload } from "../models/FileUpload";
 import UploadItem from "./UploadItem";
+import { PARAM_HISTORY_PROJECT_NOTE_ID } from "./SearchComponent";
+import { updateUrlWithParam } from "./IssueComponent";
 
 export const ProjectNotesComponent: React.FC = () => {
   const [notes, setNotes] = useState<ProjectNote[]>([]);
@@ -48,6 +51,15 @@ export const ProjectNotesComponent: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const { debouncedUpdate } = useDebounce();
   const [filter, setFilter] = useState<string>("");
+
+  const handleHistory = () => {
+    if (expandedNoteId === null) return;
+    updateUrlWithParam(
+      PARAM_HISTORY_PROJECT_NOTE_ID,
+      expandedNoteId.toString(),
+    );
+    window.dispatchEvent(new Event("urlchange"));
+  };
 
   // Drag-and-drop and upload state (adapted from IssueComments)
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -653,6 +665,19 @@ export const ProjectNotesComponent: React.FC = () => {
                   <Box
                     sx={{ display: "flex", justifyContent: "flex-end", p: 1 }}
                   >
+                    <IconButton
+                      size="small"
+                      sx={{
+                        color: "#000000",
+                      }}
+                      title="See history of this note"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleHistory();
+                      }}
+                    >
+                      <AccessTime />
+                    </IconButton>
                     <IconButton
                       onClick={() => handleSaveNote()}
                       size="small"

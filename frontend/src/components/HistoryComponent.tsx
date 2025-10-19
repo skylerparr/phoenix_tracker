@@ -3,9 +3,13 @@ import { Box, Typography, Stack } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { User } from "../models/User";
 import { History } from "../models/History";
+import { ProjectNoteHistory } from "../models/ProjectNoteHistory";
 import { historyService } from "../services/HistoryService";
 import { userService } from "../services/UserService";
-import { PARAM_HISTORY_ISSUE_ID } from "./SearchComponent";
+import {
+  PARAM_HISTORY_ISSUE_ID,
+  PARAM_HISTORY_PROJECT_NOTE_ID,
+} from "./SearchComponent";
 import { useSearchParams } from "../hooks/useSearchParams";
 
 const theme = createTheme({
@@ -38,8 +42,8 @@ const theme = createTheme({
 });
 
 interface CommentProps {
-  history: History;
-  user: User;
+  history: History | ProjectNoteHistory;
+  user: User | null;
 }
 
 const Comment: React.FC<CommentProps> = ({ user, history }) => (
@@ -58,7 +62,7 @@ const Comment: React.FC<CommentProps> = ({ user, history }) => (
               fontSize: "14px",
             }}
           >
-            {user.name}{" "}
+            {user?.name || "Unknown User"}{" "}
           </Typography>
           <Typography
             component="span"
@@ -93,23 +97,38 @@ const Comment: React.FC<CommentProps> = ({ user, history }) => (
   </Box>
 );
 const HistoryComponent: React.FC = () => {
-  const [histories, setHistories] = React.useState<History[]>([]);
+  const [histories, setHistories] = React.useState<
+    (History | ProjectNoteHistory)[]
+  >([]);
   const [userMap, setUserMap] = React.useState<Map<number, User>>(new Map());
   const searchParams = useSearchParams();
 
   React.useEffect(() => {
     const fetchHistories = async () => {
-      const id = searchParams.get(PARAM_HISTORY_ISSUE_ID);
-      if (!id) return;
-      const fetchedHistories = await historyService.getHistoryByIssue(
-        parseInt(id),
-      );
+      const issueId = searchParams.get(PARAM_HISTORY_ISSUE_ID);
+      const projectNoteId = searchParams.get(PARAM_HISTORY_PROJECT_NOTE_ID);
+
+      if (!issueId && !projectNoteId) return;
+
+      let fetchedHistories: (History | ProjectNoteHistory)[] = [];
+      if (issueId) {
+        fetchedHistories = await historyService.getHistoryByIssue(
+          parseInt(issueId),
+        );
+      } else if (projectNoteId) {
+        fetchedHistories = await historyService.getHistoryByProjectNote(
+          parseInt(projectNoteId),
+        );
+      }
+
       const userMap = new Map<number, User>();
+      const allUsers = await userService.getAllUsers();
+
       for (const history of fetchedHistories) {
-        if (!userMap.has(history.userId)) {
-          const user = await userService.getUser(history.userId);
-          if (user) {
-            userMap.set(history.userId, user);
+        if (history.userId) {
+          const cachedUser = allUsers.find((u) => u.id === history.userId);
+          if (cachedUser && !userMap.has(history.userId)) {
+            userMap.set(history.userId, cachedUser);
           }
         }
       }
@@ -137,7 +156,7 @@ const HistoryComponent: React.FC = () => {
             <Comment
               key={index}
               history={history}
-              user={userMap.get(history.userId)!}
+              user={history.userId ? userMap.get(history.userId) || null : null}
             />
           ))}
         </Stack>

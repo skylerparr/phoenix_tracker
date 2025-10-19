@@ -24,6 +24,7 @@ import { WebsocketService } from "../services/WebSocketService";
 import MyIssuesComponent from "../components/MyIssuesComponent";
 import SearchComponent, {
   PARAM_HISTORY_ISSUE_ID,
+  PARAM_HISTORY_PROJECT_NOTE_ID,
   PARAM_ID,
   PARAM_TAG,
   PARAM_USER_ID,
@@ -189,7 +190,9 @@ const Home = () => {
 
   const [activeButtons, setActiveButtons] = useState<string[]>(() => {
     const params = new URLSearchParams(window.location.search);
-    const hasHistoryParam = params.has(PARAM_HISTORY_ISSUE_ID);
+    const hasHistoryParam =
+      params.has(PARAM_HISTORY_ISSUE_ID) ||
+      params.has(PARAM_HISTORY_PROJECT_NOTE_ID);
     const hasSearchParams =
       params.has(PARAM_ID) ||
       params.has(PARAM_TAG) ||
@@ -240,7 +243,9 @@ const Home = () => {
     const handleLocationChange = () => {
       setQueryParams(createParamMap());
       const params = new URLSearchParams(window.location.search);
-      const hasHistoryParam = params.has(PARAM_HISTORY_ISSUE_ID);
+      const hasHistoryParam =
+        params.has(PARAM_HISTORY_ISSUE_ID) ||
+        params.has(PARAM_HISTORY_PROJECT_NOTE_ID);
       const hasSearchParams =
         params.has(PARAM_ID) ||
         params.has(PARAM_TAG) ||
@@ -332,7 +337,7 @@ const Home = () => {
         }
         // Clear URL params when history tab is closed
         if (buttonId === "history") {
-          clearUrlParams(["historyIssueId"], true);
+          clearUrlParams(["historyIssueId", "historyProjectNoteId"], true);
         }
 
         // Mobile: When closing a tab, open the previous one from history
