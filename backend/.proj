@@ -18,3 +18,7 @@ function cargo_add() {
 function cargo_build() {
     docker exec -it `container` cargo build --bin phoenix_tracker
 }
+
+function node() {
+    docker run --rm -v "$PWD":/app -w /app --network host node:latest node "$@"
+}
