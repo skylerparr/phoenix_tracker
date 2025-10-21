@@ -11,7 +11,6 @@ export async function fetchBacklogCommand(email, projectId, options = {}) {
   const cacert = options.cacert || '';
 
   const loginData = await login(email, { baseUrl, insecure, cacert });
-  console.log(loginData);
   const baseToken = loginData.token;
 
   const switchData = await switchProject(baseToken, projectId, { baseUrl, insecure, cacert });

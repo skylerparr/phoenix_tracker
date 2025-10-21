@@ -20,5 +20,9 @@ function cargo_build() {
 }
 
 function node() {
-    docker run --rm -v "$PWD":/app -w /app --network host node:latest node "$@"
+    if [ $TOKEN ]; then
+        docker run --rm -v "$PWD":/app -w /app --network host -e TOKEN="$TOKEN" node:latest node "$@"
+    else
+        docker run --rm -v "$PWD":/app -w /app --network host node:latest node "$@"
+    fi
 }
