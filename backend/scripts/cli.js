@@ -51,8 +51,6 @@ export const parseArgs = (scriptName, options) => {
       case '--help':
         printUsage(scriptName, options);
         process.exit(0);
-      default:
-        die(`Unknown argument: ${args[i]}`);
     }
   }
 
