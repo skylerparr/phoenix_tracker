@@ -20,6 +20,9 @@ export abstract class BaseService<R> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       headers: this.getHeaders(),
     });
+
+    this.redirectIfUnauthenticated(response);
+
     if (!response.ok) throw new Error(`Failed to fetch from ${endpoint}`);
     const data = await response.json();
     return Array.isArray(data)
@@ -36,6 +39,9 @@ export abstract class BaseService<R> {
       headers: this.getHeaders(),
       body: JSON.stringify(body),
     });
+
+    this.redirectIfUnauthenticated(response);
+
     if (!response.ok) throw new Error(`Failed to post to ${endpoint}`);
     const data = await response.json();
     return Array.isArray(data)
@@ -52,6 +58,9 @@ export abstract class BaseService<R> {
       headers: this.getHeaders(),
       body: JSON.stringify(body),
     });
+
+    this.redirectIfUnauthenticated(response);
+
     if (!response.ok) throw new Error(`Failed to update at ${endpoint}`);
     const data = await response.json();
     return Array.isArray(data)
@@ -64,6 +73,17 @@ export abstract class BaseService<R> {
       method: "DELETE",
       headers: this.getHeaders(),
     });
+
+    this.redirectIfUnauthenticated(response);
+
     if (!response.ok) throw new Error(`Failed to delete at ${endpoint}`);
+  }
+
+  protected redirectIfUnauthenticated(response: Response) {
+    if (response.status === 401) {
+      sessionStorage.logout();
+      window.location.replace("/Login");
+      throw new Error("Unauthorized");
+    }
   }
 }
