@@ -1,7 +1,6 @@
 import { createIssue } from './issue_service.js';
 import { parseArgs, prettyPrint, die } from '../cli.js';
 
-console.log("fkajdlfjkd");
 function extractArgValue(flag) {
   const args = process.argv.slice(2);
   const index = args.indexOf(flag);
