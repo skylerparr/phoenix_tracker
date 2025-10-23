@@ -1,0 +1,11 @@
+function npm() {
+    docker run --rm -v "$PWD":/app -w /app --network host node:latest npm "$@"
+}
+
+function node() {
+    if [ $TOKEN ]; then
+        docker run --rm -v "$PWD":/app -w /app --network host -e TOKEN="$TOKEN" node:latest node "$@"
+    else
+        docker run --rm -v "$PWD":/app -w /app --network host node:latest node "$@"
+    fi
+}
