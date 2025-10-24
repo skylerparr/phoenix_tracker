@@ -12,13 +12,14 @@ export async function createIssue(title, token, options = {}) {
   if (!token) {
     throw new Error('Token is required');
   }
+  console.error("options", options);
 
   const payload = JSON.stringify({
     title,
-    priority: 10,
+    priority: 1,
     status: 0,
     isIcebox: false,
-    workType: 0,
+    workType: options.workType,
     description: options.description,
     points: options.points,
     targetReleaseAt: options.targetReleaseAt,

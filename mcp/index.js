@@ -16,6 +16,20 @@ const CONFIG = {
   projectId: process.env.ISSUE_TRACKER_PROJECT_ID,
 };
 
+const POINTS = [0, 1, 2, 3, 5, 8];
+
+const WORK_TYPE_FEATURE = 0;
+const WORK_TYPE_BUG = 1;
+const WORK_TYPE_CHORE = 2;
+const WORK_TYPE_RELEASE = 3;
+
+const WORK_TYPE_MAP = {
+  feature: WORK_TYPE_FEATURE,
+  bug: WORK_TYPE_BUG,
+  chore: WORK_TYPE_CHORE,
+  release: WORK_TYPE_RELEASE,
+}
+
 // Auth token cache
 let projectToken = null;
 let tokenExpiry = null;
@@ -80,7 +94,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: "object",
           properties: {
-            title: {type: "string", description: "Issue title"}
+            title: {type: "string", description: "Issue title"},
+            points: {type: "number", description: "Story points for the issue", enum: POINTS},
+            description: {type: "string", description: "Detailed description of the issue"},
+            work_type: {
+              type: "string",
+              description: "Type of work: feature, bug, chore, or release",
+              enum: Object.keys(WORK_TYPE_MAP)
+            }
           },
           required: ["title"]
         }
@@ -107,7 +128,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
       case "create_issue": {
-        const issue = await doCreateIssue(args)
+        const workTypeInt = args.work_type ? WORK_TYPE_MAP[args.work_type] : WORK_TYPE_FEATURE;
+
+        const payload = {
+          title: args.title,
+          points: args.points,
+          description: args.description || "",
+          workType: workTypeInt
+        };
+        const issue = await doCreateIssue(payload)
         return {
           content: [
             {

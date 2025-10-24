@@ -3,3 +3,5 @@ data
 target
 .vscode
 .qodo
+node_modules
+phoenix-file-uploads

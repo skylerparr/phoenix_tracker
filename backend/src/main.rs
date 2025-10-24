@@ -125,12 +125,15 @@ async fn auth_middleware(
                     }
 
                     // Optionally load project if present in JWT claims
+                    info!("{:?}", claims);
                     if let Some(project_id) = claims.project_id {
                         let project_crud = ProjectCrud::new(app_state.clone());
                         if let Ok(Some(project)) = project_crud.find_by_id(project_id).await {
                             if let Some(state) = req.extensions_mut().get_mut::<AppState>() {
                                 state.project = Some(project);
                             }
+                        } else {
+                            info!("unable to load project");
                         }
                     }
 
