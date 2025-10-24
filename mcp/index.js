@@ -6,8 +6,13 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+
+// Service imports
 import { login, switchProject } from "./AuthService/auth_service.js";
-import { getAllIssues, createIssue } from "./IssueService/issue_service.js";
+import { tools as authTools, handleToolCall as handleAuthTool } from "./AuthService/tool_calls.js";
+import { tools as issueTools, handleToolCall as handleIssueTool } from "./IssueService/tool_calls.js";
+import { tools as projectTools, handleToolCall as handleProjectTool } from "./ProjectService/tool_calls.js";
+import { tools as userTools, handleToolCall as handleUserTool } from "./UserService/tool_calls.js";
 
 // Configuration - will come from Claude Desktop config
 const CONFIG = {
@@ -15,20 +20,6 @@ const CONFIG = {
   email: process.env.ISSUE_TRACKER_EMAIL,
   projectId: process.env.ISSUE_TRACKER_PROJECT_ID,
 };
-
-const POINTS = [0, 1, 2, 3, 5, 8];
-
-const WORK_TYPE_FEATURE = 0;
-const WORK_TYPE_BUG = 1;
-const WORK_TYPE_CHORE = 2;
-const WORK_TYPE_RELEASE = 3;
-
-const WORK_TYPE_MAP = {
-  feature: WORK_TYPE_FEATURE,
-  bug: WORK_TYPE_BUG,
-  chore: WORK_TYPE_CHORE,
-  release: WORK_TYPE_RELEASE,
-}
 
 // Auth token cache
 let projectToken = null;
@@ -47,109 +38,55 @@ const server = new Server(
 );
 
 async function doLogin() {
-  if(projectToken) {
-    return true;
+  if (projectToken) {
+    return projectToken;
   }
-  const response = await login(CONFIG.email);
+  const opts = CONFIG.baseUrl ? { baseUrl: CONFIG.baseUrl } : {};
+  const response = await login(CONFIG.email, opts);
   projectToken = response.token;
   tokenExpiry = response.expires_at;
 
-  const switchProjectResponse = await switchProject(CONFIG.projectId, projectToken);
+  const switchProjectResponse = await switchProject(CONFIG.projectId, projectToken, opts);
   projectToken = switchProjectResponse.token;
   tokenExpiry = switchProjectResponse.expires_at;
 
-  return true;
+  return projectToken;
 }
 
-async function listIssues() {
-  if(!await doLogin()) {
-    return {error: "Unable to login and switch project"};
-  }
-
-  return await getAllIssues(projectToken);
-}
-
-async function doCreateIssue(params) {
-  if(!await doLogin()) {
-    return {error: "Unable to login and switch project"};
-  }
-  return await createIssue(params.title, projectToken, params);
-}
+const allTools = [...authTools, ...issueTools, ...projectTools, ...userTools];
+const toolNameToHandler = new Map();
+for (const t of authTools) toolNameToHandler.set(t.name, handleAuthTool);
+for (const t of issueTools) toolNameToHandler.set(t.name, handleIssueTool);
+for (const t of projectTools) toolNameToHandler.set(t.name, handleProjectTool);
+for (const t of userTools) toolNameToHandler.set(t.name, handleUserTool);
 
 // Define tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
-    tools: [
-      {
-        name: "list_issues",
-        description: "List all issues in the backlog",
-        inputSchema: {
-          type: "object",
-          properties: {},
-        },
-      },
-      {
-        name: "create_issue",
-        description: "Create a new issue for the backlog",
-        inputSchema: {
-          type: "object",
-          properties: {
-            title: {type: "string", description: "Issue title"},
-            points: {type: "number", description: "Story points for the issue", enum: POINTS},
-            description: {type: "string", description: "Detailed description of the issue"},
-            work_type: {
-              type: "string",
-              description: "Type of work: feature, bug, chore, or release",
-              enum: Object.keys(WORK_TYPE_MAP)
-            }
-          },
-          required: ["title"]
-        }
-      }
-    ],
+    tools: allTools,
   };
 });
 
 // Handle tool calls
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
-    const { name, arguments: args } = request.params;
-
-    switch (name) {
-      case "list_issues": {
-        const issues = await listIssues();
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(issues, null, 2),
-            },
-          ],
-        };
-      }
-      case "create_issue": {
-        const workTypeInt = args.work_type ? WORK_TYPE_MAP[args.work_type] : WORK_TYPE_FEATURE;
-
-        const payload = {
-          title: args.title,
-          points: args.points,
-          description: args.description || "",
-          workType: workTypeInt
-        };
-        const issue = await doCreateIssue(payload)
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(issue, null, 2),
-            },
-          ],
-        };
-      }
-
-      default:
-        throw new Error(`Unknown tool: ${name}`);
+    const { name, arguments: args = {} } = request.params;
+    const handler = toolNameToHandler.get(name);
+    if (!handler) {
+      throw new Error(`Unknown tool: ${name}`);
     }
+
+    const context = {
+      token: projectToken,
+      getToken: async () => await doLogin(),
+    };
+
+    const argsWithDefaults = { ...(args || {}) };
+    if (CONFIG.baseUrl && argsWithDefaults.base_url === undefined) {
+      argsWithDefaults.base_url = CONFIG.baseUrl;
+    }
+
+    return await handler(name, argsWithDefaults, context);
   } catch (error) {
     return {
       content: [
@@ -176,7 +113,6 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("Issue Tracker MCP Server running on stdio");
-  // console.error(await listIssues());
 
   // Keep process alive by preventing stdin from closing
   process.stdin.resume();
