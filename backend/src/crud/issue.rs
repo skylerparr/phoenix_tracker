@@ -202,7 +202,7 @@ impl IssueCrud {
         let mut issues = issue::Entity::find()
             .filter(issue::Column::ProjectId.eq(project_id))
             .filter(issue::Column::IsIcebox.eq(true))
-            .order_by(issue::Column::UpdatedAt, Order::Desc)
+            .order_by(issue::Column::Priority, Order::Asc)
             .all(&self.app_state.db)
             .await?;
 

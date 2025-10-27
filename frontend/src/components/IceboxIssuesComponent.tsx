@@ -3,29 +3,34 @@ import { Box, Typography } from "@mui/material";
 import { issueService } from "../services/IssueService";
 import IssueList from "./IssueList";
 import { useIssueFilter } from "../hooks/useIssueFilter";
-import { WebsocketService } from "../services/WebSocketService";
+import { Issue } from "../models/Issue";
 
 const IceboxIssuesComponent: React.FC = () => {
   const { issues, setIssues } = useIssueFilter();
 
-  const fetchData = async () => {
-    const loadedIssues = await issueService.getAllIcebox();
-    setIssues(loadedIssues);
-  };
-
   useEffect(() => {
-    fetchData();
-
-    WebsocketService.unsubscribeToIssueUpdatedEvent(handleIssueUpdated);
-    WebsocketService.subscribeToIssueUpdatedEvent(handleIssueUpdated);
+    issueService.subscribeToGetIcebox(handleIssuesChanged);
     return () => {
-      WebsocketService.unsubscribeToIssueUpdatedEvent(handleIssueUpdated);
+      issueService.unsubscribeFromGetIcebox(handleIssuesChanged);
     };
   }, []);
 
-  const handleIssueUpdated = async () => {
-    fetchData();
+  const handleIssuesChanged = (loadedIssues: Issue[]) => {
+    setIssues(loadedIssues);
   };
+
+  const handlePriorityUpdates = (updates: [number, number][]) => {
+    issueService.bulkUpdatePriorities(updates);
+    const sortedIssues = [...issues].sort((a, b) => {
+      const updateA = updates.find(([id]) => id === a.id);
+      const updateB = updates.find(([id]) => id === b.id);
+      const priorityA = updateA ? updateA[1] : a.priority || 0;
+      const priorityB = updateB ? updateB[1] : b.priority || 0;
+      return priorityA - priorityB;
+    });
+    setIssues(sortedIssues);
+  };
+
   return (
     <Box className="backlog-container">
       <Box
@@ -41,8 +46,9 @@ const IceboxIssuesComponent: React.FC = () => {
         ) : (
           <IssueList
             issues={issues}
-            enableDragDrop={false}
+            enableDragDrop={true}
             enableGrouping={true}
+            onDragEnd={handlePriorityUpdates}
           />
         )}
       </Box>

@@ -109,6 +109,26 @@ const IssueList: React.FC<IssueListProps> = ({
   const handleDragEnd = (result: any) => {
     if (!result.destination || !onDragEnd) return;
 
+    // If no issues are scheduled, perform simple list reordering
+    if (!issues.some((i) => i.scheduledAt)) {
+      const items = Array.from(issues);
+      const [moved] = items.splice(result.source.index, 1);
+      items.splice(result.destination.index, 0, moved);
+
+      const updatedIssues = items.map((issue, index) => ({
+        ...issue,
+        priority: (index + 1) * 10,
+      }));
+
+      const updates: [number, number][] = updatedIssues
+        .map((issue) => [issue.id, issue.priority])
+        .filter((update): update is [number, number] => update[1] !== null);
+
+      setIssues(updatedIssues);
+      onDragEnd(updates);
+      return;
+    }
+
     const allIssues = Array.from(issues);
     const groupedIssues = groupIssuesByWeek(allIssues);
 
@@ -260,6 +280,42 @@ const IssueList: React.FC<IssueListProps> = ({
       });
 
       return elements;
+    }
+
+    // If there are no scheduled issues, render a simple single-list DnD
+    if (!issues.some((i) => i.scheduledAt)) {
+      return (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="unscheduled" direction="vertical">
+            {(provided) => (
+              <Box {...provided.droppableProps} ref={provided.innerRef}>
+                {issues.map((issue: Issue, index: number) => (
+                  <Draggable
+                    key={issue.id}
+                    draggableId={issue.id.toString()}
+                    index={index}
+                  >
+                    {(provided) => (
+                      <Box
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                      >
+                        <IssueComponent
+                          issue={issue}
+                          expanded={expandedIssueIds.has(issue.id)}
+                          onToggleExpanded={() => handleExpandIssue(issue.id)}
+                        />
+                      </Box>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </Box>
+            )}
+          </Droppable>
+        </DragDropContext>
+      );
     }
 
     return renderGroupedIssues();

@@ -173,6 +173,16 @@ export class IssueService extends BaseService<Issue> {
     IssueCacheManager.unsubscribe(CacheKeys.ISSUES.MY_ISSUES, callback);
   }
 
+  subscribeToGetIcebox(callback: (issues: Issue[]) => void): void {
+    this.setupSubscription(CacheKeys.ISSUES.ICEBOX, callback, () =>
+      this.get<Issue[]>("/icebox"),
+    );
+  }
+
+  unsubscribeFromGetIcebox(callback: (issues: Issue[]) => void): void {
+    IssueCacheManager.unsubscribe(CacheKeys.ISSUES.ICEBOX, callback);
+  }
+
   // Cache Management
   clearCaches(): void {
     IssueCacheManager.clearAll();
