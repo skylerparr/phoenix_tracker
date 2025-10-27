@@ -11,6 +11,8 @@ pub mod owner;
 pub mod project;
 pub mod project_note;
 pub mod project_note_history;
+pub mod project_note_parts;
+pub mod project_note_tag;
 pub mod project_user;
 pub mod tag;
 pub mod task;

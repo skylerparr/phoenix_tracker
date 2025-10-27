@@ -11,6 +11,8 @@ mod m20250604_000001_drop_token_table;
 mod m20250604_000002_drop_user_setting_table;
 mod m20250926_164833_create_file_uploads_table;
 mod m20251018_204207_add_project_note_history;
+mod m20251027_205543_create_project_note_parts;
+mod m20251027_212252_create_project_note_tag;
 
 pub struct Migrator;
 
@@ -29,6 +31,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20250604_000002_drop_user_setting_table::Migration),
             Box::new(m20250926_164833_create_file_uploads_table::Migration),
             Box::new(m20251018_204207_add_project_note_history::Migration),
+            Box::new(m20251027_205543_create_project_note_parts::Migration),
+            Box::new(m20251027_212252_create_project_note_tag::Migration),
         ]
     }
 }
