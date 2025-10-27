@@ -10,8 +10,22 @@ import {
 // Service imports
 import { login, switchProject } from "./AuthService/auth_service.js";
 import { tools as authTools, handleToolCall as handleAuthTool } from "./AuthService/tool_calls.js";
+import { tools as blockerTools, handleToolCall as handleBlockerTool } from "./BlockerService/tool_calls.js";
+import { tools as commentTools, handleToolCall as handleCommentTool } from "./CommentService/tool_calls.js";
+import { tools as historyTools, handleToolCall as handleHistoryTool } from "./HistoryService/tool_calls.js";
+import { tools as importExportTools, handleToolCall as handleImportExportTool } from "./ImportExportService/tool_calls.js";
+import { tools as issueAssigneeTools, handleToolCall as handleIssueAssigneeTool } from "./IssueAssigneeService/tool_calls.js";
 import { tools as issueTools, handleToolCall as handleIssueTool } from "./IssueService/tool_calls.js";
+import { tools as issueTagTools, handleToolCall as handleIssueTagTool } from "./IssueTagService/tool_calls.js";
+import { tools as notificationTools, handleToolCall as handleNotificationTool } from "./NotificationService/tool_calls.js";
+import { tools as ownerTools, handleToolCall as handleOwnerTool } from "./OwnerService/tool_calls.js";
+import { tools as projectNoteHistoryTools, handleToolCall as handleProjectNoteHistoryTool } from "./ProjectNoteHistoryService/tool_calls.js";
+import { tools as projectNoteTools, handleToolCall as handleProjectNoteTool } from "./ProjectNoteService/tool_calls.js";
 import { tools as projectTools, handleToolCall as handleProjectTool } from "./ProjectService/tool_calls.js";
+import { tools as statusTools, handleToolCall as handleStatusTool } from "./StatusService/tool_calls.js";
+import { tools as tagTools, handleToolCall as handleTagTool } from "./TagService/tool_calls.js";
+import { tools as taskTools, handleToolCall as handleTaskTool } from "./TaskService/tool_calls.js";
+import { tools as uploadTools, handleToolCall as handleUploadTool } from "./UploadService/tool_calls.js";
 import { tools as userTools, handleToolCall as handleUserTool } from "./UserService/tool_calls.js";
 
 // Configuration - will come from Claude Desktop config
@@ -53,11 +67,45 @@ async function doLogin() {
   return projectToken;
 }
 
-const allTools = [...authTools, ...issueTools, ...projectTools, ...userTools];
+const allTools = [
+  ...authTools,
+  ...blockerTools,
+  ...commentTools,
+  ...historyTools,
+  ...importExportTools,
+  ...issueAssigneeTools,
+  ...issueTools,
+  ...issueTagTools,
+  ...notificationTools,
+  ...ownerTools,
+  ...projectNoteHistoryTools,
+  ...projectNoteTools,
+  ...projectTools,
+  ...statusTools,
+  ...tagTools,
+  ...taskTools,
+  ...uploadTools,
+  ...userTools,
+];
+
 const toolNameToHandler = new Map();
 for (const t of authTools) toolNameToHandler.set(t.name, handleAuthTool);
+for (const t of blockerTools) toolNameToHandler.set(t.name, handleBlockerTool);
+for (const t of commentTools) toolNameToHandler.set(t.name, handleCommentTool);
+for (const t of historyTools) toolNameToHandler.set(t.name, handleHistoryTool);
+for (const t of importExportTools) toolNameToHandler.set(t.name, handleImportExportTool);
+for (const t of issueAssigneeTools) toolNameToHandler.set(t.name, handleIssueAssigneeTool);
 for (const t of issueTools) toolNameToHandler.set(t.name, handleIssueTool);
+for (const t of issueTagTools) toolNameToHandler.set(t.name, handleIssueTagTool);
+for (const t of notificationTools) toolNameToHandler.set(t.name, handleNotificationTool);
+for (const t of ownerTools) toolNameToHandler.set(t.name, handleOwnerTool);
+for (const t of projectNoteHistoryTools) toolNameToHandler.set(t.name, handleProjectNoteHistoryTool);
+for (const t of projectNoteTools) toolNameToHandler.set(t.name, handleProjectNoteTool);
 for (const t of projectTools) toolNameToHandler.set(t.name, handleProjectTool);
+for (const t of statusTools) toolNameToHandler.set(t.name, handleStatusTool);
+for (const t of tagTools) toolNameToHandler.set(t.name, handleTagTool);
+for (const t of taskTools) toolNameToHandler.set(t.name, handleTaskTool);
+for (const t of uploadTools) toolNameToHandler.set(t.name, handleUploadTool);
 for (const t of userTools) toolNameToHandler.set(t.name, handleUserTool);
 
 // Define tools
