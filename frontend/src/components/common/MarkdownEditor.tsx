@@ -1,14 +1,15 @@
 import React from "react";
 import { Box, Tabs, Tab, Typography } from "@mui/material";
 import MDEditor from "@uiw/react-md-editor";
-import remarkGfm from "remark-gfm";
+import { getHashtagRemarkPlugins, useHashtagClick } from "./hashtagMarkdown";
 
 export interface MarkdownEditorProps {
   value: string;
   onChange: (val: string) => void;
   height?: number;
-  withTabs?: boolean; // when true, shows Write/Preview tabs within the editor
+  withTabs?: boolean;
   placeholder?: string;
+  onHashtagClick?: (tag: string) => void;
 }
 
 const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
@@ -17,11 +18,20 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   height = 200,
   withTabs = true,
   placeholder,
+  onHashtagClick,
 }) => {
-  const [tab, setTab] = React.useState<number>(0); // 0 = Write, 1 = Preview
+  const [tab, setTab] = React.useState<number>(0);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Handle hashtag clicks via shared hook
+  useHashtagClick(containerRef, onHashtagClick, [value, tab]);
+
+  const previewPlugins = React.useMemo(() => {
+    return getHashtagRemarkPlugins(onHashtagClick);
+  }, [onHashtagClick]);
 
   return (
-    <Box>
+    <Box ref={containerRef}>
       {withTabs && (
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs
@@ -57,7 +67,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           onChange={(v?: string) => onChange(v ?? "")}
           height={height}
           preview={withTabs ? "edit" : "edit"}
-          previewOptions={{ remarkPlugins: [remarkGfm] }}
+          previewOptions={{ remarkPlugins: previewPlugins }}
           textareaProps={{ placeholder }}
         />
       ) : (
@@ -70,10 +80,13 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             color: "black",
             overflowY: "auto",
             padding: "8px",
+            "& .hashtag-link:hover": {
+              textDecoration: "underline",
+            },
           }}
         >
           {value ? (
-            <MDEditor.Markdown source={value} remarkPlugins={[remarkGfm]} />
+            <MDEditor.Markdown source={value} remarkPlugins={previewPlugins} />
           ) : (
             <Typography sx={{ color: "#999", fontStyle: "italic" }}>
               Nothing to preview

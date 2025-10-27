@@ -24,8 +24,11 @@ import {
 } from "../services/ProjectNoteService";
 import { ProjectNote } from "../models/ProjectNote";
 import MDEditor from "@uiw/react-md-editor";
-import remarkGfm from "remark-gfm";
 import MarkdownEditor from "./common/MarkdownEditor";
+import {
+  getHashtagRemarkPlugins,
+  useHashtagClick,
+} from "./common/hashtagMarkdown";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -69,6 +72,15 @@ export const ProjectNotesComponent: React.FC = () => {
   const [errors, setErrors] = useState<string[]>([]);
   const [noteUploads, setNoteUploads] = useState<Record<number, FileUpload[]>>(
     {},
+  );
+  const contentPreviewRef = useRef<HTMLDivElement>(null);
+  const onPreviewHashtagClick = React.useCallback((tag: string) => {
+    console.log("Clicked hashtag:", tag);
+  }, []);
+  useHashtagClick(
+    contentPreviewRef as React.RefObject<HTMLElement>,
+    onPreviewHashtagClick,
+    [editDetail],
   );
 
   useEffect(() => {
@@ -461,6 +473,7 @@ export const ProjectNotesComponent: React.FC = () => {
 
                   {activeTab === "content" ? (
                     <Box
+                      ref={contentPreviewRef}
                       sx={{
                         bgcolor: "transparent",
                         minHeight: "100px",
@@ -469,11 +482,16 @@ export const ProjectNotesComponent: React.FC = () => {
                         color: "black",
                         paddingLeft: "10px",
                         overflowY: "auto",
+                        "& .hashtag-link:hover": {
+                          textDecoration: "underline",
+                        },
                       }}
                     >
                       <MDEditor.Markdown
                         source={editDetail}
-                        remarkPlugins={[remarkGfm]}
+                        remarkPlugins={getHashtagRemarkPlugins(
+                          onPreviewHashtagClick,
+                        )}
                       />
 
                       {noteUploads[note.id] &&
@@ -556,6 +574,9 @@ export const ProjectNotesComponent: React.FC = () => {
                                 v,
                               );
                             });
+                          }}
+                          onHashtagClick={(tag) => {
+                            console.log("Clicked hashtag:", tag);
                           }}
                           height={240}
                           placeholder="Update note details..."
