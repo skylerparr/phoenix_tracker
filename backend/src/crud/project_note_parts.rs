@@ -2,8 +2,8 @@ use crate::crud::project_note_tag::ProjectNoteTagCrud;
 use crate::entities::project_note_parts;
 use crate::AppState;
 use comrak::nodes::{
-    Ast, ListDelimType, ListType, NodeCode, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
-    NodeList, NodeValue,
+    Ast, AstNode, ListDelimType, ListType, NodeCode, NodeCodeBlock, NodeHeading, NodeHtmlBlock,
+    NodeLink, NodeList, NodeValue, Sourcepos,
 };
 use comrak::{format_commonmark, parse_document, Arena, Options};
 use regex::Regex;
@@ -36,170 +36,81 @@ impl ProjectNotePartsCrud {
             return String::new();
         }
 
-        // Build a map of parent -> children relationships, sorted by idx
-        let mut children_map: HashMap<Option<i32>, Vec<&project_note_parts::Model>> =
-            HashMap::new();
+        // Index parts by id and build children lists sorted by idx
+        let mut by_id: HashMap<i32, &project_note_parts::Model> = HashMap::new();
+        let mut children: HashMap<i32, Vec<i32>> = HashMap::new();
+        let mut roots: Vec<&project_note_parts::Model> = Vec::new();
         for p in parts.iter() {
-            children_map.entry(p.parent_id).or_default().push(p);
+            by_id.insert(p.id, p);
+            if let Some(pid) = p.parent_id {
+                children.entry(pid).or_default().push(p.id);
+            } else {
+                roots.push(p);
+            }
+        }
+        for v in children.values_mut() {
+            v.sort_by_key(|cid| by_id[cid].idx);
         }
 
-        // Sort children by idx
-        for children in children_map.values_mut() {
-            children.sort_by_key(|p| p.idx);
+        // Prefer a Document root when available
+        let root_part = roots
+            .iter()
+            .find(|p| p.part_type == "Document")
+            .copied()
+            .or_else(|| roots.iter().min_by_key(|p| p.idx).copied())
+            .unwrap_or(
+                parts
+                    .iter()
+                    .find(|p| p.part_type == "Document")
+                    .unwrap_or(&parts[0]),
+            );
+
+        // Build comrak AST in an arena
+        let arena = Arena::new();
+        use comrak::arena_tree::Node as CNode;
+        let mut node_map: HashMap<i32, *const CNode<'_, RefCell<Ast>>> = HashMap::new();
+
+        // First pass: create nodes for all parts
+        for p in parts.iter() {
+            let nv = Self::fields_to_node_value(p);
+            let n: &AstNode = arena.alloc(AstNode::new(RefCell::new(Ast::new(nv, (0, 0).into()))));
+            node_map.insert(p.id, n as *const _);
         }
 
-        // Find root (part with parent_id = None)
-        let root = children_map.get(&None).and_then(|v| v.get(0)).copied();
+        // Second pass: attach children to their parents in idx order
+        for (pid, cids) in children.iter() {
+            if let Some(&pptr) = node_map.get(pid) {
+                unsafe {
+                    let parent_ref: &CNode<'_, RefCell<Ast>> = &*pptr;
+                    for cid in cids {
+                        if let Some(&cptr) = node_map.get(cid) {
+                            let child_ref: &CNode<'_, RefCell<Ast>> = &*cptr;
+                            parent_ref.append(child_ref);
+                        }
+                    }
+                }
+            }
+        }
 
-        if let Some(root_part) = root {
-            Self::render_part_to_markdown(root_part, &children_map)
+        // Ensure we have a Document root for formatting
+        let root_node = unsafe { &*node_map[&root_part.id] };
+        let format_root: &AstNode = if matches!(root_part.part_type.as_str(), "Document") {
+            root_node
         } else {
-            String::new()
-        }
-    }
+            let doc: &AstNode = arena.alloc(AstNode::new(RefCell::new(Ast::new(
+                NodeValue::Document,
+                (0, 0).into(),
+            ))));
+            unsafe {
+                doc.append(root_node);
+            }
+            doc
+        };
 
-    fn render_part_to_markdown(
-        part: &project_note_parts::Model,
-        children_map: &HashMap<Option<i32>, Vec<&project_note_parts::Model>>,
-    ) -> String {
-        let mut result = String::new();
-
-        match part.part_type.as_str() {
-            "Document" => {
-                // Render all children of the document
-                if let Some(children) = children_map.get(&Some(part.id)) {
-                    for child in children {
-                        result.push_str(&Self::render_part_to_markdown(child, children_map));
-                    }
-                }
-            }
-            "Paragraph" => {
-                if let Some(children) = children_map.get(&Some(part.id)) {
-                    for child in children {
-                        result.push_str(&Self::render_part_to_markdown(child, children_map));
-                    }
-                }
-                result.push_str("");
-            }
-            "Text" => {
-                if let Some(text) = &part.content {
-                    result.push_str(text);
-                }
-            }
-            "SoftBreak" => {
-                result.push(' ');
-            }
-            "LineBreak" => {
-                result.push_str("\\\n");
-            }
-            "Heading" => {
-                let level = part
-                    .data
-                    .as_ref()
-                    .and_then(|d| serde_json::from_str::<serde_json::Value>(d).ok())
-                    .and_then(|v| v.get("level").and_then(|lv| lv.as_u64()))
-                    .unwrap_or(1) as usize;
-                for _ in 0..level {
-                    result.push('#');
-                }
-                result.push(' ');
-                if let Some(children) = children_map.get(&Some(part.id)) {
-                    for child in children {
-                        result.push_str(&Self::render_part_to_markdown(child, children_map));
-                    }
-                }
-                result.push_str("\n\n");
-            }
-            "ThematicBreak" => {
-                result.push_str("---\n\n");
-            }
-            "Code" => {
-                result.push('`');
-                if let Some(text) = &part.content {
-                    result.push_str(text);
-                }
-                result.push('`');
-            }
-            "CodeBlock" => {
-                result.push_str("```");
-                if let Some(data) = &part.data {
-                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(data) {
-                        if let Some(info) = v.get("info").and_then(|iv| iv.as_str()) {
-                            result.push_str(info);
-                        }
-                    }
-                }
-                result.push('\n');
-                if let Some(text) = &part.content {
-                    result.push_str(text);
-                }
-                result.push_str("\n```\n\n");
-            }
-            "Strong" => {
-                result.push_str("**");
-                if let Some(children) = children_map.get(&Some(part.id)) {
-                    for child in children {
-                        result.push_str(&Self::render_part_to_markdown(child, children_map));
-                    }
-                }
-                result.push_str("**");
-            }
-            "Emph" => {
-                result.push('*');
-                if let Some(children) = children_map.get(&Some(part.id)) {
-                    for child in children {
-                        result.push_str(&Self::render_part_to_markdown(child, children_map));
-                    }
-                }
-                result.push('*');
-            }
-            "Link" => {
-                result.push('[');
-                if let Some(children) = children_map.get(&Some(part.id)) {
-                    for child in children {
-                        result.push_str(&Self::render_part_to_markdown(child, children_map));
-                    }
-                }
-                result.push(']');
-                if let Some(data) = &part.data {
-                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(data) {
-                        if let Some(url) = v.get("url").and_then(|uv| uv.as_str()) {
-                            result.push_str(&format!("({})", url));
-                        }
-                    }
-                }
-            }
-            "Image" => {
-                result.push_str("![]");
-                if let Some(data) = &part.data {
-                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(data) {
-                        if let Some(url) = v.get("url").and_then(|uv| uv.as_str()) {
-                            result.push_str(&format!("({})", url));
-                        }
-                    }
-                }
-            }
-            "List" => {
-                if let Some(children) = children_map.get(&Some(part.id)) {
-                    for child in children {
-                        result.push_str(&Self::render_part_to_markdown(child, children_map));
-                    }
-                }
-                result.push('\n');
-            }
-            "Item" => {
-                result.push_str("- ");
-                if let Some(children) = children_map.get(&Some(part.id)) {
-                    for child in children {
-                        result.push_str(&Self::render_part_to_markdown(child, children_map));
-                    }
-                }
-                result.push('\n');
-            }
-            _ => {}
-        }
-
-        result
+        let mut markdown_output = String::new();
+        format_commonmark(format_root, &Options::default(), &mut markdown_output)
+            .expect("Failed to format markdown");
+        markdown_output
     }
 
     pub async fn delete_all_by_project_note_id(&self, project_note_id: i32) -> Result<(), DbErr> {
@@ -472,6 +383,172 @@ impl ProjectNotePartsCrud {
             NodeValue::Strong => ("Strong".into(), None, None),
             NodeValue::Strikethrough => ("Strikethrough".into(), None, None),
             _ => (format!("{:?}", value), None, None),
+        }
+    }
+
+    fn fields_to_node_value(p: &project_note_parts::Model) -> NodeValue {
+        match p.part_type.as_str() {
+            "Document" => NodeValue::Document,
+            "Paragraph" => NodeValue::Paragraph,
+            "Text" => NodeValue::Text(p.content.clone().unwrap_or_default().into()),
+            "SoftBreak" => NodeValue::SoftBreak,
+            "LineBreak" => NodeValue::LineBreak,
+            "Code" => NodeValue::Code(NodeCode {
+                num_backticks: 1,
+                literal: p.content.clone().unwrap_or_default(),
+            }),
+            "HtmlInline" => NodeValue::HtmlInline(p.content.clone().unwrap_or_default()),
+            "HtmlBlock" => NodeValue::HtmlBlock(NodeHtmlBlock {
+                block_type: 0,
+                literal: p.content.clone().unwrap_or_default(),
+            }),
+            "Heading" => {
+                let (level, setext) = p
+                    .data
+                    .as_ref()
+                    .and_then(|d| serde_json::from_str::<serde_json::Value>(d).ok())
+                    .map(|v| {
+                        let level = v.get("level").and_then(|lv| lv.as_u64()).unwrap_or(1) as u8;
+                        let setext = v.get("setext").and_then(|s| s.as_bool()).unwrap_or(false);
+                        (level, setext)
+                    })
+                    .unwrap_or((1, false));
+                NodeValue::Heading(NodeHeading { level, setext })
+            }
+            "ThematicBreak" => NodeValue::ThematicBreak,
+            "BlockQuote" => NodeValue::BlockQuote,
+            "CodeBlock" => {
+                let info = p
+                    .data
+                    .as_ref()
+                    .and_then(|d| serde_json::from_str::<serde_json::Value>(d).ok())
+                    .and_then(|v| {
+                        v.get("info")
+                            .and_then(|iv| iv.as_str())
+                            .map(|s| s.to_string())
+                    })
+                    .unwrap_or_default();
+                NodeValue::CodeBlock(Box::new(NodeCodeBlock {
+                    info,
+                    literal: p.content.clone().unwrap_or_default(),
+                    ..Default::default()
+                }))
+            }
+            "List" | "Item" => {
+                let (
+                    list_type,
+                    marker_offset,
+                    padding,
+                    start,
+                    delimiter,
+                    bullet_char,
+                    tight,
+                    is_task_list,
+                ) = p
+                    .data
+                    .as_ref()
+                    .and_then(|d| serde_json::from_str::<serde_json::Value>(d).ok())
+                    .map(|v| {
+                        let list_type = match v
+                            .get("list_type")
+                            .and_then(|lt| lt.as_str())
+                            .unwrap_or("Bullet")
+                        {
+                            "Ordered" => ListType::Ordered,
+                            _ => ListType::Bullet,
+                        };
+                        let marker_offset =
+                            v.get("marker_offset").and_then(|x| x.as_i64()).unwrap_or(0) as i32;
+                        let padding = v.get("padding").and_then(|x| x.as_i64()).unwrap_or(0) as i32;
+                        let start = v.get("start").and_then(|x| x.as_i64()).unwrap_or(1) as i32;
+                        let delimiter = match v
+                            .get("delimiter")
+                            .and_then(|d| d.as_str())
+                            .unwrap_or("Period")
+                        {
+                            "Paren" => ListDelimType::Paren,
+                            _ => ListDelimType::Period,
+                        };
+                        let bullet_char = v
+                            .get("bullet_char")
+                            .and_then(|x| x.as_i64())
+                            .unwrap_or(b'-' as i64) as u8;
+                        let tight = v.get("tight").and_then(|x| x.as_bool()).unwrap_or(false);
+                        let is_task_list = v
+                            .get("is_task_list")
+                            .and_then(|x| x.as_bool())
+                            .unwrap_or(false);
+                        (
+                            list_type,
+                            marker_offset,
+                            padding,
+                            start,
+                            delimiter,
+                            bullet_char,
+                            tight,
+                            is_task_list,
+                        )
+                    })
+                    .unwrap_or((
+                        ListType::Bullet,
+                        0,
+                        0,
+                        1,
+                        ListDelimType::Period,
+                        b'-',
+                        false,
+                        false,
+                    ));
+                let nl = NodeList {
+                    list_type,
+                    marker_offset: marker_offset as usize,
+                    padding: padding as usize,
+                    start: start as usize,
+                    delimiter,
+                    bullet_char,
+                    tight,
+                    is_task_list,
+                };
+                if p.part_type == "List" {
+                    NodeValue::List(nl)
+                } else {
+                    NodeValue::Item(nl)
+                }
+            }
+            "Link" | "Image" => {
+                let (url, title) = p
+                    .data
+                    .as_ref()
+                    .and_then(|d| serde_json::from_str::<serde_json::Value>(d).ok())
+                    .map(|v| {
+                        let url = v
+                            .get("url")
+                            .and_then(|u| u.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        let title = v
+                            .get("title")
+                            .and_then(|t| t.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        (url, title)
+                    })
+                    .unwrap_or_default();
+                let link = NodeLink { url, title };
+                if p.part_type == "Link" {
+                    NodeValue::Link(Box::new(link))
+                } else {
+                    NodeValue::Image(Box::new(link))
+                }
+            }
+            "Emph" => NodeValue::Emph,
+            "Strong" => NodeValue::Strong,
+            "Strikethrough" => NodeValue::Strikethrough,
+            other => {
+                // Fallback to Paragraph for unknown/debug-stored types to avoid panics
+                eprintln!("Unknown AST part_type encountered: {}", other);
+                NodeValue::Paragraph
+            }
         }
     }
 }
