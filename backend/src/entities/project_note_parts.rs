@@ -44,4 +44,11 @@ impl Related<Entity> for Entity {
     }
 }
 
+// Define relation back to ProjectNote
+impl Related<super::project_note::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::ProjectNote.def()
+    }
+}
+
 impl ActiveModelBehavior for ActiveModel {}

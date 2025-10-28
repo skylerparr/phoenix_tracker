@@ -1,11 +1,16 @@
 use crate::crud::project_note_tag::ProjectNoteTagCrud;
 use crate::entities::project_note_parts;
 use crate::AppState;
-use comrak::nodes::{Ast, NodeValue};
-use comrak::{parse_document, Arena, Options};
+use comrak::nodes::{
+    Ast, ListDelimType, ListType, NodeCode, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink,
+    NodeList, NodeValue,
+};
+use comrak::{format_commonmark, parse_document, Arena, Options};
 use regex::Regex;
 use sea_orm::*;
+use std::borrow::Cow;
 use std::cell::RefCell;
+use std::collections::HashMap;
 
 pub struct ProjectNotePartsCrud {
     app_state: AppState,
@@ -23,6 +28,178 @@ pub struct ProjectNotePartData {
 impl ProjectNotePartsCrud {
     pub fn new(app_state: AppState) -> Self {
         Self { app_state }
+    }
+
+    // Public utility: reconstruct markdown from stored part records
+    pub fn ast_to_markdown_string(parts: &[project_note_parts::Model]) -> String {
+        if parts.is_empty() {
+            return String::new();
+        }
+
+        // Build a map of parent -> children relationships, sorted by idx
+        let mut children_map: HashMap<Option<i32>, Vec<&project_note_parts::Model>> =
+            HashMap::new();
+        for p in parts.iter() {
+            children_map.entry(p.parent_id).or_default().push(p);
+        }
+
+        // Sort children by idx
+        for children in children_map.values_mut() {
+            children.sort_by_key(|p| p.idx);
+        }
+
+        // Find root (part with parent_id = None)
+        let root = children_map.get(&None).and_then(|v| v.get(0)).copied();
+
+        if let Some(root_part) = root {
+            Self::render_part_to_markdown(root_part, &children_map)
+        } else {
+            String::new()
+        }
+    }
+
+    fn render_part_to_markdown(
+        part: &project_note_parts::Model,
+        children_map: &HashMap<Option<i32>, Vec<&project_note_parts::Model>>,
+    ) -> String {
+        let mut result = String::new();
+
+        match part.part_type.as_str() {
+            "Document" => {
+                // Render all children of the document
+                if let Some(children) = children_map.get(&Some(part.id)) {
+                    for child in children {
+                        result.push_str(&Self::render_part_to_markdown(child, children_map));
+                    }
+                }
+            }
+            "Paragraph" => {
+                if let Some(children) = children_map.get(&Some(part.id)) {
+                    for child in children {
+                        result.push_str(&Self::render_part_to_markdown(child, children_map));
+                    }
+                }
+                result.push_str("");
+            }
+            "Text" => {
+                if let Some(text) = &part.content {
+                    result.push_str(text);
+                }
+            }
+            "SoftBreak" => {
+                result.push(' ');
+            }
+            "LineBreak" => {
+                result.push_str("\\\n");
+            }
+            "Heading" => {
+                let level = part
+                    .data
+                    .as_ref()
+                    .and_then(|d| serde_json::from_str::<serde_json::Value>(d).ok())
+                    .and_then(|v| v.get("level").and_then(|lv| lv.as_u64()))
+                    .unwrap_or(1) as usize;
+                for _ in 0..level {
+                    result.push('#');
+                }
+                result.push(' ');
+                if let Some(children) = children_map.get(&Some(part.id)) {
+                    for child in children {
+                        result.push_str(&Self::render_part_to_markdown(child, children_map));
+                    }
+                }
+                result.push_str("\n\n");
+            }
+            "ThematicBreak" => {
+                result.push_str("---\n\n");
+            }
+            "Code" => {
+                result.push('`');
+                if let Some(text) = &part.content {
+                    result.push_str(text);
+                }
+                result.push('`');
+            }
+            "CodeBlock" => {
+                result.push_str("```");
+                if let Some(data) = &part.data {
+                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(data) {
+                        if let Some(info) = v.get("info").and_then(|iv| iv.as_str()) {
+                            result.push_str(info);
+                        }
+                    }
+                }
+                result.push('\n');
+                if let Some(text) = &part.content {
+                    result.push_str(text);
+                }
+                result.push_str("\n```\n\n");
+            }
+            "Strong" => {
+                result.push_str("**");
+                if let Some(children) = children_map.get(&Some(part.id)) {
+                    for child in children {
+                        result.push_str(&Self::render_part_to_markdown(child, children_map));
+                    }
+                }
+                result.push_str("**");
+            }
+            "Emph" => {
+                result.push('*');
+                if let Some(children) = children_map.get(&Some(part.id)) {
+                    for child in children {
+                        result.push_str(&Self::render_part_to_markdown(child, children_map));
+                    }
+                }
+                result.push('*');
+            }
+            "Link" => {
+                result.push('[');
+                if let Some(children) = children_map.get(&Some(part.id)) {
+                    for child in children {
+                        result.push_str(&Self::render_part_to_markdown(child, children_map));
+                    }
+                }
+                result.push(']');
+                if let Some(data) = &part.data {
+                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(data) {
+                        if let Some(url) = v.get("url").and_then(|uv| uv.as_str()) {
+                            result.push_str(&format!("({})", url));
+                        }
+                    }
+                }
+            }
+            "Image" => {
+                result.push_str("![]");
+                if let Some(data) = &part.data {
+                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(data) {
+                        if let Some(url) = v.get("url").and_then(|uv| uv.as_str()) {
+                            result.push_str(&format!("({})", url));
+                        }
+                    }
+                }
+            }
+            "List" => {
+                if let Some(children) = children_map.get(&Some(part.id)) {
+                    for child in children {
+                        result.push_str(&Self::render_part_to_markdown(child, children_map));
+                    }
+                }
+                result.push('\n');
+            }
+            "Item" => {
+                result.push_str("- ");
+                if let Some(children) = children_map.get(&Some(part.id)) {
+                    for child in children {
+                        result.push_str(&Self::render_part_to_markdown(child, children_map));
+                    }
+                }
+                result.push('\n');
+            }
+            _ => {}
+        }
+
+        result
     }
 
     pub async fn delete_all_by_project_note_id(&self, project_note_id: i32) -> Result<(), DbErr> {

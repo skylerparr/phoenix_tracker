@@ -67,19 +67,37 @@ impl ProjectNoteCrud {
 
     pub async fn find_by_id(&self, id: i32) -> Result<Option<project_note::Model>, DbErr> {
         let project_id = &self.app_state.project.clone().unwrap().id;
-        project_note::Entity::find_by_id(id)
+        let res = project_note::Entity::find()
             .filter(project_note::Column::ProjectId.eq(*project_id))
-            .one(&self.app_state.db)
-            .await
+            .filter(project_note::Column::Id.eq(id))
+            .find_with_related(crate::entities::project_note_parts::Entity)
+            .all(&self.app_state.db)
+            .await?;
+        if let Some((mut note, parts)) = res.into_iter().next() {
+            let md = ProjectNotePartsCrud::ast_to_markdown_string(&parts);
+            note.detail = md;
+            Ok(Some(note))
+        } else {
+            Ok(None)
+        }
     }
 
     pub async fn find_all(&self) -> Result<Vec<project_note::Model>, DbErr> {
         let project_id = &self.app_state.project.clone().unwrap().id;
-        project_note::Entity::find()
+        let res = project_note::Entity::find()
             .filter(project_note::Column::ProjectId.eq(*project_id))
             .order_by_asc(project_note::Column::CreatedAt)
+            .find_with_related(crate::entities::project_note_parts::Entity)
             .all(&self.app_state.db)
-            .await
+            .await?;
+        let notes = res
+            .into_iter()
+            .map(|(mut note, parts)| {
+                note.detail = ProjectNotePartsCrud::ast_to_markdown_string(&parts);
+                note
+            })
+            .collect();
+        Ok(notes)
     }
 
     pub async fn update(
