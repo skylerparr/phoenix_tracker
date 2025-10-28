@@ -26,6 +26,8 @@ jsonwebtoken = "9.3.0"
 serde_urlencoded = "0.7.1"
 aws-config = "1.8.8"
 aws-sdk-s3 = "1.108.0"
+comrak = "0.45.0"
+regex = "1"
 
 [profile.dev]
 incremental = true

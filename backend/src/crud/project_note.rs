@@ -4,9 +4,11 @@ use crate::crud::event_broadcaster::{
 };
 use crate::crud::file_upload::FileUploadCrud;
 use crate::crud::project_note_history::ProjectNoteHistoryCrud;
+use crate::crud::project_note_parts::ProjectNotePartsCrud;
 use crate::entities::project_note;
 use crate::AppState;
 use chrono::Utc;
+use sea_orm::*;
 use sea_orm::*;
 
 #[derive(Clone)]
@@ -115,10 +117,19 @@ impl ProjectNoteCrud {
 
         project_note.lock_version = Set(current_version + 1);
 
+        // Update note row
         let result = project_note.clone().update(&txn).await?;
         if result.lock_version != current_version + 1 {
             txn.rollback().await?;
             return Err(DbErr::Custom("Optimistic lock error".to_owned()));
+        }
+
+        // Only store AST for the detail content
+        if detail_changed {
+            let parts_crud = ProjectNotePartsCrud::new(self.app_state.clone());
+            parts_crud
+                .store_markdown_ast(&txn, id, *project_id, &result.detail)
+                .await?;
         }
 
         txn.commit().await?;
