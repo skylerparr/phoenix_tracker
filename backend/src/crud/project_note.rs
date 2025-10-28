@@ -93,7 +93,10 @@ impl ProjectNoteCrud {
         let notes = res
             .into_iter()
             .map(|(mut note, parts)| {
-                note.detail = ProjectNotePartsCrud::ast_to_markdown_string(&parts);
+                let md = ProjectNotePartsCrud::ast_to_markdown_string(&parts);
+                if (md != "") {
+                    note.detail = md;
+                }
                 note
             })
             .collect();
