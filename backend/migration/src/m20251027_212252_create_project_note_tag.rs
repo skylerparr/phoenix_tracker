@@ -88,8 +88,7 @@ impl MigrationTrait for Migration {
         manager
             .create_index(
                 Index::create()
-                    .unique()
-                    .name("idx_project_note_tag_name_unique")
+                    .name("idx_project_note_tag_name")
                     .table(ProjectNoteTag::Table)
                     .col(ProjectNoteTag::ProjectId)
                     .col(ProjectNoteTag::TagName)
@@ -105,7 +104,7 @@ impl MigrationTrait for Migration {
         manager
             .drop_index(
                 Index::drop()
-                    .name("idx_project_note_tag_name_unique")
+                    .name("idx_project_note_tag_name")
                     .table(ProjectNoteTag::Table)
                     .to_owned(),
             )

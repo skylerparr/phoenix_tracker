@@ -1,7 +1,6 @@
 use crate::entities::project_note_parts;
 use crate::entities::project_note_tag;
 use crate::AppState;
-use sea_orm::sea_query::OnConflict;
 use sea_orm::*;
 
 pub struct ProjectNoteTagCrud {
@@ -29,14 +28,6 @@ impl ProjectNoteTagCrud {
 
         // Upsert to avoid unique violation on (project_id, tag_name)
         project_note_tag::Entity::insert(tag_active)
-            .on_conflict(
-                OnConflict::columns([
-                    project_note_tag::Column::ProjectId,
-                    project_note_tag::Column::TagName,
-                ])
-                .do_nothing()
-                .to_owned(),
-            )
             .exec(txn)
             .await?;
 
@@ -63,15 +54,31 @@ impl ProjectNoteTagCrud {
         project_id: i32,
         tag_name: &str,
     ) -> Result<Option<project_note_tag::Model>, DbErr> {
-        let tag = project_note_tag::Entity::find()
+        let tags = project_note_tag::Entity::find()
             .filter(project_note_tag::Column::ProjectId.eq(project_id))
             .filter(project_note_tag::Column::TagName.eq(tag_name))
             .find_with_related(project_note_parts::Entity)
             .all(&self.app_state.db)
             .await?;
 
-        Ok(tag.into_iter().next().map(|(mut tag_model, parts)| {
-            tag_model.project_note_parts = parts;
+        if tags.is_empty() {
+            return Ok(None);
+        }
+
+        let mut combined_parts = Vec::new();
+        let mut first_tag = None;
+
+        for (tag_model, parts) in tags {
+            if first_tag.is_none() {
+                first_tag = Some(tag_model);
+            }
+            combined_parts.extend(parts);
+        }
+
+        combined_parts.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+
+        Ok(first_tag.map(|mut tag_model| {
+            tag_model.project_note_parts = combined_parts;
             tag_model
         }))
     }

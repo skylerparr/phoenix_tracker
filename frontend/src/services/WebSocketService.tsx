@@ -17,6 +17,7 @@ export const USER_DELETED = "user_deleted";
 export const ISSUE_ASSIGNEE_CREATED = "issue_assignee_created";
 export const ISSUE_ASSIGNEE_UPDATED = "issue_assignee_updated";
 export const ISSUE_ASSIGNEE_DELETED = "issue_assignee_deleted";
+export const PROJECT_NOTE_PART_UPDATED = "project_note_part_updated";
 
 export class WebsocketService {
   private static socket: WebSocket;
@@ -78,6 +79,7 @@ export class WebsocketService {
           ISSUE_ASSIGNEE_CREATED,
           ISSUE_ASSIGNEE_UPDATED,
           ISSUE_ASSIGNEE_DELETED,
+          PROJECT_NOTE_PART_UPDATED,
         ];
         const eventType = eventTypes.find((type) => type === data.event_type);
         if (eventType) {
@@ -334,6 +336,26 @@ export class WebsocketService {
       callback,
       "unsubscribe",
       ISSUE_ASSIGNEE_DELETED,
+    );
+  }
+
+  public static subscribeToProjectNotePartUpdatedEvent(
+    callback: (data: any) => void,
+  ) {
+    this.handleEventSubscription(
+      callback,
+      "subscribe",
+      PROJECT_NOTE_PART_UPDATED,
+    );
+  }
+
+  public static unsubscribeToProjectNotePartUpdatedEvent(
+    callback: (data: any) => void,
+  ) {
+    this.handleEventSubscription(
+      callback,
+      "unsubscribe",
+      PROJECT_NOTE_PART_UPDATED,
     );
   }
 }

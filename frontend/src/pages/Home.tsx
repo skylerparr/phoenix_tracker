@@ -16,6 +16,7 @@ import {
   Settings,
   Notes as NotesIcon,
   Notifications as NotificationIcon,
+  AddLink as LocalOfferIcon,
 } from "@mui/icons-material";
 import CreateIssue from "../components/CreateIssue";
 import Backlog from "../components/Backlog";
@@ -36,6 +37,10 @@ import EpicsComponent from "../components/EpicsComponent";
 import HistoryComponent from "../components/HistoryComponent";
 import SettingsComponent from "../components/SettingsComponent";
 import { ProjectNotesComponent } from "../components/ProjectNotesComponent";
+import {
+  ProjectNoteTagComponent,
+  PARAM_PROJECT_NOTE_TAG,
+} from "../components/ProjectNoteTagComponent";
 import NotificationsComponent from "../components/NotificationsComponent";
 import { useNotificationCount } from "../hooks/useNotificationCount";
 import { useMobile } from "../context/MobileContext";
@@ -105,6 +110,11 @@ const buttonColors = {
     half: "rgba(255, 87, 34, 0.2)",
     hover: "rgba(255, 87, 34, 0.4)",
   },
+  project_note_tag: {
+    full: "rgba(103, 58, 183, 1.0)", // Deep Purple
+    half: "rgba(103, 58, 183, 0.2)",
+    hover: "rgba(103, 58, 183, 0.4)",
+  },
 };
 const toolbarButtons = [
   {
@@ -162,6 +172,12 @@ const toolbarButtons = [
     component: ProjectNotesComponent,
   },
   {
+    tooltip: "Project Note Tag",
+    icon: <LocalOfferIcon />,
+    id: "project_note_tag",
+    component: ProjectNoteTagComponent,
+  },
+  {
     tooltip: "History",
     icon: <AccessTime />,
     id: "history",
@@ -197,6 +213,7 @@ const Home = () => {
       params.has(PARAM_ID) ||
       params.has(PARAM_TAG) ||
       params.has(PARAM_USER_ID);
+    const hasProjectNoteTagParam = params.has(PARAM_PROJECT_NOTE_TAG);
 
     const storedButtons = sessionStorage.getActiveButtons();
     let newButtons = [...storedButtons];
@@ -206,6 +223,9 @@ const Home = () => {
     }
     if (hasSearchParams) {
       newButtons = Array.from(new Set([...newButtons, "search"]));
+    }
+    if (hasProjectNoteTagParam) {
+      newButtons = Array.from(new Set([...newButtons, "project_note_tag"]));
     }
 
     // Mobile: Ensure only one tab is active, default to "my_work" if none
@@ -250,6 +270,7 @@ const Home = () => {
         params.has(PARAM_ID) ||
         params.has(PARAM_TAG) ||
         params.has(PARAM_USER_ID);
+      const hasProjectNoteTagParam = params.has(PARAM_PROJECT_NOTE_TAG);
 
       // Close search tab if no search params
       if (!hasSearchParams && activeButtons.includes("search")) {
@@ -259,6 +280,16 @@ const Home = () => {
       // Close history tab if no history param
       if (!hasHistoryParam && activeButtons.includes("history")) {
         setActiveButtons((prev) => prev.filter((id) => id !== "history"));
+      }
+
+      // Close project_note_tag tab if no project note tag param
+      if (
+        !hasProjectNoteTagParam &&
+        activeButtons.includes("project_note_tag")
+      ) {
+        setActiveButtons((prev) =>
+          prev.filter((id) => id !== "project_note_tag"),
+        );
       }
 
       if (hasSearchParams && !activeButtons.includes("search")) {
@@ -277,6 +308,22 @@ const Home = () => {
       if (hasHistoryParam && !activeButtons.includes("history")) {
         setActiveButtons((prev) =>
           [...prev, "history"].sort((a, b) => {
+            const aIndex = toolbarButtons.findIndex(
+              (button) => button.id === a,
+            );
+            const bIndex = toolbarButtons.findIndex(
+              (button) => button.id === b,
+            );
+            return aIndex - bIndex;
+          }),
+        );
+      }
+      if (
+        hasProjectNoteTagParam &&
+        !activeButtons.includes("project_note_tag")
+      ) {
+        setActiveButtons((prev) =>
+          [...prev, "project_note_tag"].sort((a, b) => {
             const aIndex = toolbarButtons.findIndex(
               (button) => button.id === a,
             );
@@ -338,6 +385,10 @@ const Home = () => {
         // Clear URL params when history tab is closed
         if (buttonId === "history") {
           clearUrlParams(["historyIssueId", "historyProjectNoteId"], true);
+        }
+        // Clear URL params when project_note_tag tab is closed
+        if (buttonId === "project_note_tag") {
+          clearUrlParams([PARAM_PROJECT_NOTE_TAG]);
         }
 
         // Mobile: When closing a tab, open the previous one from history

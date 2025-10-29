@@ -43,6 +43,7 @@ import { FileUpload } from "../models/FileUpload";
 import UploadItem from "./UploadItem";
 import { PARAM_HISTORY_PROJECT_NOTE_ID } from "./SearchComponent";
 import { updateUrlWithParam } from "./IssueComponent";
+import { PARAM_PROJECT_NOTE_TAG } from "./ProjectNoteTagComponent";
 
 export const ProjectNotesComponent: React.FC = () => {
   const [notes, setNotes] = useState<ProjectNote[]>([]);
@@ -75,7 +76,8 @@ export const ProjectNotesComponent: React.FC = () => {
   );
   const contentPreviewRef = useRef<HTMLDivElement>(null);
   const onPreviewHashtagClick = React.useCallback((tag: string) => {
-    console.log("Clicked hashtag:", tag);
+    updateUrlWithParam(PARAM_PROJECT_NOTE_TAG, tag);
+    window.dispatchEvent(new Event("urlchange"));
   }, []);
   useHashtagClick(
     contentPreviewRef as React.RefObject<HTMLElement>,
@@ -358,6 +360,11 @@ export const ProjectNotesComponent: React.FC = () => {
     setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
   };
 
+  const handleTagClick = (tagName: string) => {
+    updateUrlWithParam(PARAM_PROJECT_NOTE_TAG, tagName);
+    window.dispatchEvent(new Event("urlchange"));
+  };
+
   return (
     <Box>
       <Box
@@ -575,9 +582,7 @@ export const ProjectNotesComponent: React.FC = () => {
                               );
                             });
                           }}
-                          onHashtagClick={(tag) => {
-                            console.log("Clicked hashtag:", tag);
-                          }}
+                          onHashtagClick={handleTagClick}
                           height={240}
                           placeholder="Update note details..."
                           withTabs={false}
