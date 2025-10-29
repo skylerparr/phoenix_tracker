@@ -1,22 +1,43 @@
-import React, { useEffect, useState } from "react";
-import { Box, Typography, Divider, IconButton, TextField } from "@mui/material";
+import React, { useEffect, useState, useRef } from "react";
+import {
+  Box,
+  Typography,
+  Divider,
+  IconButton,
+  TextField,
+  Link,
+} from "@mui/material";
 import { Edit as EditIcon, Save as SaveIcon } from "@mui/icons-material";
 import { useSearchParams } from "../hooks/useSearchParams";
 import { projectNoteTagService } from "../services/ProjectNoteTagService";
 import { ProjectNoteTag } from "../models/ProjectNoteTag";
 import { projectNotePartService } from "../services/ProjectNotePartService";
+import { useHashtagClick } from "./common/hashtagMarkdown";
+import { updateUrlWithParam } from "./IssueComponent";
 
 export const PARAM_PROJECT_NOTE_TAG = "projectNoteTag";
 export const PARAM_PROJECT_NOTE_ID = "projectNoteId";
 
 export const ProjectNoteTagComponent: React.FC = () => {
   const searchParams = useSearchParams();
+  const contentContainerRef = useRef<HTMLDivElement>(null);
 
   const [projectNoteTag, setProjectNoteTag] = useState<ProjectNoteTag | null>(
     null,
   );
   const [editingPartId, setEditingPartId] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState<string>("");
+
+  const onHashtagClick = React.useCallback((tag: string) => {
+    updateUrlWithParam(PARAM_PROJECT_NOTE_TAG, tag);
+    window.dispatchEvent(new Event("urlchange"));
+  }, []);
+
+  useHashtagClick(
+    contentContainerRef as React.RefObject<HTMLElement>,
+    onHashtagClick,
+    [projectNoteTag],
+  );
 
   useEffect(() => {
     const projectNoteTag = searchParams.get(PARAM_PROJECT_NOTE_TAG);
@@ -71,6 +92,46 @@ export const ProjectNoteTagComponent: React.FC = () => {
     }
     window.history.pushState({}, "", url);
     window.dispatchEvent(new Event("urlchange"));
+  };
+
+  const handleHashtagClick = (tag: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set(PARAM_PROJECT_NOTE_TAG, tag);
+    window.history.pushState({}, "", url);
+    window.dispatchEvent(new Event("urlchange"));
+  };
+
+  const renderContentWithHashtags = (content: string) => {
+    const hashtagRegex = /(#\w+)/g;
+    const parts = content.split(hashtagRegex);
+
+    return parts.map((part, index) => {
+      if (part.match(hashtagRegex)) {
+        const tag = part.substring(1); // Remove the # prefix
+        return (
+          <Link
+            key={index}
+            component="span"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              handleHashtagClick(tag);
+            }}
+            sx={{
+              cursor: "pointer",
+              color: "#1976d2",
+              textDecoration: "none",
+              fontWeight: 500,
+              "&:hover": {
+                textDecoration: "underline",
+              },
+            }}
+          >
+            {part}
+          </Link>
+        );
+      }
+      return <React.Fragment key={index}>{part}</React.Fragment>;
+    });
   };
 
   if (!projectNoteTag) {
@@ -200,7 +261,7 @@ export const ProjectNoteTagComponent: React.FC = () => {
                             ml: 0.5,
                           }}
                         >
-                          {part.content}
+                          {renderContentWithHashtags(part.content)}
                         </Typography>
                       )}
                       <IconButton
