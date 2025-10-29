@@ -22,6 +22,7 @@ import {
   projectNoteService,
   CreateProjectNoteRequest,
 } from "../services/ProjectNoteService";
+import { projectNotePartService } from "../services/ProjectNotePartService";
 import { ProjectNote } from "../models/ProjectNote";
 import MDEditor from "@uiw/react-md-editor";
 import MarkdownEditor from "./common/MarkdownEditor";
@@ -84,23 +85,46 @@ export const ProjectNotesComponent: React.FC = () => {
     onPreviewHashtagClick,
     [editDetail],
   );
-
+  const fetchNotes = async () => {
+    try {
+      setLoading(true);
+      const fetchedNotes = await projectNoteService.getProjectNotesByProject();
+      setNotes(fetchedNotes);
+    } catch (error) {
+      console.error("Error fetching project notes:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
-    const fetchNotes = async () => {
-      try {
-        setLoading(true);
-        const fetchedNotes =
-          await projectNoteService.getProjectNotesByProject();
-        setNotes(fetchedNotes);
-      } catch (error) {
-        console.error("Error fetching project notes:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchNotes();
   }, []);
+
+  useEffect(() => {
+    const handleProjectNotePartUpdated = async () => {
+      await fetchNotes();
+    };
+
+    projectNotePartService.subscribeToProjectNotePartUpdatedEvent(
+      handleProjectNotePartUpdated,
+    );
+
+    return () => {
+      projectNotePartService.unsubscribeToProjectNotePartUpdatedEvent(
+        handleProjectNotePartUpdated,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    if (expandedNoteId !== null) {
+      const expandedNote = notes.find((note) => note.id === expandedNoteId);
+      if (expandedNote) {
+        setEditTitle(expandedNote.title);
+        setEditDetail(expandedNote.detail || "");
+      }
+    }
+  }, [notes, expandedNoteId]);
 
   const handleCreateNewNote = async () => {
     try {

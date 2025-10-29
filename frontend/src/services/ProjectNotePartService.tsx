@@ -24,13 +24,13 @@ export class ProjectNotePartService extends BaseService<ProjectNotePart> {
     return this.put<ProjectNotePart>(`/${id}/content`, request);
   }
 
-  public static subscribeToProjectNotePartUpdatedEvent(
+  public subscribeToProjectNotePartUpdatedEvent(
     callback: (data: ProjectNotePart) => void,
   ) {
     WebsocketService.subscribeToProjectNotePartUpdatedEvent(callback);
   }
 
-  public static unsubscribeToProjectNotePartUpdatedEvent(
+  public unsubscribeToProjectNotePartUpdatedEvent(
     callback: (data: ProjectNotePart) => void,
   ) {
     WebsocketService.unsubscribeToProjectNotePartUpdatedEvent(callback);
