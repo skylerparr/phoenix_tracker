@@ -11,6 +11,8 @@ pub struct Model {
     pub tag_name: String,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
+    #[sea_orm(ignore)]
+    pub project_note_parts: Vec<super::project_note_parts::Model>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -27,6 +29,12 @@ pub enum Relation {
         to = "super::project::Column::Id"
     )]
     Project,
+}
+
+impl Related<super::project_note_parts::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::ProjectNoteParts.def()
+    }
 }
 
 impl ActiveModelBehavior for ActiveModel {}

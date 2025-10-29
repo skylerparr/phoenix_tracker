@@ -1,14 +1,15 @@
+use crate::crud::event_broadcaster::EventBroadcaster;
+use crate::crud::event_broadcaster::{PROJECT_NOTE_PART_UPDATED, PROJECT_NOTE_UPDATED};
 use crate::crud::project_note_tag::ProjectNoteTagCrud;
 use crate::entities::project_note_parts;
 use crate::AppState;
 use comrak::nodes::{
     Ast, AstNode, ListDelimType, ListType, NodeCode, NodeCodeBlock, NodeHeading, NodeHtmlBlock,
-    NodeLink, NodeList, NodeValue, Sourcepos,
+    NodeLink, NodeList, NodeValue,
 };
 use comrak::{format_commonmark, parse_document, Arena, Options};
 use regex::Regex;
 use sea_orm::*;
-use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
@@ -16,13 +17,20 @@ pub struct ProjectNotePartsCrud {
     app_state: AppState,
 }
 
+#[derive(Clone, Copy, Debug)]
+struct Ctx {
+    in_code: bool,
+    in_link: bool,
+    in_html: bool,
+}
+
 #[derive(Clone, Debug)]
-pub struct ProjectNotePartData {
-    pub parent_id: Option<i32>,
-    pub idx: i32,
-    pub part_type: String,
-    pub content: Option<String>,
-    pub data: Option<String>,
+struct PrePart {
+    parent_local: Option<i32>,
+    idx: i32,
+    part_type: String,
+    content: Option<String>,
+    data: Option<String>,
 }
 
 impl ProjectNotePartsCrud {
@@ -101,9 +109,7 @@ impl ProjectNotePartsCrud {
                 NodeValue::Document,
                 (0, 0).into(),
             ))));
-            unsafe {
-                doc.append(root_node);
-            }
+            doc.append(root_node);
             doc
         };
 
@@ -151,20 +157,6 @@ impl ProjectNotePartsCrud {
         self.delete_all_by_project_note_id(project_note_id).await?;
 
         // Build a Send-safe, in-memory representation of the AST without any awaits
-        #[derive(Clone, Copy, Debug)]
-        struct Ctx {
-            in_code: bool,
-            in_link: bool,
-            in_html: bool,
-        }
-        #[derive(Clone, Debug)]
-        struct PrePart {
-            parent_local: Option<i32>,
-            idx: i32,
-            part_type: String,
-            content: Option<String>,
-            data: Option<String>,
-        }
 
         let tag_re = Regex::new(r"(^|[^A-Za-z0-9_])#([A-Za-z0-9_-]+)").unwrap();
 
@@ -384,6 +376,49 @@ impl ProjectNotePartsCrud {
             NodeValue::Strikethrough => ("Strikethrough".into(), None, None),
             _ => (format!("{:?}", value), None, None),
         }
+    }
+
+    pub async fn update_content(
+        &self,
+        project_note_part_id: i32,
+        content: String,
+    ) -> Result<project_note_parts::Model, DbErr> {
+        // Find the part to get project_note_id and project_id
+        let part = project_note_parts::Entity::find_by_id(project_note_part_id)
+            .one(&self.app_state.db)
+            .await?
+            .ok_or(DbErr::Custom("Project note part not found".to_owned()))?;
+
+        let mut active_part: project_note_parts::ActiveModel = part.into();
+        active_part.content = Set(Some(content));
+        active_part.updated_at = Set(chrono::Utc::now().into());
+
+        let updated_part = active_part.update(&self.app_state.db).await?;
+
+        // Broadcast events
+        let project_id = self.app_state.project.as_ref().unwrap().id;
+        let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
+
+        broadcaster.broadcast_event(
+            project_id,
+            PROJECT_NOTE_PART_UPDATED,
+            serde_json::json!({
+                "project_id": project_id,
+                "project_note_id": updated_part.project_note_id,
+                "project_note_part_id": updated_part.id
+            }),
+        );
+
+        broadcaster.broadcast_event(
+            project_id,
+            PROJECT_NOTE_UPDATED,
+            serde_json::json!({
+                "project_id": project_id,
+                "project_note_id": updated_part.project_note_id
+            }),
+        );
+
+        Ok(updated_part)
     }
 
     fn fields_to_node_value(p: &project_note_parts::Model) -> NodeValue {

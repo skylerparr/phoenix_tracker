@@ -11,6 +11,8 @@ pub mod notification;
 pub mod owner;
 pub mod project;
 pub mod project_note;
+pub mod project_note_part;
+pub mod project_note_tag;
 pub mod tag;
 pub mod task;
 pub mod user;

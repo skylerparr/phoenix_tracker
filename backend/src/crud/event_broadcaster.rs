@@ -15,6 +15,8 @@ pub const TAG_CREATED: &str = "tag_created";
 pub const TAG_UPDATED: &str = "tag_updated";
 pub const TAG_DELETED: &str = "tag_deleted";
 
+pub const PROJECT_NOTE_PART_UPDATED: &str = "project_note_part_updated";
+
 pub const PROJECT_NOTE_CREATED: &str = "project_note_created";
 pub const PROJECT_NOTE_UPDATED: &str = "project_note_updated";
 pub const PROJECT_NOTE_DELETED: &str = "project_note_deleted";

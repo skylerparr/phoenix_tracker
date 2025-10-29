@@ -1,3 +1,4 @@
+use crate::entities::project_note_parts;
 use crate::entities::project_note_tag;
 use crate::AppState;
 use sea_orm::sea_query::OnConflict;
@@ -42,19 +43,6 @@ impl ProjectNoteTagCrud {
         Ok(())
     }
 
-    pub async fn delete(
-        &self,
-        txn: &DatabaseTransaction,
-        project_id: i32,
-        tag_name: &str,
-    ) -> Result<DeleteResult, DbErr> {
-        project_note_tag::Entity::delete_many()
-            .filter(project_note_tag::Column::ProjectId.eq(project_id))
-            .filter(project_note_tag::Column::TagName.eq(tag_name))
-            .exec(txn)
-            .await
-    }
-
     pub async fn delete_many(
         &self,
         txn: &DatabaseTransaction,
@@ -74,11 +62,17 @@ impl ProjectNoteTagCrud {
         &self,
         project_id: i32,
         tag_name: &str,
-    ) -> Result<Vec<project_note_tag::Model>, DbErr> {
-        project_note_tag::Entity::find()
+    ) -> Result<Option<project_note_tag::Model>, DbErr> {
+        let tag = project_note_tag::Entity::find()
             .filter(project_note_tag::Column::ProjectId.eq(project_id))
             .filter(project_note_tag::Column::TagName.eq(tag_name))
+            .find_with_related(project_note_parts::Entity)
             .all(&self.app_state.db)
-            .await
+            .await?;
+
+        Ok(tag.into_iter().next().map(|(mut tag_model, parts)| {
+            tag_model.project_note_parts = parts;
+            tag_model
+        }))
     }
 }

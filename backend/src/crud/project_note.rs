@@ -9,7 +9,6 @@ use crate::entities::project_note;
 use crate::AppState;
 use chrono::Utc;
 use sea_orm::*;
-use sea_orm::*;
 
 #[derive(Clone)]
 pub struct ProjectNoteCrud {
@@ -94,7 +93,7 @@ impl ProjectNoteCrud {
             .into_iter()
             .map(|(mut note, parts)| {
                 let md = ProjectNotePartsCrud::ast_to_markdown_string(&parts);
-                if (md != "") {
+                if md != "" {
                     note.detail = md;
                 }
                 note
@@ -208,6 +207,12 @@ impl ProjectNoteCrud {
         // Delete all history records for this project note
         let history_crud = ProjectNoteHistoryCrud::new(self.app_state.db.clone());
         history_crud.delete_by_project_note_id(id).await?;
+
+        // Delete all note parts
+        let project_note_parts_crud = ProjectNotePartsCrud::new(self.app_state.clone());
+        project_note_parts_crud
+            .delete_all_by_project_note_id(id)
+            .await?;
 
         // Delete the project note itself
         let result = project_note::Entity::delete_by_id(id)
