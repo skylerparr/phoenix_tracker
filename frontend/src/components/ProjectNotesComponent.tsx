@@ -44,9 +44,14 @@ import { FileUpload } from "../models/FileUpload";
 import UploadItem from "./UploadItem";
 import { PARAM_HISTORY_PROJECT_NOTE_ID } from "./SearchComponent";
 import { updateUrlWithParam } from "./IssueComponent";
-import { PARAM_PROJECT_NOTE_TAG } from "./ProjectNoteTagComponent";
+import {
+  PARAM_PROJECT_NOTE_TAG,
+  PARAM_PROJECT_NOTE_ID,
+} from "./ProjectNoteTagComponent";
+import { useSearchParams } from "../hooks/useSearchParams";
 
 export const ProjectNotesComponent: React.FC = () => {
+  const searchParams = useSearchParams();
   const [notes, setNotes] = useState<ProjectNote[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [expandedNoteId, setExpandedNoteId] = useState<number | null>(null);
@@ -99,6 +104,18 @@ export const ProjectNotesComponent: React.FC = () => {
   useEffect(() => {
     fetchNotes();
   }, []);
+
+  // Handle projectNoteId from URL params
+  useEffect(() => {
+    const projectNoteIdParam = searchParams.get(PARAM_PROJECT_NOTE_ID);
+    if (projectNoteIdParam && notes.length > 0) {
+      const noteId = parseInt(projectNoteIdParam, 10);
+      const noteExists = notes.find((note) => note.id === noteId);
+      if (noteExists && expandedNoteId !== noteId) {
+        handleExpandNote(noteExists);
+      }
+    }
+  }, [searchParams, notes]);
 
   useEffect(() => {
     const handleProjectNotePartUpdated = async () => {

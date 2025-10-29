@@ -40,6 +40,7 @@ import { ProjectNotesComponent } from "../components/ProjectNotesComponent";
 import {
   ProjectNoteTagComponent,
   PARAM_PROJECT_NOTE_TAG,
+  PARAM_PROJECT_NOTE_ID,
 } from "../components/ProjectNoteTagComponent";
 import NotificationsComponent from "../components/NotificationsComponent";
 import { useNotificationCount } from "../hooks/useNotificationCount";
@@ -214,6 +215,7 @@ const Home = () => {
       params.has(PARAM_TAG) ||
       params.has(PARAM_USER_ID);
     const hasProjectNoteTagParam = params.has(PARAM_PROJECT_NOTE_TAG);
+    const hasProjectNoteIdParam = params.has(PARAM_PROJECT_NOTE_ID);
 
     const storedButtons = sessionStorage.getActiveButtons();
     let newButtons = [...storedButtons];
@@ -226,6 +228,9 @@ const Home = () => {
     }
     if (hasProjectNoteTagParam) {
       newButtons = Array.from(new Set([...newButtons, "project_note_tag"]));
+    }
+    if (hasProjectNoteIdParam) {
+      newButtons = Array.from(new Set([...newButtons, "project_notes"]));
     }
 
     // Mobile: Ensure only one tab is active, default to "my_work" if none
@@ -271,6 +276,7 @@ const Home = () => {
         params.has(PARAM_TAG) ||
         params.has(PARAM_USER_ID);
       const hasProjectNoteTagParam = params.has(PARAM_PROJECT_NOTE_TAG);
+      const hasProjectNoteIdParam = params.has(PARAM_PROJECT_NOTE_ID);
 
       // Close search tab if no search params
       if (!hasSearchParams && activeButtons.includes("search")) {
@@ -324,6 +330,19 @@ const Home = () => {
       ) {
         setActiveButtons((prev) =>
           [...prev, "project_note_tag"].sort((a, b) => {
+            const aIndex = toolbarButtons.findIndex(
+              (button) => button.id === a,
+            );
+            const bIndex = toolbarButtons.findIndex(
+              (button) => button.id === b,
+            );
+            return aIndex - bIndex;
+          }),
+        );
+      }
+      if (hasProjectNoteIdParam && !activeButtons.includes("project_notes")) {
+        setActiveButtons((prev) =>
+          [...prev, "project_notes"].sort((a, b) => {
             const aIndex = toolbarButtons.findIndex(
               (button) => button.id === a,
             );
@@ -389,6 +408,10 @@ const Home = () => {
         // Clear URL params when project_note_tag tab is closed
         if (buttonId === "project_note_tag") {
           clearUrlParams([PARAM_PROJECT_NOTE_TAG]);
+        }
+        // Clear URL params when project_notes tab is closed
+        if (buttonId === "project_notes") {
+          clearUrlParams([PARAM_PROJECT_NOTE_ID]);
         }
 
         // Mobile: When closing a tab, open the previous one from history

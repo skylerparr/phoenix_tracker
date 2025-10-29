@@ -7,6 +7,7 @@ import { ProjectNoteTag } from "../models/ProjectNoteTag";
 import { projectNotePartService } from "../services/ProjectNotePartService";
 
 export const PARAM_PROJECT_NOTE_TAG = "projectNoteTag";
+export const PARAM_PROJECT_NOTE_ID = "projectNoteId";
 
 export const ProjectNoteTagComponent: React.FC = () => {
   const searchParams = useSearchParams();
@@ -60,6 +61,18 @@ export const ProjectNoteTagComponent: React.FC = () => {
     }
   };
 
+  const handleProjectNoteTitleClick = (projectNoteId: number) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set(PARAM_PROJECT_NOTE_ID, projectNoteId.toString());
+    // Preserve the projectNoteTag if it exists
+    const currentTag = searchParams.get(PARAM_PROJECT_NOTE_TAG);
+    if (currentTag) {
+      url.searchParams.set(PARAM_PROJECT_NOTE_TAG, currentTag);
+    }
+    window.history.pushState({}, "", url);
+    window.dispatchEvent(new Event("urlchange"));
+  };
+
   if (!projectNoteTag) {
     return (
       <Box
@@ -109,11 +122,20 @@ export const ProjectNoteTagComponent: React.FC = () => {
                 p: 0.5,
                 backgroundColor: "#e8e8e8",
                 borderBottom: "1px solid #cccccc",
+                cursor: "pointer",
+                "&:hover": {
+                  backgroundColor: "#d0d0d0",
+                },
               }}
+              onClick={() => handleProjectNoteTitleClick(note.id)}
             >
               <Typography
                 variant="subtitle1"
-                sx={{ fontWeight: "bold", color: "#333333" }}
+                sx={{
+                  fontWeight: "bold",
+                  color: "#1976d2",
+                  textDecoration: "underline",
+                }}
               >
                 {note.title}
               </Typography>
