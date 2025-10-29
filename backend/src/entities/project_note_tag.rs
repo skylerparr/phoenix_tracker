@@ -1,6 +1,13 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ProjectNoteWithParts {
+    pub id: i32,
+    pub title: String,
+    pub parts: Vec<super::project_note_parts::Model>,
+}
+
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "project_note_tag")]
 pub struct Model {
@@ -12,7 +19,7 @@ pub struct Model {
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
     #[sea_orm(ignore)]
-    pub project_note_parts: Vec<super::project_note_parts::Model>,
+    pub project_note_parts: Vec<ProjectNoteWithParts>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

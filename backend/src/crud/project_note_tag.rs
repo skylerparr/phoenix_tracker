@@ -1,7 +1,10 @@
+use crate::entities::project_note;
 use crate::entities::project_note_parts;
 use crate::entities::project_note_tag;
+use crate::entities::project_note_tag::ProjectNoteWithParts;
 use crate::AppState;
 use sea_orm::*;
+use std::collections::HashMap;
 
 pub struct ProjectNoteTagCrud {
     app_state: AppState,
@@ -75,10 +78,50 @@ impl ProjectNoteTagCrud {
             combined_parts.extend(parts);
         }
 
-        combined_parts.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+        // Group parts by project_note_id
+        let mut grouped_by_note: HashMap<i32, Vec<project_note_parts::Model>> = HashMap::new();
+        for part in combined_parts {
+            grouped_by_note
+                .entry(part.project_note_id)
+                .or_insert_with(Vec::new)
+                .push(part);
+        }
+
+        // Get all unique project_note_ids to fetch their titles
+        let note_ids: Vec<i32> = grouped_by_note.keys().cloned().collect();
+
+        // Fetch project notes with titles
+        let notes = project_note::Entity::find()
+            .filter(project_note::Column::Id.is_in(note_ids))
+            .all(&self.app_state.db)
+            .await?;
+
+        // Create a map of note_id -> title
+        let note_titles: HashMap<i32, String> = notes
+            .into_iter()
+            .map(|note| (note.id, note.title))
+            .collect();
+
+        // Build the final structure
+        let mut project_note_parts_grouped: Vec<ProjectNoteWithParts> = grouped_by_note
+            .into_iter()
+            .filter_map(|(note_id, mut parts)| {
+                note_titles.get(&note_id).map(|title| {
+                    parts.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+                    ProjectNoteWithParts {
+                        id: note_id,
+                        title: title.clone(),
+                        parts,
+                    }
+                })
+            })
+            .collect();
+
+        // Sort by note id for consistent ordering
+        project_note_parts_grouped.sort_by(|a, b| a.id.cmp(&b.id));
 
         Ok(first_tag.map(|mut tag_model| {
-            tag_model.project_note_parts = combined_parts;
+            tag_model.project_note_parts = project_note_parts_grouped;
             tag_model
         }))
     }

@@ -41,12 +41,15 @@ export const ProjectNoteTagComponent: React.FC = () => {
   const handleSaveClick = async (partId: number) => {
     if (projectNoteTag) {
       // Update the local state first
-      const updatedParts = projectNoteTag.projectNoteParts.map((part) =>
-        part.id === partId ? { ...part, content: editingContent } : part,
-      );
+      const updatedNotes = projectNoteTag.projectNoteParts.map((note) => ({
+        ...note,
+        parts: note.parts.map((part) =>
+          part.id === partId ? { ...part, content: editingContent } : part,
+        ),
+      }));
       setProjectNoteTag({
         ...projectNoteTag,
-        projectNoteParts: updatedParts,
+        projectNoteParts: updatedNotes,
       });
       setEditingPartId(null);
       setEditingContent("");
@@ -84,7 +87,10 @@ export const ProjectNoteTagComponent: React.FC = () => {
           borderBottom: "1px solid #666666",
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: "bold", color: "black" }}>
+        <Typography
+          variant="h6"
+          sx={{ fontWeight: "bold", color: "blue", p: 0 }}
+        >
           #{projectNoteTag.tagName}
         </Typography>
       </Box>
@@ -96,77 +102,102 @@ export const ProjectNoteTagComponent: React.FC = () => {
           </Typography>
         </Box>
       ) : (
-        projectNoteTag.projectNoteParts.map((part, index) => (
-          <React.Fragment key={part.id}>
+        projectNoteTag.projectNoteParts.map((note, noteIndex) => (
+          <React.Fragment key={note.id}>
             <Box
               sx={{
-                display: "flex",
-                alignItems: "flex-start",
-                p: 0,
-                "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.04)" },
+                p: 0.5,
+                backgroundColor: "#e8e8e8",
+                borderBottom: "1px solid #cccccc",
               }}
             >
-              {editingPartId === part.id ? (
-                <>
-                  <TextField
-                    value={editingContent}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setEditingContent(e.target.value)
-                    }
-                    size="small"
-                    autoFocus
-                    fullWidth
-                    multiline
-                    maxRows={4}
-                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                      if (e.key === "Enter" && e.ctrlKey) {
-                        handleSaveClick(part.id);
-                      } else if (e.key === "Escape") {
-                        setEditingPartId(null);
-                        setEditingContent("");
-                      }
-                    }}
-                    sx={{
-                      backgroundColor: "white",
-                      pl: 1,
-                      "& .MuiOutlinedInput-input": {
-                        color: "black",
-                      },
-                    }}
-                  />
-                  <IconButton
-                    size="small"
-                    onClick={() => handleSaveClick(part.id)}
-                    sx={{ mr: 1 }}
-                  >
-                    <SaveIcon sx={{ color: "green", fontSize: "12" }} />
-                  </IconButton>
-                </>
-              ) : (
-                <>
-                  {part.content && (
-                    <Typography
-                      sx={{
-                        color: "black",
-                        flex: 1,
-                        pl: 1,
-                      }}
-                    >
-                      {part.content}
-                    </Typography>
-                  )}
-                  <IconButton
-                    size="small"
-                    onClick={() => handleEditClick(part.id, part.content)}
-                    sx={{ mr: 1 }}
-                  >
-                    <EditIcon sx={{ color: "#666666", fontSize: "12" }} />
-                  </IconButton>
-                </>
-              )}
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: "bold", color: "#333333" }}
+              >
+                {note.title}
+              </Typography>
             </Box>
-            {index < projectNoteTag.projectNoteParts.length - 1 && (
-              <Divider sx={{ bgcolor: "#666666" }} />
+            {note.parts.map((part, partIndex) => (
+              <React.Fragment key={part.id}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    p: 0,
+                    "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.04)" },
+                  }}
+                >
+                  {editingPartId === part.id ? (
+                    <>
+                      <TextField
+                        value={editingContent}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setEditingContent(e.target.value)
+                        }
+                        size="small"
+                        autoFocus
+                        fullWidth
+                        multiline
+                        maxRows={4}
+                        onKeyDown={(
+                          e: React.KeyboardEvent<HTMLInputElement>,
+                        ) => {
+                          if (e.key === "Enter" && e.ctrlKey) {
+                            handleSaveClick(part.id);
+                          } else if (e.key === "Escape") {
+                            setEditingPartId(null);
+                            setEditingContent("");
+                          }
+                        }}
+                        sx={{
+                          backgroundColor: "white",
+                          pl: 1,
+                          "& .MuiOutlinedInput-input": {
+                            color: "black",
+                          },
+                        }}
+                      />
+                      <IconButton
+                        size="small"
+                        onClick={() => handleSaveClick(part.id)}
+                        sx={{ mr: 1 }}
+                      >
+                        <SaveIcon sx={{ color: "green", fontSize: "12" }} />
+                      </IconButton>
+                    </>
+                  ) : (
+                    <>
+                      {part.content && (
+                        <Typography
+                          sx={{
+                            color: "black",
+                            flex: 1,
+                            pl: 1,
+                            pt: 0.7,
+                            ml: 0.5,
+                          }}
+                        >
+                          {part.content}
+                        </Typography>
+                      )}
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEditClick(part.id, part.content)}
+                        sx={{ mr: 1 }}
+                      >
+                        <EditIcon sx={{ color: "#666666", fontSize: "10" }} />
+                      </IconButton>
+                    </>
+                  )}
+                </Box>
+                {partIndex < note.parts.length - 1 && (
+                  <Divider sx={{ bgcolor: "#e0e0e0" }} />
+                )}
+              </React.Fragment>
+            ))}
+            {noteIndex < projectNoteTag.projectNoteParts.length - 1 && (
+              <Divider sx={{ bgcolor: "#666666", height: "2px" }} />
             )}
           </React.Fragment>
         ))
