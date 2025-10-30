@@ -89,20 +89,39 @@ export async function handleToolCall(name, args = {}, context = {}) {
     switch (name) {
       case 'auth_login': {
         const resp = await login(args.email, buildOptions(args));
+        // Update token in context
+        if (context.updateToken) {
+          context.updateToken(resp.token, resp.expires_at);
+        }
         return { content: [{ type: 'text', text: JSON.stringify(resp, null, 2) }] };
       }
       case 'auth_register': {
         const resp = await register(args.name, args.email, buildOptions(args));
+        // Update token in context
+        if (context.updateToken) {
+          context.updateToken(resp.token, resp.expires_at);
+        }
         return { content: [{ type: 'text', text: JSON.stringify(resp, null, 2) }] };
       }
       case 'auth_logout': {
         const token = await resolveToken(args, context);
         await logout(Number(args.user_id), { ...buildOptions(args), token });
+        // Clear token in context
+        if (context.updateToken) {
+          context.updateToken(null, null);
+        }
         return { content: [{ type: 'text', text: JSON.stringify({ success: true }, null, 2) }] };
       }
       case 'auth_switch_project': {
         const token = await resolveToken(args, context);
         const resp = await switchProject(Number(args.project_id), token, buildOptions(args));
+        // Update token and project ID in context
+        if (context.updateToken) {
+          context.updateToken(resp.token, resp.expires_at);
+        }
+        if (context.updateProjectId) {
+          context.updateProjectId(Number(args.project_id));
+        }
         return { content: [{ type: 'text', text: JSON.stringify(resp, null, 2) }] };
       }
       default:

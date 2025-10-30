@@ -124,6 +124,13 @@ export async function handleToolCall(name, args = {}, context = {}) {
       case 'select_project': {
         const token = await resolveToken(args, context);
         const res = await selectProject(Number(args.project_id), token, opts);
+        // Update token and project ID in context
+        if (context.updateToken) {
+          context.updateToken(res.token, res.expires_at);
+        }
+        if (context.updateProjectId) {
+          context.updateProjectId(Number(args.project_id));
+        }
         return { content: [{ type: 'text', text: JSON.stringify(res, null, 2) }] };
       }
       default:

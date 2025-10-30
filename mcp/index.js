@@ -29,16 +29,25 @@ import { tools as uploadTools, handleToolCall as handleUploadTool } from "./Uplo
 import { tools as userTools, handleToolCall as handleUserTool } from "./UserService/tool_calls.js";
 
 // Configuration - will come from Claude Desktop config
-const CONFIG = {
+export const CONFIG = {
   baseUrl: process.env.ISSUE_TRACKER_BASE_URL,
   email: process.env.ISSUE_TRACKER_EMAIL,
   projectId: process.env.ISSUE_TRACKER_PROJECT_ID,
 };
 
 // Auth token cache
-let projectToken = null;
-let tokenExpiry = null;
+export let projectToken = null;
+export let tokenExpiry = null;
 
+// Functions to update token and project
+export function updateToken(token, expiry = null) {
+  projectToken = token;
+  tokenExpiry = expiry;
+}
+
+export function updateProjectId(projectId) {
+  CONFIG.projectId = projectId;
+}
 const server = new Server(
   {
     name: "issue-tracker-server",
@@ -51,18 +60,17 @@ const server = new Server(
   }
 );
 
-async function doLogin() {
-  if (projectToken) {
-    return projectToken;
-  }
+async function doLogin(projectId) {
   const opts = CONFIG.baseUrl ? { baseUrl: CONFIG.baseUrl } : {};
   const response = await login(CONFIG.email, opts);
   projectToken = response.token;
   tokenExpiry = response.expires_at;
 
-  const switchProjectResponse = await switchProject(CONFIG.projectId, projectToken, opts);
-  projectToken = switchProjectResponse.token;
-  tokenExpiry = switchProjectResponse.expires_at;
+  if(projectId) {
+    const switchProjectResponse = await switchProject(projectId, projectToken, opts);
+    projectToken = switchProjectResponse.token;
+    tokenExpiry = switchProjectResponse.expires_at;
+  }
 
   return projectToken;
 }
@@ -127,6 +135,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const context = {
       token: projectToken,
       getToken: async () => await doLogin(),
+      updateToken,
+      updateProjectId,
     };
 
     const argsWithDefaults = { ...(args || {}) };
@@ -150,11 +160,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 async function main() {
   // Validate config
-  if (!CONFIG.baseUrl || !CONFIG.email || !CONFIG.projectId) {
+  if (!CONFIG.baseUrl || !CONFIG.email) {
     console.error("Error: Missing required environment variables:");
     console.error("  ISSUE_TRACKER_BASE_URL");
     console.error("  ISSUE_TRACKER_EMAIL");
-    console.error("  ISSUE_TRACKER_PROJECT_ID");
     process.exit(1);
   }
 
