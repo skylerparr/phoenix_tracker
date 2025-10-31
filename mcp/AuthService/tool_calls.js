@@ -119,9 +119,6 @@ export async function handleToolCall(name, args = {}, context = {}) {
         if (context.updateToken) {
           context.updateToken(resp.token, resp.expires_at);
         }
-        if (context.updateProjectId) {
-          context.updateProjectId(Number(args.project_id));
-        }
         return { content: [{ type: 'text', text: JSON.stringify(resp, null, 2) }] };
       }
       default:

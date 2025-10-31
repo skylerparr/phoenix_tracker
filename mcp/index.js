@@ -45,9 +45,6 @@ export function updateToken(token, expiry = null) {
   tokenExpiry = expiry;
 }
 
-export function updateProjectId(projectId) {
-  CONFIG.projectId = projectId;
-}
 const server = new Server(
   {
     name: "issue-tracker-server",
@@ -60,17 +57,14 @@ const server = new Server(
   }
 );
 
-async function doLogin(projectId) {
+async function doLogin() {
+  if(projectToken) {
+    return projectToken;
+  }
   const opts = CONFIG.baseUrl ? { baseUrl: CONFIG.baseUrl } : {};
   const response = await login(CONFIG.email, opts);
   projectToken = response.token;
   tokenExpiry = response.expires_at;
-
-  if(projectId) {
-    const switchProjectResponse = await switchProject(projectId, projectToken, opts);
-    projectToken = switchProjectResponse.token;
-    tokenExpiry = switchProjectResponse.expires_at;
-  }
 
   return projectToken;
 }
@@ -136,7 +130,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       token: projectToken,
       getToken: async () => await doLogin(),
       updateToken,
-      updateProjectId,
     };
 
     const argsWithDefaults = { ...(args || {}) };
