@@ -20,7 +20,9 @@ import { tools as issueTagTools, handleToolCall as handleIssueTagTool } from "./
 import { tools as notificationTools, handleToolCall as handleNotificationTool } from "./NotificationService/tool_calls.js";
 import { tools as ownerTools, handleToolCall as handleOwnerTool } from "./OwnerService/tool_calls.js";
 import { tools as projectNoteHistoryTools, handleToolCall as handleProjectNoteHistoryTool } from "./ProjectNoteHistoryService/tool_calls.js";
+import { tools as projectNoteTagTools, handleToolCall as handleProjectNoteTagTool } from "./ProjectNoteTagService/tool_calls.js";
 import { tools as projectNoteTools, handleToolCall as handleProjectNoteTool } from "./ProjectNoteService/tool_calls.js";
+import { tools as projectNotePartTools, handleToolCall as handleProjectNotePartTool } from "./ProjectNotePartService/tool_calls.js";
 import { tools as projectTools, handleToolCall as handleProjectTool } from "./ProjectService/tool_calls.js";
 import { tools as statusTools, handleToolCall as handleStatusTool } from "./StatusService/tool_calls.js";
 import { tools as tagTools, handleToolCall as handleTagTool } from "./TagService/tool_calls.js";
@@ -81,7 +83,9 @@ const allTools = [
   ...notificationTools,
   ...ownerTools,
   ...projectNoteHistoryTools,
+  ...projectNoteTagTools,
   ...projectNoteTools,
+  ...projectNotePartTools,
   ...projectTools,
   ...statusTools,
   ...tagTools,
@@ -102,7 +106,9 @@ for (const t of issueTagTools) toolNameToHandler.set(t.name, handleIssueTagTool)
 for (const t of notificationTools) toolNameToHandler.set(t.name, handleNotificationTool);
 for (const t of ownerTools) toolNameToHandler.set(t.name, handleOwnerTool);
 for (const t of projectNoteHistoryTools) toolNameToHandler.set(t.name, handleProjectNoteHistoryTool);
+for (const t of projectNoteTagTools) toolNameToHandler.set(t.name, handleProjectNoteTagTool);
 for (const t of projectNoteTools) toolNameToHandler.set(t.name, handleProjectNoteTool);
+for (const t of projectNotePartTools) toolNameToHandler.set(t.name, handleProjectNotePartTool);
 for (const t of projectTools) toolNameToHandler.set(t.name, handleProjectTool);
 for (const t of statusTools) toolNameToHandler.set(t.name, handleStatusTool);
 for (const t of tagTools) toolNameToHandler.set(t.name, handleTagTool);
