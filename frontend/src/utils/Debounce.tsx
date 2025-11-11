@@ -11,7 +11,7 @@ const useDebounce = () => {
     const id = setTimeout(async () => {
       await func();
       setDebounceId(null);
-    }, 400);
+    }, 2500);
     setDebounceId(id);
   };
 
