@@ -17,6 +17,8 @@ import {
   DialogTitle,
   Alert,
   Chip,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import {
   projectNoteService,
@@ -61,6 +63,7 @@ export const ProjectNotesComponent: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const { debouncedUpdate } = useDebounce();
   const [filter, setFilter] = useState<string>("");
+  const [autosaveEnabled, setAutosaveEnabled] = useState<boolean>(true);
 
   const handleHistory = () => {
     if (expandedNoteId === null) return;
@@ -614,14 +617,16 @@ export const ProjectNotesComponent: React.FC = () => {
                           value={editDetail}
                           onChange={(v: string) => {
                             setEditDetail(v);
-                            debouncedUpdate(async () => {
-                              if (expandedNoteId === null) return;
-                              await saveProjectNote(
-                                expandedNoteId,
-                                editTitle,
-                                v,
-                              );
-                            });
+                            if (autosaveEnabled) {
+                              debouncedUpdate(async () => {
+                                if (expandedNoteId === null) return;
+                                await saveProjectNote(
+                                  expandedNoteId,
+                                  editTitle,
+                                  v,
+                                );
+                              });
+                            }
                           }}
                           onHashtagClick={handleTagClick}
                           height={240}
@@ -732,6 +737,18 @@ export const ProjectNotesComponent: React.FC = () => {
                   <Box
                     sx={{ display: "flex", justifyContent: "flex-end", p: 1 }}
                   >
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={autosaveEnabled}
+                          onChange={(e) => setAutosaveEnabled(e.target.checked)}
+                          size="small"
+                          sx={{ padding: "4px", color: "black" }}
+                        />
+                      }
+                      label="Autosave"
+                      sx={{ mr: 2, color: "black" }}
+                    />
                     <IconButton
                       size="small"
                       sx={{
