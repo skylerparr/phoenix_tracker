@@ -58,24 +58,24 @@ pub fn issue_routes() -> Router<AppState> {
     Router::new()
         .route("/issues", post(create_issue))
         .route("/issues", get(get_all_issues_for_backlog))
-        .route("/issues/:id", get(get_issue))
-        .route("/issues/:id", put(update_issue))
-        .route("/issues/:id/start", put(start_issue))
-        .route("/issues/:id/finish", put(finish_issue))
-        .route("/issues/:id/deliver", put(deliver_issue))
-        .route("/issues/:id/accept", put(accept_issue))
-        .route("/issues/:id/reject", put(reject_issue))
-        .route("/issues/:id", delete(delete_issue))
-        .route("/issues/bulk-priority", put(bulk_update_priorities))
         .route("/issues/me", get(get_issues_for_me))
-        .route("/issues/tag/:id", get(get_issues_by_tag))
         .route("/issues/accepted", get(get_all_accepted))
         .route("/issues/icebox", get(get_all_icebox))
+        .route("/issues/bulk-priority", put(bulk_update_priorities))
         .route(
             "/issues/weekly-points-average",
             get(get_weekly_points_average),
         )
-        .route("/issues/user/:id", get(get_issues_by_user))
+        .route("/issues/tag/{id}", get(get_issues_by_tag))
+        .route("/issues/user/{id}", get(get_issues_by_user))
+        .route("/issues/{id}", get(get_issue))
+        .route("/issues/{id}", put(update_issue))
+        .route("/issues/{id}", delete(delete_issue))
+        .route("/issues/{id}/start", put(start_issue))
+        .route("/issues/{id}/finish", put(finish_issue))
+        .route("/issues/{id}/deliver", put(deliver_issue))
+        .route("/issues/{id}/accept", put(accept_issue))
+        .route("/issues/{id}/reject", put(reject_issue))
 }
 
 #[axum::debug_handler]

@@ -29,11 +29,11 @@ pub struct UpdateProjectRequest {
 pub fn project_routes() -> Router<AppState> {
     Router::new()
         .route("/projects", post(create_project))
-        .route("/projects/:id", get(get_project))
-        .route("/projects/:id", put(update_project))
-        .route("/projects/:id", delete(delete_project))
         .route("/projects/user/me", get(get_all_projects_by_user_id))
-        .route("/projects/:id/user", post(select_project))
+        .route("/projects/{id}", get(get_project))
+        .route("/projects/{id}", put(update_project))
+        .route("/projects/{id}", delete(delete_project))
+        .route("/projects/{id}/user", post(select_project))
 }
 #[axum::debug_handler]
 async fn create_project(

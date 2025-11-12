@@ -6,7 +6,7 @@ use tracing::debug;
 
 pub fn project_note_tag_routes() -> Router<AppState> {
     Router::new().route(
-        "/project-note-tags/tag/:tag_name",
+        "/project-note-tags/tag/{tag_name}",
         get(get_project_note_tag_by_tag_name),
     )
 }

@@ -38,12 +38,12 @@ pub fn user_routes() -> Router<AppState> {
     Router::new()
         .route("/users", post(create_user))
         .route("/users", get(get_all_users))
-        .route("/users/:id", get(get_user))
-        .route("/users/:id", put(update_user))
-        .route("/users/:id", delete(delete_user))
         .route("/users/by-email", get(get_user_by_email))
         .route("/users/invite", post(invite_user))
-        .route("/users/:id/remove", delete(remove_user))
+        .route("/users/{id}", get(get_user))
+        .route("/users/{id}", put(update_user))
+        .route("/users/{id}", delete(delete_user))
+        .route("/users/{id}/remove", delete(remove_user))
 }
 
 #[axum::debug_handler]

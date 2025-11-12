@@ -26,9 +26,9 @@ pub fn owner_routes() -> Router<AppState> {
     Router::new()
         .route("/owners", post(create_owner))
         .route("/owners", get(get_all_owners))
-        .route("/owners/:id", get(get_owner))
-        .route("/owners/:id", put(update_owner))
-        .route("/owners/:id", delete(delete_owner))
+        .route("/owners/{id}", get(get_owner))
+        .route("/owners/{id}", put(update_owner))
+        .route("/owners/{id}", delete(delete_owner))
 }
 
 #[axum::debug_handler]

@@ -13,7 +13,7 @@ pub struct UpdateProjectNotePartRequest {
 
 pub fn project_note_part_routes() -> Router<AppState> {
     Router::new().route(
-        "/project-note-parts/:id/content",
+        "/project-note-parts/{id}/content",
         put(update_project_note_part_content),
     )
 }

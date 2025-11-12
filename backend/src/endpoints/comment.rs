@@ -36,12 +36,12 @@ pub struct CommentResponse {
 pub fn comment_routes() -> Router<AppState> {
     Router::new()
         .route("/comments", post(create_comment))
+        .route("/comments/issue/{id}", get(get_comments_by_issue))
+        .route("/comments/user/{id}", get(get_comments_by_user))
         .route(
-            "/comments/:id",
+            "/comments/{id}",
             get(get_comment).put(update_comment).delete(delete_comment),
         )
-        .route("/comments/issue/:id", get(get_comments_by_issue))
-        .route("/comments/user/:id", get(get_comments_by_user))
 }
 
 #[axum::debug_handler]

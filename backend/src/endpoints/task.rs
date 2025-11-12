@@ -31,10 +31,10 @@ pub struct UpdateTaskRequest {
 pub fn task_routes() -> Router<AppState> {
     Router::new()
         .route("/tasks", post(create_task))
-        .route("/tasks/:id", get(get_task))
-        .route("/tasks/issue/:id", get(get_tasks_by_issue))
-        .route("/tasks/:id", put(update_task))
-        .route("/tasks/:id", delete(delete_task))
+        .route("/tasks/issue/{id}", get(get_tasks_by_issue))
+        .route("/tasks/{id}", get(get_task))
+        .route("/tasks/{id}", put(update_task))
+        .route("/tasks/{id}", delete(delete_task))
 }
 
 #[axum::debug_handler]

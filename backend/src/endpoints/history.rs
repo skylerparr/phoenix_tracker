@@ -7,9 +7,9 @@ use tracing::debug;
 
 pub fn history_routes() -> Router<AppState> {
     Router::new()
-        .route("/history/issue/:id", get(get_history_by_issue))
+        .route("/history/issue/{id}", get(get_history_by_issue))
         .route(
-            "/history/project-note/:id",
+            "/history/project-note/{id}",
             get(get_history_by_project_note),
         )
 }

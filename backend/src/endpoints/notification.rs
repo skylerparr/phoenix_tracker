@@ -24,11 +24,11 @@ pub struct GetNotificationsQuery {
 pub fn notification_routes() -> Router<AppState> {
     Router::new()
         .route("/notifications", get(get_notifications_for_project))
-        .route("/notifications/:id/read", put(mark_notification_as_read))
         .route(
             "/notifications/count",
             get(get_notification_count_for_project),
         )
+        .route("/notifications/{id}/read", put(mark_notification_as_read))
 }
 #[axum::debug_handler]
 async fn get_notifications_for_project(

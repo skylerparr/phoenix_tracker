@@ -448,7 +448,7 @@ impl ProjectNotePartsCrud {
                         (level, setext)
                     })
                     .unwrap_or((1, false));
-                NodeValue::Heading(NodeHeading { level, setext })
+                NodeValue::Heading(NodeHeading { level, setext, closed: false })
             }
             "ThematicBreak" => NodeValue::ThematicBreak,
             "BlockQuote" => NodeValue::BlockQuote,

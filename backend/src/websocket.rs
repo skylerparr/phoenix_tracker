@@ -135,7 +135,7 @@ pub async fn handle_socket(
                                         let mut ws_state = web_socket_state.lock().await;
                                         ws_state.last_ping_time = std::time::Instant::now();
                                     }
-                                    if let Err(_) = socket.send(Message::Text("pong".to_string())).await {
+                                    if let Err(_) = socket.send(Message::Text("pong".to_string().into())).await {
                                         break;
                                     }
                                     continue;
@@ -179,13 +179,13 @@ pub async fn handle_socket(
                                                         ws_state.subscribed_projects.insert(project_id);
                                                         debug!("Subscribed to project {}", project_id);
                                                         let response = format!("{{\"event\": \"subscribed\", \"project_id\": {}}}", project_id);
-                                                        if let Err(_) = socket.send(Message::Text(response)).await {
+                                                        if let Err(_) = socket.send(Message::Text(response.into())).await {
                                                             break;
                                                         }
                                                     } else {
                                                         debug!("User {} does not have access to project {}", user_id, project_id);
                                                         let response = format!("{{\"event\": \"error\", \"message\": \"Access denied to project {}\"}}", project_id);
-                                                        if let Err(_) = socket.send(Message::Text(response)).await {
+                                                        if let Err(_) = socket.send(Message::Text(response.into())).await {
                                                             break;
                                                         }
                                                     }
@@ -196,7 +196,7 @@ pub async fn handle_socket(
                                                 ws_state.subscribed_projects.remove(&project_id);
                                                 debug!("Unsubscribed from project {}", project_id);
                                                 let response = format!("{{\"event\": \"unsubscribed\", \"project_id\": {}}}", project_id);
-                                                if let Err(_) = socket.send(Message::Text(response)).await {
+                                                if let Err(_) = socket.send(Message::Text(response.into())).await {
                                                     break;
                                                 }
                                             }
@@ -229,7 +229,7 @@ pub async fn handle_socket(
                                 info!("Forwarding {} event to user {} for project {}",
                                       event.event_type, user_id, event.project_id);
 
-                                if let Err(send_err) = socket.send(Message::Text(broadcast_msg)).await {
+                                if let Err(send_err) = socket.send(Message::Text(broadcast_msg.into())).await {
                                     error!("Failed to send event to user {}: {:?}", user_id, send_err);
                                     break;
                                 }

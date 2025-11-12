@@ -7,7 +7,7 @@ use crate::crud::project_note_history::ProjectNoteHistoryCrud;
 use crate::entities::{comment_file_upload, file_upload};
 use crate::environment;
 use crate::AppState;
-use rand::{distributions::Alphanumeric, Rng};
+use rand::Rng;
 use sea_orm::sea_query::Expr;
 use sea_orm::*;
 use std::path::{Path, PathBuf};
@@ -693,14 +693,16 @@ fn tmp_path_for(final_path: &Path) -> PathBuf {
 // ---------------- Helpers ----------------
 
 fn generate_guid(len: usize) -> String {
-    rand::thread_rng()
-        .sample_iter(&Alphanumeric)
-        .filter(|c| c.is_ascii_alphanumeric())
-        .map(char::from)
-        .take(len)
+    use rand::seq::SliceRandom;
+    const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let mut rng = rand::rng();
+    (0..len)
+        .map(|_| {
+            let idx = rng.gen_range(0..CHARSET.len());
+            CHARSET[idx] as char
+        })
         .collect()
 }
-
 fn derive_extension(original_filename: &str, mime_type: &str) -> String {
     if let Some(ext) = Path::new(original_filename)
         .extension()

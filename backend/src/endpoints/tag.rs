@@ -43,9 +43,9 @@ pub fn tag_routes() -> Router<AppState> {
         .route("/tags", post(create_tag))
         .route("/tags", get(get_all_tags))
         .route("/tags/counts", get(get_tags_with_counts))
-        .route("/tags/:id", get(get_tag))
-        .route("/tags/:id", put(update_tag))
-        .route("/tags/:id", delete(delete_tag))
+        .route("/tags/{id}", get(get_tag))
+        .route("/tags/{id}", put(update_tag))
+        .route("/tags/{id}", delete(delete_tag))
 }
 
 #[axum::debug_handler]

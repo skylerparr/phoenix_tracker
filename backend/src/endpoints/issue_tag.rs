@@ -21,9 +21,9 @@ pub struct CreateIssueTagRequest {
 pub fn issue_tag_routes() -> Router<AppState> {
     Router::new()
         .route("/issue-tags", post(create_issue_tag))
-        .route("/issue-tags/issue/:id", get(get_issue_tags))
-        .route("/issue-tags/tag/:id", get(get_tag_issues))
-        .route("/issue-tags/:issue_id/:tag_id", delete(delete_issue_tag))
+        .route("/issue-tags/issue/{id}", get(get_issue_tags))
+        .route("/issue-tags/tag/{id}", get(get_tag_issues))
+        .route("/issue-tags/{issue_id}/{tag_id}", delete(delete_issue_tag))
 }
 
 #[axum::debug_handler]

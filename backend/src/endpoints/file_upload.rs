@@ -17,37 +17,37 @@ pub fn file_upload_routes() -> Router<AppState> {
     Router::new()
         // Issue uploads
         .route(
-            "/issues/:id/uploads",
+            "/issues/{id}/uploads/unattached",
+            get(list_unattached_for_issue),
+        )
+        .route(
+            "/issues/{id}/uploads",
             post(upload_for_issue)
                 .layer(DefaultBodyLimit::max(environment::max_upload_size_bytes())),
         )
-        .route("/issues/:id/uploads", get(list_for_issue))
-        .route(
-            "/issues/:id/uploads/unattached",
-            get(list_unattached_for_issue),
-        )
+        .route("/issues/{id}/uploads", get(list_for_issue))
         // Project note uploads
         .route(
-            "/project-notes/:id/uploads",
+            "/project-notes/{id}/uploads",
             post(upload_for_project_note)
                 .layer(DefaultBodyLimit::max(environment::max_upload_size_bytes())),
         )
-        .route("/project-notes/:id/uploads", get(list_for_project_note))
+        .route("/project-notes/{id}/uploads", get(list_for_project_note))
         // Comment attachments (associate existing file to a comment)
-        .route("/comments/:id/uploads", get(list_for_comment))
+        .route("/comments/{id}/uploads", get(list_for_comment))
         .route(
-            "/comments/:comment_id/uploads/:file_upload_id",
+            "/comments/{comment_id}/uploads/{file_upload_id}",
             post(attach_upload_to_comment).delete(detach_upload_from_comment),
         )
         // File upload perspective: attach an existing upload to a comment
         .route(
-            "/uploads/:file_upload_id/comments/:comment_id",
+            "/uploads/{file_upload_id}/comments/{comment_id}",
             post(file_upload_attach_to_comment),
         )
-        // Single upload actions
-        .route("/uploads/:id", get(download_upload).delete(delete_upload))
         // Named file route for nicer URLs (filename is ignored for lookup)
-        .route("/uploads/assets/:id/:filename", get(download_upload_named))
+        .route("/uploads/assets/{id}/{filename}", get(download_upload_named))
+        // Single upload actions
+        .route("/uploads/{id}", get(download_upload).delete(delete_upload))
 }
 
 #[axum::debug_handler]

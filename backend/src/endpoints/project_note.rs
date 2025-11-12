@@ -28,10 +28,10 @@ pub struct UpdateProjectNoteRequest {
 pub fn project_note_routes() -> Router<AppState> {
     Router::new()
         .route("/project-notes", post(create_project_note))
-        .route("/project-notes/:id", get(get_project_note))
         .route("/project-notes/project", get(get_project_note_by_project))
-        .route("/project-notes/:id", put(update_project_note))
-        .route("/project-notes/:id", delete(delete_project_note))
+        .route("/project-notes/{id}", get(get_project_note))
+        .route("/project-notes/{id}", put(update_project_note))
+        .route("/project-notes/{id}", delete(delete_project_note))
 }
 
 #[axum::debug_handler]

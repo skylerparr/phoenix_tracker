@@ -21,10 +21,10 @@ pub struct CreateIssueAssigneeRequest {
 pub fn issue_assignee_routes() -> Router<AppState> {
     Router::new()
         .route("/issue-assignees", post(create_issue_assignee))
-        .route("/issue-assignees/issue/:id", get(get_issue_assignees))
-        .route("/issue-assignees/user/:id", get(get_user_assignees))
+        .route("/issue-assignees/issue/{id}", get(get_issue_assignees))
+        .route("/issue-assignees/user/{id}", get(get_user_assignees))
         .route(
-            "/issue-assignees/:issue_id/:user_id",
+            "/issue-assignees/{issue_id}/{user_id}",
             delete(delete_issue_assignee),
         )
 }

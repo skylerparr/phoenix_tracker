@@ -222,10 +222,8 @@ fn main() {
             .merge(project_note_tag_routes())
             .merge(project_note_routes());
 
-        let static_router = Router::new().nest_service(
-            "/",
-            ServeDir::new("static").fallback(ServeFile::new("static/index.html")),
-        );
+        let static_service =
+            ServeDir::new("static").fallback(ServeFile::new("static/index.html"));
 
         let api_router = Router::new()
             .nest("/api", api_routes)
@@ -240,7 +238,7 @@ fn main() {
 
         let app = Router::new()
             .merge(api_router)
-            .fallback_service(static_router.clone())
+            .fallback_service(static_service.clone())
             .layer(middleware::from_fn(logging_middleware))
             .layer(cors.clone());
 
