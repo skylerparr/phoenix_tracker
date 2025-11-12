@@ -31,6 +31,7 @@ import {
   POINTS,
   WORK_TYPE_FEATURE,
   WORK_TYPE_RELEASE,
+  WORK_TYPE_REMINDER,
 } from "../models/Issue";
 import { issueService } from "../services/IssueService";
 import { workTypes } from "./WorkTypeButtons";
@@ -661,25 +662,26 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <ThemeProvider theme={lightTheme}>
-                {issue.workType !== WORK_TYPE_RELEASE && (
-                  <Select
-                    size="small"
-                    value={issue.status}
-                    onChange={(e: SelectChangeEvent<number>) =>
-                      handleStatusChange(Number(e.target.value))
-                    }
-                    sx={{
-                      minWidth: 120,
-                      backgroundColor: "#f6f6f6",
-                    }}
-                  >
-                    {getStatusArray().map((status: Status) => (
-                      <MenuItem key={status.id} value={status.id}>
-                        {status.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                )}
+                {issue.workType !== WORK_TYPE_RELEASE &&
+                  issue.workType !== WORK_TYPE_REMINDER && (
+                    <Select
+                      size="small"
+                      value={issue.status}
+                      onChange={(e: SelectChangeEvent<number>) =>
+                        handleStatusChange(Number(e.target.value))
+                      }
+                      sx={{
+                        minWidth: 120,
+                        backgroundColor: "#f6f6f6",
+                      }}
+                    >
+                      {getStatusArray().map((status: Status) => (
+                        <MenuItem key={status.id} value={status.id}>
+                          {status.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  )}
                 <StatusButton issue={issue} />
               </ThemeProvider>
             </Box>{" "}
@@ -789,6 +791,122 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
               </Box>
             </Stack>
           </Box>
+        )}
+        {issue.workType === WORK_TYPE_REMINDER && (
+          <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="flex-start"
+              sx={{ p: 1 }}
+            >
+              <Typography
+                sx={{
+                  width: 120,
+                  color: "#666",
+                  borderRight: "1px solid #ddd",
+                  pr: 2,
+                  pt: 1,
+                }}
+              >
+                Reminder Date
+              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 1,
+                  flex: 1,
+                }}
+              >
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="Reminder Date"
+                    value={dayjs(issue.targetReleaseAt)}
+                    onChange={(newValue: Dayjs | null) => {
+                      setIssue({
+                        ...issue,
+                        targetReleaseAt: newValue?.toDate() ?? null,
+                      });
+                    }}
+                    slotProps={{
+                      textField: {
+                        sx: {
+                          backgroundColor: "#f6f6f6",
+                          "& .MuiInputBase-root": {
+                            color: "#4a4a4a",
+                          },
+                          "& .MuiInputLabel-root": {
+                            color: "#4a4a4a",
+                          },
+                          "& .MuiSvgIcon-root": {
+                            color: "#4a4a4a",
+                          },
+                        },
+                      },
+                    }}
+                    sx={{
+                      width: "100%",
+                    }}
+                  />
+                </LocalizationProvider>
+                {issue.targetReleaseAt && (
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    <TextField
+                      label="Hour"
+                      type="number"
+                      inputProps={{ min: 0, max: 23 }}
+                      size="small"
+                      value={new Date(issue.targetReleaseAt).getHours()}
+                      onChange={(e) => {
+                        const date = new Date(issue.targetReleaseAt!);
+                        date.setHours(parseInt(e.target.value, 10));
+                        setIssue({
+                          ...issue,
+                          targetReleaseAt: date,
+                        });
+                      }}
+                      sx={{
+                        flex: 1,
+                        backgroundColor: "#f6f6f6",
+                        "& .MuiInputBase-root": {
+                          color: "#4a4a4a",
+                        },
+                        "& .MuiInputLabel-root": {
+                          color: "#4a4a4a",
+                        },
+                      }}
+                    />
+                    <TextField
+                      label="Minute"
+                      type="number"
+                      inputProps={{ min: 0, max: 59 }}
+                      size="small"
+                      value={new Date(issue.targetReleaseAt).getMinutes()}
+                      onChange={(e) => {
+                        const date = new Date(issue.targetReleaseAt!);
+                        date.setMinutes(parseInt(e.target.value, 10));
+                        setIssue({
+                          ...issue,
+                          targetReleaseAt: date,
+                        });
+                      }}
+                      sx={{
+                        flex: 1,
+                        backgroundColor: "#f6f6f6",
+                        "& .MuiInputBase-root": {
+                          color: "#4a4a4a",
+                        },
+                        "& .MuiInputLabel-root": {
+                          color: "#4a4a4a",
+                        },
+                      }}
+                    />
+                  </Box>
+                )}
+              </Box>
+            </Stack>
+          </Box>
         )}{" "}
         <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>
           <Stack direction="row" spacing={2} alignItems="center" sx={{ p: 1 }}>
@@ -809,44 +927,45 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
             </Box>
           </Stack>
         </Box>
-        {issue.workType !== WORK_TYPE_RELEASE && (
-          <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>
-            <Stack
-              direction="row"
-              spacing={2}
-              alignItems="center"
-              sx={{ p: 1 }}
-            >
-              <Typography
-                sx={{
-                  width: 120,
-                  color: "#666",
-                  borderRight: "1px solid #ddd",
-                  pr: 2,
-                }}
+        {issue.workType !== WORK_TYPE_RELEASE &&
+          issue.workType !== WORK_TYPE_REMINDER && (
+            <Box sx={{ border: "1px solid #ddd", borderRadius: "4px" }}>
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="center"
+                sx={{ p: 1 }}
               >
-                OWNERS
-              </Typography>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  width: "100%",
-                }}
-              >
-                <IssueAutoCompleteComponent
-                  options={availableUsers}
-                  value={selectedUsers}
-                  onChange={handleSetUsers}
-                  inputValue={userInputValue}
-                  onInputChange={setUserTagInputValue}
-                  placeholder="Add owners..."
-                />
-              </Box>{" "}
-            </Stack>
-          </Box>
-        )}
+                <Typography
+                  sx={{
+                    width: 120,
+                    color: "#666",
+                    borderRight: "1px solid #ddd",
+                    pr: 2,
+                  }}
+                >
+                  OWNERS
+                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    width: "100%",
+                  }}
+                >
+                  <IssueAutoCompleteComponent
+                    options={availableUsers}
+                    value={selectedUsers}
+                    onChange={handleSetUsers}
+                    inputValue={userInputValue}
+                    onInputChange={setUserTagInputValue}
+                    placeholder="Add owners..."
+                  />
+                </Box>{" "}
+              </Stack>
+            </Box>
+          )}
         <Box sx={{ border: "1px solid #ddd", borderRadius: "4px", p: 1 }}>
           <Stack spacing={1}>
             <Typography variant="caption" sx={{ color: "#666" }}>

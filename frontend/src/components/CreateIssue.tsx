@@ -7,7 +7,12 @@ import PointsButton from "./PointsButtons";
 import WorkTypeButtons from "./WorkTypeButtons";
 import { tagService } from "../services/TagService";
 import { issueTagService } from "../services/IssueTagService";
-import { POINTS, WORK_TYPE_FEATURE, WORK_TYPE_RELEASE } from "../models/Issue";
+import {
+  POINTS,
+  WORK_TYPE_FEATURE,
+  WORK_TYPE_RELEASE,
+  WORK_TYPE_REMINDER,
+} from "../models/Issue";
 import IssueAutoCompleteComponent from "./IssueAutoCompleteComponent";
 import { userService } from "../services/UserService";
 import { issueAssigneeService } from "../services/IssueAssigneeService";
@@ -36,6 +41,11 @@ const CreateIssue: React.FC = () => {
   const [targetReleaseDate, setTargetReleaseDate] = useState<Dayjs | null>(
     null,
   );
+  const [reminderDate, setReminderDate] = useState<Dayjs | null>(null);
+  const [reminderHour, setReminderHour] = useState<string>("12");
+  const [reminderMinute, setReminderMinute] = useState<string>("00");
+  const [reminderValidationError, setReminderValidationError] =
+    useState<string>("");
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -70,6 +80,13 @@ const CreateIssue: React.FC = () => {
       return;
     }
 
+    if (selectedType === WORK_TYPE_REMINDER) {
+      const dt = getReminderDateTimeForSubmit();
+      if (!dt) {
+        return;
+      }
+    }
+
     try {
       const issue = await issueService.createIssue({
         title,
@@ -82,7 +99,9 @@ const CreateIssue: React.FC = () => {
         targetReleaseAt:
           selectedType === WORK_TYPE_RELEASE
             ? targetReleaseDate?.toDate()
-            : null,
+            : selectedType === WORK_TYPE_REMINDER
+              ? getReminderDateTimeForSubmit()
+              : null,
       });
 
       const selectedTagIds = selectedTags
@@ -120,6 +139,11 @@ const CreateIssue: React.FC = () => {
       setSelectedTags([]);
       setSelectedAssignees([]);
       setSelectedPoints(null);
+      setTargetReleaseDate(null);
+      setReminderDate(null);
+      setReminderHour("12");
+      setReminderMinute("00");
+      setReminderValidationError("");
     } catch (error) {
       console.error("Failed to create issue:", error);
     }
@@ -130,6 +154,71 @@ const CreateIssue: React.FC = () => {
       name: newTagName,
       isEpic: false,
     });
+  };
+
+  const getUserTimezone = (): string => {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  };
+
+  const validateReminderDateTime = (): boolean => {
+    if (!reminderDate) {
+      setReminderValidationError("Please select a date");
+      return false;
+    }
+
+    const hour = parseInt(reminderHour, 10);
+    const minute = parseInt(reminderMinute, 10);
+
+    if (isNaN(hour) || hour < 0 || hour > 23) {
+      setReminderValidationError("Hour must be between 0 and 23");
+      return false;
+    }
+
+    if (isNaN(minute) || minute < 0 || minute > 59) {
+      setReminderValidationError("Minute must be between 0 and 59");
+      return false;
+    }
+
+    const candidate = new Date(reminderDate.toDate());
+    candidate.setHours(hour, minute, 0, 0);
+
+    const now = new Date();
+    if (candidate.getTime() <= now.getTime()) {
+      setReminderValidationError(
+        "Reminder date and time must be in the future",
+      );
+      return false;
+    }
+
+    setReminderValidationError("");
+    return true;
+  };
+
+  const handleReminderDateChange = (newValue: Dayjs | null) => {
+    setReminderDate(newValue);
+    setReminderValidationError("");
+  };
+
+  const handleReminderTimeChange = (value: string, type: "hour" | "minute") => {
+    if (type === "hour") {
+      setReminderHour(value);
+    } else {
+      setReminderMinute(value);
+    }
+    setReminderValidationError("");
+  };
+
+  const getReminderDateTimeForSubmit = (): Date | null => {
+    if (!validateReminderDateTime()) {
+      return null;
+    }
+
+    const hour = parseInt(reminderHour, 10);
+    const minute = parseInt(reminderMinute, 10);
+
+    const candidate = new Date(reminderDate!.toDate());
+    candidate.setHours(hour, minute, 0, 0);
+    return candidate;
   };
 
   const getChipColor = (tagName: string) => {
@@ -208,7 +297,11 @@ const CreateIssue: React.FC = () => {
         },
       ]
         .filter(
-          (item) => !(item.id === "1" && selectedType === WORK_TYPE_RELEASE),
+          (item) =>
+            !(
+              (item.id === "1" && selectedType === WORK_TYPE_RELEASE) ||
+              (item.id === "1" && selectedType === WORK_TYPE_REMINDER)
+            ),
         )
         .map(
           ({
@@ -262,6 +355,96 @@ const CreateIssue: React.FC = () => {
             }}
           />
         </LocalizationProvider>
+      )}
+      {selectedType === WORK_TYPE_REMINDER && (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePicker
+              label="Reminder Date"
+              value={reminderDate}
+              onChange={handleReminderDateChange}
+              slotProps={{
+                textField: {
+                  sx: {
+                    backgroundColor: "#f6f6f6",
+                    "& .MuiInputBase-root": {
+                      color: "#4a4a4a",
+                    },
+                    "& .MuiInputLabel-root": {
+                      color: "#4a4a4a",
+                    },
+                    "& .MuiSvgIcon-root": {
+                      color: "#4a4a4a",
+                    },
+                  },
+                },
+              }}
+              sx={{
+                width: "100%",
+              }}
+            />
+          </LocalizationProvider>
+          <Box
+            sx={{
+              fontSize: "0.875rem",
+              color: "#ffffff",
+              fontStyle: "italic",
+            }}
+          >
+            Timezone: {getUserTimezone()}
+          </Box>
+
+          <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+            <TextField
+              label="Hour"
+              type="number"
+              inputProps={{ min: 0, max: 23 }}
+              value={reminderHour}
+              onChange={(e) => handleReminderTimeChange(e.target.value, "hour")}
+              sx={{
+                flex: 1,
+                backgroundColor: "#f6f6f6",
+                "& .MuiInputBase-root": {
+                  color: "#4a4a4a",
+                },
+                "& .MuiInputLabel-root": {
+                  color: "#4a4a4a",
+                },
+              }}
+            />{" "}
+            <TextField
+              label="Minute"
+              type="number"
+              inputProps={{ min: 0, max: 59 }}
+              value={reminderMinute}
+              onChange={(e) =>
+                handleReminderTimeChange(e.target.value, "minute")
+              }
+              sx={{
+                flex: 1,
+                backgroundColor: "#f6f6f6",
+                "& .MuiInputBase-root": {
+                  color: "#4a4a4a",
+                },
+                "& .MuiInputLabel-root": {
+                  color: "#4a4a4a",
+                },
+              }}
+            />
+          </Box>
+
+          {reminderValidationError && (
+            <Box
+              sx={{
+                fontSize: "0.875rem",
+                color: "#d32f2f",
+                fontWeight: "bold",
+              }}
+            >
+              {reminderValidationError}
+            </Box>
+          )}
+        </Box>
       )}
       <TextField
         fullWidth

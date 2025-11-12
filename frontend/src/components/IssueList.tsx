@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Box } from "@mui/material";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { Issue, WORK_TYPE_RELEASE } from "../models/Issue";
+import { Issue, WORK_TYPE_RELEASE, WORK_TYPE_REMINDER } from "../models/Issue";
 import { IssueComponent } from "./IssueComponent";
 import IssueGroup from "./IssueGroup";
 import ReleaseStatusBar from "./ReleaseStatusBar";

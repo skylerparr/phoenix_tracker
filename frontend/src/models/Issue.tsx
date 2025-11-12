@@ -46,3 +46,4 @@ export const WORK_TYPE_FEATURE = 0;
 export const WORK_TYPE_BUG = 1;
 export const WORK_TYPE_CHORE = 2;
 export const WORK_TYPE_RELEASE = 3;
+export const WORK_TYPE_REMINDER = 4;

@@ -1,5 +1,10 @@
 import React from "react";
-import { Issue, WORK_TYPE_FEATURE, WORK_TYPE_RELEASE } from "../models/Issue";
+import {
+  Issue,
+  WORK_TYPE_FEATURE,
+  WORK_TYPE_RELEASE,
+  WORK_TYPE_REMINDER,
+} from "../models/Issue";
 import { Box, Typography, Stack, Button, Link } from "@mui/material";
 import { PointsIcon } from "./PointsIcon";
 import WorkTypeIcon from "./WorkTypeIcons";
@@ -32,6 +37,13 @@ export const getBackgroundColor = (issue: Issue | undefined) => {
   if (issue.workType === WORK_TYPE_RELEASE) {
     return "#437aa2";
   }
+  if (issue.workType === WORK_TYPE_REMINDER) {
+    // Check if reminder is in the past
+    if (issue.targetReleaseAt && new Date(issue.targetReleaseAt) < new Date()) {
+      return "#B71C1C";
+    }
+    return "#e1bee7";
+  }
   if (issue.isIcebox) {
     return "#e4eff6";
   }
@@ -55,6 +67,12 @@ export const getHoverBackgroundColor = (issue: Issue | undefined) => {
   }
   if (issue.workType === WORK_TYPE_RELEASE) {
     return "#326491";
+  }
+  if (issue.workType === WORK_TYPE_REMINDER) {
+    if (issue.targetReleaseAt && new Date(issue.targetReleaseAt) < new Date()) {
+      return "#8B0000";
+    }
+    return "#ce93d8";
   }
   if (issue.isIcebox) {
     return "#c9dff0";
@@ -177,7 +195,16 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
               <Typography
                 sx={{
                   color:
-                    issue.workType === WORK_TYPE_RELEASE ? "white" : "black",
+                    issue.workType === WORK_TYPE_RELEASE ||
+                    issue.workType === WORK_TYPE_REMINDER
+                      ? issue.workType === WORK_TYPE_REMINDER &&
+                        issue.targetReleaseAt &&
+                        new Date(issue.targetReleaseAt) < new Date()
+                        ? "white"
+                        : issue.workType === WORK_TYPE_RELEASE
+                          ? "white"
+                          : "black"
+                      : "black",
                   fontStyle:
                     issue.points === null &&
                     issue.workType === WORK_TYPE_FEATURE
@@ -217,6 +244,29 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
                   </Typography>
                 )}
               </Typography>
+              {issue.workType === WORK_TYPE_REMINDER &&
+                issue.targetReleaseAt && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: "block",
+                      color:
+                        issue.targetReleaseAt &&
+                        new Date(issue.targetReleaseAt) < new Date()
+                          ? "white"
+                          : "#7b1fa2",
+                      fontWeight: "500",
+                    }}
+                  >
+                    {new Intl.DateTimeFormat("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }).format(new Date(issue.targetReleaseAt))}
+                  </Typography>
+                )}
 
               <Stack direction="row" spacing={1}>
                 {tags.map((tag: Tag) => (
@@ -228,9 +278,14 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
                       color:
                         issue.workType === WORK_TYPE_RELEASE
                           ? "#edda87"
-                          : tag.isEpic
-                            ? "#673ab7"
-                            : "green",
+                          : issue.workType === WORK_TYPE_REMINDER
+                            ? issue.targetReleaseAt &&
+                              new Date(issue.targetReleaseAt) < new Date()
+                              ? "#edda87"
+                              : "#7b1fa2"
+                            : tag.isEpic
+                              ? "#673ab7"
+                              : "green",
                       minWidth: "auto",
                       textTransform: "none",
                       fontStyle:

@@ -17,6 +17,7 @@ import {
   WORK_TYPE_CHORE,
   WORK_TYPE_FEATURE,
   WORK_TYPE_RELEASE,
+  WORK_TYPE_REMINDER,
 } from "../models/Issue";
 
 interface StatusButtonProps {
@@ -32,9 +33,11 @@ const StyledButton = styled(Button)(({ theme }) => ({
 const StatusButton: React.FC<StatusButtonProps> = ({ issue }) => {
   const isChore = issue.workType === WORK_TYPE_CHORE;
   const isRelease = issue.workType === WORK_TYPE_RELEASE;
+  const isReminder = issue.workType === WORK_TYPE_REMINDER;
   const showPoints =
     issue.workType === WORK_TYPE_FEATURE && issue.points === null;
   const isChoreOrRelease = isChore || issue.workType === WORK_TYPE_RELEASE;
+  const isChoreOrReleaseOrReminder = isChore || isRelease || isReminder;
 
   const handleOnEstimated = (points: number) => {
     issueService.updateIssue(issue.id, { points });
@@ -65,7 +68,7 @@ const StatusButton: React.FC<StatusButtonProps> = ({ issue }) => {
   const baseStatusMap = new Map<number, StatusButtonState[]>([
     [
       STATUS_UNSTARTED,
-      isRelease
+      isRelease || isReminder
         ? [
             {
               status: "Finish",
@@ -91,7 +94,7 @@ const StatusButton: React.FC<StatusButtonProps> = ({ issue }) => {
           color: "#000080",
           textColor: "#ffffff",
           nextStatusHandler: () =>
-            isChoreOrRelease
+            isChoreOrReleaseOrReminder
               ? issueService.acceptIssue(issue.id)
               : issueService.deliverIssue(issue.id),
         },
@@ -110,7 +113,7 @@ const StatusButton: React.FC<StatusButtonProps> = ({ issue }) => {
     ],
     [STATUS_ACCEPTED, []],
   ]);
-  if (!isChore) {
+  if (!isChore && !isReminder) {
     baseStatusMap
       .set(STATUS_COMPLETED, [
         {

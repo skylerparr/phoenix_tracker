@@ -1,7 +1,13 @@
 import React from "react";
 import { Box, IconButton } from "@mui/material";
 import WorkTypeIcon from "./WorkTypeIcons";
-import { Star, BugReport, Build, Rocket } from "@mui/icons-material";
+import {
+  Star,
+  BugReport,
+  Build,
+  Rocket,
+  NotificationsActive,
+} from "@mui/icons-material";
 
 interface WorkTypeButtonsProps {
   selectedWorkType: number | null;
@@ -21,6 +27,11 @@ export const workTypes: {
   { id: 1, icon: () => <BugReport sx={{ color: "red" }} />, label: "Bug" },
   { id: 2, icon: () => <Build sx={{ color: "#424242" }} />, label: "Chore" },
   { id: 3, icon: () => <Rocket sx={{ color: "#1a237e" }} />, label: "Release" },
+  {
+    id: 4,
+    icon: () => <NotificationsActive sx={{ color: "#7b1fa2" }} />,
+    label: "Reminder",
+  },
 ];
 const WorkTypeButtons: React.FC<WorkTypeButtonsProps> = ({
   selectedWorkType,
