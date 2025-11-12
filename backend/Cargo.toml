@@ -30,6 +30,7 @@ aws-sdk-s3 = "1.108.0"
 comrak = "0.47"
 regex = "1"
 reqwest = { version = "0.12", features = ["json"] }
+graphile_worker = "0.8.7"
 
 [profile.dev]
 incremental = true

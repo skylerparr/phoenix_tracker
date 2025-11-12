@@ -23,7 +23,10 @@ pub fn blocker_routes() -> Router<AppState> {
         .route("/blockers", post(create_blocker))
         .route("/blockers/blocker/{id}", get(get_blocker_issues))
         .route("/blockers/blocked/{id}", get(get_blocked_issues))
-        .route("/blockers/{blocker_id}/{blocked_id}", delete(delete_blocker))
+        .route(
+            "/blockers/{blocker_id}/{blocked_id}",
+            delete(delete_blocker),
+        )
 }
 
 #[axum::debug_handler]

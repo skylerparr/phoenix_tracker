@@ -22,6 +22,7 @@ use endpoints::{
     project_note_tag::project_note_tag_routes, tag::tag_routes, task::task_routes,
     user::user_routes,
 };
+use graphile_worker::WorkerOptions;
 use sea_orm::{Database, DatabaseConnection};
 use serde::Deserialize;
 use std::net::SocketAddr;
@@ -222,8 +223,7 @@ fn main() {
             .merge(project_note_tag_routes())
             .merge(project_note_routes());
 
-        let static_service =
-            ServeDir::new("static").fallback(ServeFile::new("static/index.html"));
+        let static_service = ServeDir::new("static").fallback(ServeFile::new("static/index.html"));
 
         let api_router = Router::new()
             .nest("/api", api_routes)
@@ -246,6 +246,27 @@ fn main() {
         let addr = SocketAddr::from(([0, 0, 0, 0], port));
         info!("Listening on {}", addr);
         let listener = TcpListener::bind(addr).await.unwrap();
+
+        // Start graphile_worker in a separate task (non-blocking)
+        tokio::spawn(async move {
+            match WorkerOptions::default()
+                .database_url(database_url)
+                .schema("graphile_worker")
+                .init()
+                .await
+            {
+                Ok(worker) => {
+                    info!("Graphile worker initialized successfully");
+                    if let Err(e) = worker.run().await {
+                        tracing::error!("Graphile worker error: {:?}", e);
+                    }
+                }
+                Err(e) => {
+                    tracing::error!("Failed to initialize graphile worker: {:?}", e);
+                }
+            }
+        });
+
         axum::serve(listener, app).await.unwrap()
     });
 }

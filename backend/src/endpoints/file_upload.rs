@@ -45,7 +45,10 @@ pub fn file_upload_routes() -> Router<AppState> {
             post(file_upload_attach_to_comment),
         )
         // Named file route for nicer URLs (filename is ignored for lookup)
-        .route("/uploads/assets/{id}/{filename}", get(download_upload_named))
+        .route(
+            "/uploads/assets/{id}/{filename}",
+            get(download_upload_named),
+        )
         // Single upload actions
         .route("/uploads/{id}", get(download_upload).delete(delete_upload))
 }
