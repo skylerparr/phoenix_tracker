@@ -39,6 +39,7 @@ mod endpoints;
 mod entities;
 mod environment;
 mod jwt;
+mod notifications;
 mod websocket;
 
 #[derive(Clone)]

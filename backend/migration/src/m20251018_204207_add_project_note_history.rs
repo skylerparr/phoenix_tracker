@@ -41,27 +41,17 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
-                    .col(
-                        ColumnDef::new(ProjectNoteHistory::UserId)
-                            .integer()
-                            .null(),
-                    )
+                    .col(ColumnDef::new(ProjectNoteHistory::UserId).integer().null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_project_note_history_project_note")
-                            .from(
-                                ProjectNoteHistory::Table,
-                                ProjectNoteHistory::ProjectNoteId,
-                            )
+                            .from(ProjectNoteHistory::Table, ProjectNoteHistory::ProjectNoteId)
                             .to(ProjectNotes::Table, ProjectNotes::Id),
                     )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_project_note_history_user")
-                            .from(
-                                ProjectNoteHistory::Table,
-                                ProjectNoteHistory::UserId,
-                            )
+                            .from(ProjectNoteHistory::Table, ProjectNoteHistory::UserId)
                             .to(User::Table, User::Id),
                     )
                     .to_owned(),

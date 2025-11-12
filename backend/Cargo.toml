@@ -28,6 +28,7 @@ aws-config = "1.8.8"
 aws-sdk-s3 = "1.108.0"
 comrak = "0.45.0"
 regex = "1"
+reqwest = { version = "0.12", features = ["json"] }
 
 [profile.dev]
 incremental = true

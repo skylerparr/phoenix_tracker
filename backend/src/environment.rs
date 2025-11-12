@@ -68,6 +68,11 @@ lazy_static! {
         .ok()
         .and_then(|v| v.parse::<u64>().ok())
         .unwrap_or(900);
+
+    // Gotify notification configuration
+    static ref GOTIFY_URL: String = env::var("GOTIFY_URL")
+        .unwrap_or_else(|_| "http://gotify:80".to_string());
+    static ref GOTIFY_TOKEN: Option<String> = env::var("GOTIFY_TOKEN").ok();
 }
 
 // ---- Public accessors (static-style) ----
@@ -140,4 +145,14 @@ pub fn s3_force_path_style() -> bool {
 
 pub fn s3_presign_ttl_seconds() -> u64 {
     *S3_PRESIGN_TTL_SECONDS
+}
+
+// ---- Gotify notification accessors ----
+
+pub fn gotify_url() -> &'static str {
+    &GOTIFY_URL
+}
+
+pub fn gotify_token() -> Option<&'static str> {
+    GOTIFY_TOKEN.as_deref()
 }

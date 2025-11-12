@@ -13,6 +13,7 @@ mod m20250926_164833_create_file_uploads_table;
 mod m20251018_204207_add_project_note_history;
 mod m20251027_205543_create_project_note_parts;
 mod m20251027_212252_create_project_note_tag;
+mod m20251112_175958_add_notifcation_settings_table;
 
 pub struct Migrator;
 
@@ -33,6 +34,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20251018_204207_add_project_note_history::Migration),
             Box::new(m20251027_205543_create_project_note_parts::Migration),
             Box::new(m20251027_212252_create_project_note_tag::Migration),
+            Box::new(m20251112_175958_add_notifcation_settings_table::Migration),
         ]
     }
 }

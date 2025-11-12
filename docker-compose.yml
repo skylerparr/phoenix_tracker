@@ -60,6 +60,16 @@ services:
     ports:
       - "5432:5432"
 
+  gotify:
+    image: gotify/server:latest
+    ports:
+      - "8080:80"
+    environment:
+      - GOTIFY_DEFAULTUSER_PASS=admin
+      - GOTIFY_DEFAULTUSER_NAME=admin
+    volumes:
+      - gotify-data:/var/lib/gotify
+
   localstack:
     image: localstack/localstack:latest
     profiles:
@@ -82,3 +92,4 @@ volumes:
   cargo-registry:
   postgres_data:
   localstack-data:
+  gotify-data:

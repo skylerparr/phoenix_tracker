@@ -25,11 +25,7 @@ impl MigrationTrait for Migration {
                             .not_null(),
                     )
                     // Parent pointer within the same table (tree structure)
-                    .col(
-                        ColumnDef::new(ProjectNoteParts::ParentId)
-                            .integer()
-                            .null(),
-                    )
+                    .col(ColumnDef::new(ProjectNoteParts::ParentId).integer().null())
                     // Sibling order for deterministic reconstruction
                     .col(
                         ColumnDef::new(ProjectNoteParts::Idx)
@@ -38,23 +34,11 @@ impl MigrationTrait for Migration {
                             .default(0),
                     )
                     // Node kind (Document, Paragraph, Text, List, Heading, Link, ...)
-                    .col(
-                        ColumnDef::new(ProjectNoteParts::PartType)
-                            .text()
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(ProjectNoteParts::PartType).text().not_null())
                     // Optional textual content (e.g., for Text/Code nodes)
-                    .col(
-                        ColumnDef::new(ProjectNoteParts::Content)
-                            .text()
-                            .null(),
-                    )
+                    .col(ColumnDef::new(ProjectNoteParts::Content).text().null())
                     // Optional opaque JSON string with node-specific attributes (heading level, list props, link url, etc.)
-                    .col(
-                        ColumnDef::new(ProjectNoteParts::Data)
-                            .text()
-                            .null(),
-                    )
+                    .col(ColumnDef::new(ProjectNoteParts::Data).text().null())
                     .col(
                         ColumnDef::new(ProjectNoteParts::CreatedAt)
                             .timestamp_with_time_zone()

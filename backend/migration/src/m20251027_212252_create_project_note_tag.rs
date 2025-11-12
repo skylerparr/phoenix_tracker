@@ -29,11 +29,7 @@ impl MigrationTrait for Migration {
                             .integer()
                             .not_null(),
                     )
-                    .col(
-                        ColumnDef::new(ProjectNoteTag::TagName)
-                            .string()
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(ProjectNoteTag::TagName).string().not_null())
                     .col(
                         ColumnDef::new(ProjectNoteTag::CreatedAt)
                             .timestamp_with_time_zone()
