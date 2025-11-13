@@ -9,6 +9,7 @@ pub mod issue;
 pub mod issue_assignee;
 pub mod issue_tag;
 pub mod notification;
+pub mod notification_settings;
 pub mod owner;
 pub mod project;
 pub mod project_note;

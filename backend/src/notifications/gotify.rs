@@ -43,36 +43,26 @@ pub struct ApplicationResponse {
 
 pub struct GotifyClient {
     base_url: String,
-    token: Option<String>,
     client: reqwest::Client,
 }
 
 impl GotifyClient {
     pub fn new() -> Self {
         let base_url = environment::gotify_url().to_string();
-        let token = environment::gotify_token().map(|s| s.to_string());
 
         Self {
             base_url,
-            token,
             client: reqwest::Client::new(),
         }
     }
 
     pub async fn send_notification(
         &self,
+        token: String,
         title: impl Into<String>,
         message: impl Into<String>,
         priority: Option<i32>,
     ) -> Result<GotifyResponse, String> {
-        let token = match &self.token {
-            Some(t) => t,
-            None => {
-                warn!("GOTIFY_TOKEN not configured, skipping notification");
-                return Err("GOTIFY_TOKEN not configured".to_string());
-            }
-        };
-
         let url = format!("{}/message", self.base_url);
 
         let payload = GotifyMessage {
@@ -126,22 +116,31 @@ impl GotifyClient {
 
     pub async fn send_simple_notification(
         &self,
+        token: String,
         title: impl Into<String>,
         message: impl Into<String>,
     ) -> Result<GotifyResponse, String> {
-        self.send_notification(title, message, Some(5)).await
+        self.send_notification(token, title, message, Some(5)).await
     }
 
-    pub async fn create_application(
+    pub async fn create_application_with_basic_auth(
         &self,
         name: impl Into<String>,
         description: Option<String>,
     ) -> Result<ApplicationResponse, String> {
-        let token = match &self.token {
-            Some(t) => t,
+        let username = match environment::gotify_defaultuser_name() {
+            Some(u) => u,
             None => {
-                warn!("GOTIFY_TOKEN not configured, skipping application creation");
-                return Err("GOTIFY_TOKEN not configured".to_string());
+                warn!("GOTIFY_DEFAULTUSER_NAME not configured");
+                return Err("GOTIFY_DEFAULTUSER_NAME not configured".to_string());
+            }
+        };
+
+        let password = match environment::gotify_defaultuser_pass() {
+            Some(p) => p,
+            None => {
+                warn!("GOTIFY_DEFAULTUSER_PASS not configured");
+                return Err("GOTIFY_DEFAULTUSER_PASS not configured".to_string());
             }
         };
 
@@ -152,12 +151,12 @@ impl GotifyClient {
             description,
         };
 
-        info!("Creating Gotify application at: {}", url);
+        info!("Creating Gotify application with basic auth at: {}", url);
 
         match self
             .client
             .post(&url)
-            .header("X-Gotify-Key", token)
+            .basic_auth(username, Some(password))
             .json(&payload)
             .send()
             .await
@@ -167,7 +166,7 @@ impl GotifyClient {
                     match response.json::<ApplicationResponse>().await {
                         Ok(app_response) => {
                             info!(
-                                "Gotify application created successfully: {:?}",
+                                "Gotify application created successfully with basic auth: {:?}",
                                 app_response
                             );
                             Ok(app_response)

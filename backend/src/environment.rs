@@ -72,7 +72,8 @@ lazy_static! {
     // Gotify notification configuration
     static ref GOTIFY_URL: String = env::var("GOTIFY_URL")
         .unwrap_or_else(|_| "http://gotify:80".to_string());
-    static ref GOTIFY_TOKEN: Option<String> = env::var("GOTIFY_TOKEN").ok();
+    static ref GOTIFY_DEFAULTUSER_NAME: Option<String> = env::var("GOTIFY_DEFAULTUSER_NAME").ok();
+    static ref GOTIFY_DEFAULTUSER_PASS: Option<String> = env::var("GOTIFY_DEFAULTUSER_PASS").ok();
 }
 
 // ---- Public accessors (static-style) ----
@@ -153,6 +154,10 @@ pub fn gotify_url() -> &'static str {
     &GOTIFY_URL
 }
 
-pub fn gotify_token() -> Option<&'static str> {
-    GOTIFY_TOKEN.as_deref()
+pub fn gotify_defaultuser_name() -> Option<&'static str> {
+    GOTIFY_DEFAULTUSER_NAME.as_deref()
+}
+
+pub fn gotify_defaultuser_pass() -> Option<&'static str> {
+    GOTIFY_DEFAULTUSER_PASS.as_deref()
 }

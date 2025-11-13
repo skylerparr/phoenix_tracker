@@ -7,13 +7,15 @@ use crate::crud::history::HistoryCrud;
 use crate::crud::issue_assignee::IssueAssigneeCrud;
 use crate::crud::issue_tag::IssueTagCrud;
 use crate::crud::notification::NotificationCrud;
+use crate::crud::notification_settings::NotificationSettingsCrud;
 use crate::crud::status::STATUS_MAP;
 use crate::crud::status::{STATUS_ACCEPTED, STATUS_REJECTED, STATUS_UNSTARTED};
 use crate::crud::task::TaskCrud;
-use crate::crud::work_type::{WORK_TYPE_FEATURE, WORK_TYPE_MAP};
+use crate::crud::work_type::{WORK_TYPE_FEATURE, WORK_TYPE_MAP, WORK_TYPE_REMINDER};
 use crate::entities::issue;
 use crate::entities::issue_assignee;
 use crate::entities::issue_tag;
+use crate::notifications::gotify::GotifyClient;
 use crate::AppState;
 use chrono::Datelike;
 use sea_orm::entity::prelude::*;
@@ -42,6 +44,44 @@ impl IssueCrud {
         target_release_at: Option<DateTimeWithTimeZone>,
         created_by_id: i32,
     ) -> Result<issue::Model, DbErr> {
+        // Only run notification setup code if work_type is not REMINDER
+        if work_type == WORK_TYPE_REMINDER {
+            // Check if notification settings exist for this project, create if not
+            let notification_settings_crud = NotificationSettingsCrud::new(self.app_state.clone());
+            match notification_settings_crud
+                .find_by_project_id(project_id)
+                .await
+            {
+                Ok(Some(_)) => {
+                    // Settings already exist, continue
+                    tracing::warn!("the notification setting was found");
+                }
+                _ => {
+                    // Settings don't exist, create a new Gotify application
+                    let gotify_client = GotifyClient::new();
+                    match gotify_client
+                        .create_application_with_basic_auth(
+                            format!("Phoenix Tracker - Project {}", project_id),
+                            Some("Notification application for Phoenix Tracker project".to_string()),
+                        )
+                        .await
+                    {
+                        Ok(app_response) => {
+                            // Create notification settings with the new token
+                            let _ = notification_settings_crud.create(app_response.token).await;
+                        }
+                        Err(e) => {
+                            tracing::warn!(
+                                "Failed to create Gotify application for project {}: {}",
+                                project_id,
+                                e
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
         let issue = issue::ActiveModel {
             title: Set(title.clone()),
             description: Set(Some(description.clone().unwrap_or_default())),
