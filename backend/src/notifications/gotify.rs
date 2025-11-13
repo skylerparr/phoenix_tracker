@@ -13,6 +13,7 @@ pub struct GotifyMessage {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct GotifyResponse {
     pub id: i32,
     pub message: String,
@@ -29,6 +30,7 @@ pub struct CreateApplicationRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ApplicationResponse {
     pub id: i32,
     pub token: String,

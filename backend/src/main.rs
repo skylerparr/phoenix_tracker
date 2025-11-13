@@ -212,7 +212,7 @@ fn main() {
             tx: BroadcastTx(tx.clone()),
         };
         let worker_arc_opt: Option<Arc<graphile_worker::Worker>> = match WorkerOptions::default()
-            .database_url(database_url.clone())
+            .database_url(&database_url)
             .schema("graphile_worker")
             .add_extension(worker_ext)
             .define_job::<crate::notifications::push_notification::PushNotification>()
@@ -251,7 +251,7 @@ fn main() {
                 HeaderName::from_static("authorization"),
             ])
             .allow_credentials(true);
-        let mut app_state = AppState {
+        let app_state = AppState {
             db: conn.clone(),
             tx: tx.clone(),
             user: None,

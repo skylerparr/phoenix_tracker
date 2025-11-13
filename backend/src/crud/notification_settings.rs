@@ -33,15 +33,6 @@ impl NotificationSettingsCrud {
         notification_settings.insert(&self.app_state.db).await
     }
 
-    pub async fn find_by_id(&self, id: i32) -> Result<Option<notification_settings::Model>, DbErr> {
-        let project_id = &self.app_state.project.clone().unwrap().id;
-        notification_settings::Entity::find()
-            .filter(notification_settings::Column::ProjectId.eq(*project_id))
-            .filter(notification_settings::Column::Id.eq(id))
-            .one(&self.app_state.db)
-            .await
-    }
-
     pub async fn find_by_project_id(
         &self,
         project_id: i32,
@@ -52,6 +43,7 @@ impl NotificationSettingsCrud {
             .await
     }
 
+    #[allow(dead_code)]
     pub async fn delete(&self, id: i32) -> Result<DeleteResult, DbErr> {
         let project_id = &self.app_state.project.clone().unwrap().id;
         let _notification_settings = notification_settings::Entity::find_by_id(id)

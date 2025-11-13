@@ -20,7 +20,7 @@ use crate::notifications::push_notification::PushNotification;
 use crate::AppState;
 use chrono::Datelike;
 use chrono::Utc;
-use graphile_worker::{JobSpecBuilder, TaskHandler};
+use graphile_worker::JobSpecBuilder;
 use sea_orm::entity::prelude::*;
 use sea_orm::*;
 
@@ -169,7 +169,7 @@ impl IssueCrud {
             .expect("To be present")
             .clone();
         let utils = worker.create_utils();
-        utils.add_job(PushNotification { issue_id }, job_spec).await;
+        let _ = utils.add_job(PushNotification { issue_id }, job_spec).await;
 
         Ok(())
     }
