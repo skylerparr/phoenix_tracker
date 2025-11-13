@@ -16,8 +16,11 @@ use crate::entities::issue;
 use crate::entities::issue_assignee;
 use crate::entities::issue_tag;
 use crate::notifications::gotify::GotifyClient;
+use crate::notifications::push_notification::PushNotification;
 use crate::AppState;
 use chrono::Datelike;
+use chrono::Utc;
+use graphile_worker::{JobSpecBuilder, TaskHandler};
 use sea_orm::entity::prelude::*;
 use sea_orm::*;
 
@@ -44,43 +47,7 @@ impl IssueCrud {
         target_release_at: Option<DateTimeWithTimeZone>,
         created_by_id: i32,
     ) -> Result<issue::Model, DbErr> {
-        // Only run notification setup code if work_type is not REMINDER
-        if work_type == WORK_TYPE_REMINDER {
-            // Check if notification settings exist for this project, create if not
-            let notification_settings_crud = NotificationSettingsCrud::new(self.app_state.clone());
-            match notification_settings_crud
-                .find_by_project_id(project_id)
-                .await
-            {
-                Ok(Some(_)) => {
-                    // Settings already exist, continue
-                    tracing::warn!("the notification setting was found");
-                }
-                _ => {
-                    // Settings don't exist, create a new Gotify application
-                    let gotify_client = GotifyClient::new();
-                    match gotify_client
-                        .create_application_with_basic_auth(
-                            format!("Phoenix Tracker - Project {}", project_id),
-                            Some("Notification application for Phoenix Tracker project".to_string()),
-                        )
-                        .await
-                    {
-                        Ok(app_response) => {
-                            // Create notification settings with the new token
-                            let _ = notification_settings_crud.create(app_response.token).await;
-                        }
-                        Err(e) => {
-                            tracing::warn!(
-                                "Failed to create Gotify application for project {}: {}",
-                                project_id,
-                                e
-                            );
-                        }
-                    }
-                }
-            }
-        }
+        let txn = self.app_state.db.begin().await?;
 
         let issue = issue::ActiveModel {
             title: Set(title.clone()),
@@ -92,10 +59,10 @@ impl IssueCrud {
             project_id: Set(project_id),
             is_icebox: Set(is_icebox),
             created_by_id: Set(created_by_id),
-            target_release_at: Set(target_release_at),
+            target_release_at: Set(target_release_at.clone()),
             ..Default::default()
         };
-        let mut issue = issue.insert(&self.app_state.db).await?;
+        let mut issue = issue.insert(&txn).await?;
 
         let work_type_name = WORK_TYPE_MAP.get(&work_type).unwrap_or(&"Unknown");
         let history_record = format!(
@@ -107,16 +74,104 @@ impl IssueCrud {
         );
         let history_crud = HistoryCrud::new(self.app_state.db.clone());
         history_crud
-            .create(created_by_id, Some(issue.id), None, None, history_record)
+            .create_with_txn(
+                created_by_id,
+                Some(issue.id),
+                None,
+                None,
+                history_record,
+                &txn,
+            )
             .await?;
 
         self.populate_issue_tags(&mut issue).await?;
         self.populate_issue_assignees(&mut issue).await?;
 
+        txn.commit().await?;
+
+        // Track if this is a REMINDER for later scheduling
+        let is_reminder = work_type == WORK_TYPE_REMINDER && target_release_at.is_some();
+
+        // Only run notification setup code if work_type is REMINDER
+        if is_reminder {
+            // Check if notification settings exist for this project, create if not
+            let notification_settings_crud = NotificationSettingsCrud::new(self.app_state.clone());
+            match notification_settings_crud
+                .find_by_project_id(project_id)
+                .await
+            {
+                Ok(Some(_)) => {
+                    // Settings already exist, continue
+                    let _ = self
+                        .schedule_push_notification(issue.id, target_release_at)
+                        .await;
+                }
+                _ => {
+                    // Settings don't exist, create a new Gotify application
+                    let gotify_client = GotifyClient::new();
+                    match gotify_client
+                        .create_application_with_basic_auth(
+                            format!("Phoenix Tracker - Project {}", project_id),
+                            Some(
+                                "Notification application for Phoenix Tracker project".to_string(),
+                            ),
+                        )
+                        .await
+                    {
+                        Ok(app_response) => {
+                            // Create notification settings with the new token
+                            let _ = notification_settings_crud
+                                .create(app_response.token, app_response.id)
+                                .await;
+                            let _ = self
+                                .schedule_push_notification(issue.id, target_release_at)
+                                .await;
+                        }
+                        Err(e) => {
+                            tracing::error!(
+                                "Failed to create Gotify application for project {}: {}",
+                                project_id,
+                                e
+                            );
+                            return Err(DbErr::Custom(format!(
+                                "Failed to create Gotify application: {}",
+                                e
+                            )));
+                        }
+                    }
+                }
+            }
+        }
+
         let broadcaster = EventBroadcaster::new(self.app_state.tx.clone());
         broadcaster.broadcast_event(project_id, ISSUE_CREATED, serde_json::json!(issue));
 
         Ok(issue)
+    }
+
+    async fn schedule_push_notification(
+        &self,
+        issue_id: i32,
+        target_release_at: Option<DateTimeWithTimeZone>,
+    ) -> Result<(), String> {
+        tracing::warn!("the notification setting was found");
+        tracing::info!("now {:?}", Utc::now());
+        tracing::info!("target {:?}", target_release_at);
+
+        let job_spec = JobSpecBuilder::new()
+            .run_at(target_release_at.unwrap())
+            .build();
+
+        let worker = self
+            .app_state
+            .clone()
+            .worker
+            .expect("To be present")
+            .clone();
+        let utils = worker.create_utils();
+        utils.add_job(PushNotification { issue_id }, job_spec).await;
+
+        Ok(())
     }
 
     async fn populate_issue_tags(&self, issue: &mut issue::Model) -> Result<(), DbErr> {

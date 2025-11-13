@@ -18,6 +18,9 @@ services:
       - FILE_STORE_SCHEME=${FILE_STORE_SCHEME}
       - BASE_FILE_PATH=${BASE_FILE_PATH}
       - PORT=3001
+      - GOTIFY_URL=http://gotify
+      - GOTIFY_DEFAULTUSER_PASS=admin
+      - GOTIFY_DEFAULTUSER_NAME=admin
       # AWS/LocalStack S3 configuration
       - S3_BUCKET=${S3_BUCKET}
       - AWS_REGION=${AWS_REGION}

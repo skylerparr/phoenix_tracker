@@ -1,5 +1,6 @@
 use crate::crud::issue::IssueCrud;
 use crate::crud::notification::NotificationCrud;
+use crate::crud::notification_settings::NotificationSettingsCrud;
 use crate::crud::owner::OwnerCrud;
 use crate::crud::project_note::ProjectNoteCrud;
 use crate::crud::tag::TagCrud;
@@ -183,6 +184,9 @@ impl ProjectCrud {
 
         let notification_crud = NotificationCrud::new(self.state.clone());
         notification_crud.delete_all_for_project(id).await?;
+
+        let notification_settings_crud = NotificationSettingsCrud::new(self.state.clone());
+        notification_settings_crud.delete_by_project_id(id).await?;
 
         let tag_crud = TagCrud::new(self.state.clone());
         tag_crud.delete_all_for_project(id).await?;

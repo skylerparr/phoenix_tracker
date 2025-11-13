@@ -50,6 +50,31 @@ pub struct AppState {
     pub user: Option<entities::user::Model>,
     pub project: Option<entities::project::Model>,
     pub bearer_token: Option<String>,
+    pub worker: Option<Arc<graphile_worker::Worker>>,
+}
+
+// Debug-friendly wrappers for non-Debug types we want to share with the worker
+#[derive(Clone)]
+pub struct DbConn(pub DatabaseConnection);
+impl std::fmt::Debug for DbConn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("DbConn(..)")
+    }
+}
+
+#[derive(Clone)]
+pub struct BroadcastTx(pub Arc<broadcast::Sender<String>>);
+impl std::fmt::Debug for BroadcastTx {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("BroadcastTx(..)")
+    }
+}
+
+// Minimal worker extension state that satisfies Debug bound
+#[derive(Clone, Debug)]
+pub struct WorkerAppState {
+    pub db: DbConn,
+    pub tx: BroadcastTx,
 }
 
 async fn logging_middleware(req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
@@ -176,9 +201,40 @@ fn main() {
     let tx = std::sync::Arc::new(tx);
 
     let rt = tokio::runtime::Runtime::new().unwrap();
+
     rt.block_on(async {
         let database_url = environment::database_url();
         let conn = Database::connect(database_url).await.unwrap();
+
+        // Initialize Graphile worker synchronously so we can store it in AppState, then run it in background
+        let worker_ext = WorkerAppState {
+            db: DbConn(conn.clone()),
+            tx: BroadcastTx(tx.clone()),
+        };
+        let worker_arc_opt: Option<Arc<graphile_worker::Worker>> = match WorkerOptions::default()
+            .database_url(database_url.clone())
+            .schema("graphile_worker")
+            .add_extension(worker_ext)
+            .define_job::<crate::notifications::push_notification::PushNotification>()
+            .init()
+            .await
+        {
+            Ok(worker) => {
+                info!("Graphile worker initialized successfully");
+                let w = Arc::new(worker);
+                let run_w = w.clone();
+                tokio::spawn(async move {
+                    if let Err(e) = run_w.run().await {
+                        tracing::error!("Graphile worker error: {:?}", e);
+                    }
+                });
+                Some(w)
+            }
+            Err(e) => {
+                tracing::error!("Failed to initialize graphile worker: {:?}", e);
+                None
+            }
+        };
 
         let frontend_url = environment::frontend_url().to_string();
 
@@ -195,12 +251,13 @@ fn main() {
                 HeaderName::from_static("authorization"),
             ])
             .allow_credentials(true);
-        let app_state = AppState {
+        let mut app_state = AppState {
             db: conn.clone(),
             tx: tx.clone(),
             user: None,
             project: None,
             bearer_token: None,
+            worker: worker_arc_opt,
         };
 
         let api_routes = Router::new()
@@ -246,26 +303,6 @@ fn main() {
         let addr = SocketAddr::from(([0, 0, 0, 0], port));
         info!("Listening on {}", addr);
         let listener = TcpListener::bind(addr).await.unwrap();
-
-        // Start graphile_worker in a separate task (non-blocking)
-        tokio::spawn(async move {
-            match WorkerOptions::default()
-                .database_url(database_url)
-                .schema("graphile_worker")
-                .init()
-                .await
-            {
-                Ok(worker) => {
-                    info!("Graphile worker initialized successfully");
-                    if let Err(e) = worker.run().await {
-                        tracing::error!("Graphile worker error: {:?}", e);
-                    }
-                }
-                Err(e) => {
-                    tracing::error!("Failed to initialize graphile worker: {:?}", e);
-                }
-            }
-        });
 
         axum::serve(listener, app).await.unwrap()
     });

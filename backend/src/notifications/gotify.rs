@@ -14,9 +14,7 @@ pub struct GotifyMessage {
 
 #[derive(Debug, Deserialize)]
 pub struct GotifyResponse {
-    pub id: i64,
-    #[serde(rename = "appid")]
-    pub app_id: i64,
+    pub id: i32,
     pub message: String,
     pub title: String,
     pub priority: i32,
@@ -32,7 +30,7 @@ pub struct CreateApplicationRequest {
 
 #[derive(Debug, Deserialize)]
 pub struct ApplicationResponse {
-    pub id: i64,
+    pub id: i32,
     pub token: String,
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -188,6 +186,61 @@ impl GotifyClient {
             }
             Err(e) => {
                 error!("Failed to create Gotify application: {:?}", e);
+                Err(format!("Network error: {}", e))
+            }
+        }
+    }
+
+    pub async fn delete_application(&self, app_id: i64) -> Result<(), String> {
+        let username = match environment::gotify_defaultuser_name() {
+            Some(u) => u,
+            None => {
+                warn!("GOTIFY_DEFAULTUSER_NAME not configured");
+                return Err("GOTIFY_DEFAULTUSER_NAME not configured".to_string());
+            }
+        };
+
+        let password = match environment::gotify_defaultuser_pass() {
+            Some(p) => p,
+            None => {
+                warn!("GOTIFY_DEFAULTUSER_PASS not configured");
+                return Err("GOTIFY_DEFAULTUSER_PASS not configured".to_string());
+            }
+        };
+
+        let url = format!("{}/application/{}", self.base_url, app_id);
+
+        info!(
+            "Deleting Gotify application with ID: {} from: {}",
+            app_id, url
+        );
+
+        match self
+            .client
+            .delete(&url)
+            .basic_auth(username, Some(password))
+            .send()
+            .await
+        {
+            Ok(response) => {
+                if response.status().is_success() {
+                    info!("Gotify application {} deleted successfully", app_id);
+                    Ok(())
+                } else {
+                    let status = response.status();
+                    let body = response
+                        .text()
+                        .await
+                        .unwrap_or_else(|_| "Could not read response body".to_string());
+                    error!(
+                        "Gotify delete request failed with status {}: {}",
+                        status, body
+                    );
+                    Err(format!("Request failed with status {}: {}", status, body))
+                }
+            }
+            Err(e) => {
+                error!("Failed to delete Gotify application: {:?}", e);
                 Err(format!("Network error: {}", e))
             }
         }

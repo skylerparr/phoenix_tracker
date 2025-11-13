@@ -32,6 +32,30 @@ impl HistoryCrud {
         history.insert(&self.db).await
     }
 
+    pub async fn create_with_txn<'db, C>(
+        &self,
+        user_id: i32,
+        issue_id: Option<i32>,
+        comment_id: Option<i32>,
+        task_id: Option<i32>,
+        action: String,
+        txn: &C,
+    ) -> Result<history::Model, DbErr>
+    where
+        C: sea_orm::ConnectionTrait,
+    {
+        let history = history::ActiveModel {
+            user_id: Set(user_id),
+            issue_id: Set(issue_id),
+            comment_id: Set(comment_id),
+            task_id: Set(task_id),
+            action: Set(action),
+            ..Default::default()
+        };
+
+        history.insert(txn).await
+    }
+
     pub async fn find_by_issue_id(&self, issue_id: i32) -> Result<Vec<history::Model>, DbErr> {
         history::Entity::find()
             .filter(history::Column::IssueId.eq(issue_id))

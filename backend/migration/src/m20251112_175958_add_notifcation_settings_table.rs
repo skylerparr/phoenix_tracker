@@ -26,6 +26,12 @@ impl MigrationTrait for Migration {
                             .not_null(),
                     )
                     .col(
+                        ColumnDef::new(NotificationSettings::ApplicationId)
+                            .integer()
+                            .not_null()
+                            .default(0),
+                    )
+                    .col(
                         ColumnDef::new(NotificationSettings::Token)
                             .string()
                             .not_null(),
@@ -39,12 +45,6 @@ impl MigrationTrait for Migration {
                         ColumnDef::new(NotificationSettings::UpdatedAt)
                             .timestamp_with_time_zone()
                             .not_null(),
-                    )
-                    .col(
-                        ColumnDef::new(NotificationSettings::LockVersion)
-                            .integer()
-                            .not_null()
-                            .default(0),
                     )
                     .foreign_key(
                         ForeignKey::create()
@@ -63,6 +63,7 @@ impl MigrationTrait for Migration {
                     .name("idx_notification_settings_project_id")
                     .table(NotificationSettings::Table)
                     .col(NotificationSettings::ProjectId)
+                    .unique()
                     .to_owned(),
             )
             .await?;
@@ -70,9 +71,11 @@ impl MigrationTrait for Migration {
         manager
             .create_index(
                 Index::create()
-                    .name("idx_notification_settings_created_at")
+                    .name("idx_notification_settings_application_project_unique")
                     .table(NotificationSettings::Table)
-                    .col(NotificationSettings::CreatedAt)
+                    .col(NotificationSettings::ApplicationId)
+                    .col(NotificationSettings::ProjectId)
+                    .unique()
                     .to_owned(),
             )
             .await?;
@@ -164,7 +167,7 @@ impl MigrationTrait for Migration {
         manager
             .drop_index(
                 Index::drop()
-                    .name("idx_notification_settings_created_at")
+                    .name("idx_notification_settings_application_project_unique")
                     .table(NotificationSettings::Table)
                     .to_owned(),
             )
@@ -191,10 +194,10 @@ enum NotificationSettings {
     Table,
     Id,
     ProjectId,
+    ApplicationId,
     Token,
     CreatedAt,
     UpdatedAt,
-    LockVersion,
 }
 
 #[derive(DeriveIden)]
