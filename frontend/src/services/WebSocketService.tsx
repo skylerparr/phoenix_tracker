@@ -4,6 +4,7 @@ import { IssueAssignee } from "../models/IssueAssignee";
 import { Tag } from "../models/Tag";
 import { User } from "../models/User";
 import { sessionStorage } from "../store/Session";
+import { PushNotificationService } from "./PushNotificationService";
 
 export const ISSUE_CREATED = "issue_created";
 export const ISSUE_UPDATED = "issue_updated";
@@ -18,6 +19,8 @@ export const ISSUE_ASSIGNEE_CREATED = "issue_assignee_created";
 export const ISSUE_ASSIGNEE_UPDATED = "issue_assignee_updated";
 export const ISSUE_ASSIGNEE_DELETED = "issue_assignee_deleted";
 export const PROJECT_NOTE_PART_UPDATED = "project_note_part_updated";
+
+export const REMINDER_DISPATCHED = "reminder_dispatched";
 
 export class WebsocketService {
   private static socket: WebSocket;
@@ -80,6 +83,7 @@ export class WebsocketService {
           ISSUE_ASSIGNEE_UPDATED,
           ISSUE_ASSIGNEE_DELETED,
           PROJECT_NOTE_PART_UPDATED,
+          REMINDER_DISPATCHED,
         ];
         const eventType = eventTypes.find((type) => type === data.event_type);
         if (eventType) {
@@ -87,6 +91,11 @@ export class WebsocketService {
           const issue =
             eventType !== ISSUE_DELETED ? new Issue(data.data) : data.data;
           callbacks.forEach((callback) => callback(issue));
+
+          // Send browser notifications for relevant events
+          if (eventType === REMINDER_DISPATCHED) {
+            this.sendNotificationForEvent(issue);
+          }
         }
       } catch (error) {
         console.error("Error parsing WebSocket message:", error);
@@ -357,5 +366,23 @@ export class WebsocketService {
       "unsubscribe",
       PROJECT_NOTE_PART_UPDATED,
     );
+  }
+
+  private static sendNotificationForEvent(data: any): void {
+    // Only send notifications if enabled
+    if (!PushNotificationService.isEnabled()) {
+      console.error("notifications are not enabled");
+      return;
+    }
+
+    try {
+      PushNotificationService.send({
+        title: data.title,
+        body: data.description,
+        tag: `reminder-dispatched-${data.id}`,
+      });
+    } catch (error) {
+      console.error("Error sending notification for event:", error);
+    }
   }
 }

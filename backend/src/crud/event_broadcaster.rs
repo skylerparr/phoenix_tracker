@@ -21,6 +21,8 @@ pub const PROJECT_NOTE_CREATED: &str = "project_note_created";
 pub const PROJECT_NOTE_UPDATED: &str = "project_note_updated";
 pub const PROJECT_NOTE_DELETED: &str = "project_note_deleted";
 
+pub const REMINDER_DISPATCHED: &str = "reminder_dispatched";
+
 impl EventBroadcaster {
     pub fn new(tx: Arc<Sender<String>>) -> Self {
         Self { tx }

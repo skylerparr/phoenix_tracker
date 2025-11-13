@@ -9,20 +9,34 @@ import {
   ListItem,
   ListItemText,
   IconButton,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import { userService } from "../services/UserService";
 import { User } from "../models/User";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { sessionStorage } from "../store/Session";
 import { projectService } from "../services/ProjectService";
+import { PushNotificationService } from "../services/PushNotificationService";
 
 const SettingsComponent: React.FC = () => {
   const [email, setEmail] = useState<string>("");
   const [users, setUsers] = useState<User[]>([]);
   const [projectOwnerUser, setProjectOwnerUser] = useState<User | null>(null);
+  const [notificationsEnabled, setNotificationsEnabled] =
+    useState<boolean>(false);
+  const [notificationsSupported, setNotificationsSupported] =
+    useState<boolean>(false);
 
   useEffect(() => {
     loadUsers();
+    // Check notification support and status
+    const supported = PushNotificationService.isSupported();
+    setNotificationsSupported(supported);
+    if (supported) {
+      const enabled = PushNotificationService.isEnabled();
+      setNotificationsEnabled(enabled);
+    }
   }, []);
 
   const loadUsers = async () => {
@@ -69,6 +83,28 @@ const SettingsComponent: React.FC = () => {
     if (confirmed) {
       await projectService.deleteProject(projectId);
       window.location.href = "/projects";
+    }
+  };
+
+  const handleNotificationToggle = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const isEnabled = event.target.checked;
+    if (isEnabled) {
+      // Request permission
+      const granted = await PushNotificationService.requestPermission();
+      if (granted) {
+        setNotificationsEnabled(true);
+        // Send a test notification
+        await PushNotificationService.send({
+          title: "Notifications Enabled",
+          body: "You will now receive browser notifications.",
+        });
+      } else {
+        setNotificationsEnabled(false);
+      }
+    } else {
+      setNotificationsEnabled(false);
     }
   };
 
@@ -123,6 +159,30 @@ const SettingsComponent: React.FC = () => {
           </Button>
         </Box>
       </Box>
+      <Divider sx={{ borderColor: "#424242", my: 3 }} />
+      <Typography variant="h6" sx={{ mb: 2, color: "black" }}>
+        Notifications
+      </Typography>
+      {notificationsSupported ? (
+        <FormControlLabel
+          control={
+            <Switch
+              checked={notificationsEnabled}
+              onChange={handleNotificationToggle}
+              color="primary"
+            />
+          }
+          label={
+            <Typography sx={{ color: "black" }}>
+              Enable Browser Notifications
+            </Typography>
+          }
+        />
+      ) : (
+        <Typography sx={{ color: "#666666", fontSize: "0.875rem" }}>
+          Browser notifications are not supported on this device
+        </Typography>
+      )}
       <Divider sx={{ borderColor: "#424242", my: 3 }} />
       <Typography variant="h6" sx={{ mb: 2, color: "black" }}>
         Project Members

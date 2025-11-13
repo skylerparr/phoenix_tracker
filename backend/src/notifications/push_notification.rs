@@ -1,5 +1,8 @@
+use crate::crud::event_broadcaster::EventBroadcaster;
+use crate::crud::event_broadcaster::REMINDER_DISPATCHED;
 use crate::crud::issue::IssueCrud;
 use crate::crud::notification_settings::NotificationSettingsCrud;
+use crate::crud::project::ProjectCrud;
 use crate::crud::status::STATUS_ACCEPTED;
 use crate::crud::status::STATUS_UNSTARTED;
 use crate::crud::user::UserCrud;
@@ -57,11 +60,25 @@ impl TaskHandler for PushNotification {
                     }
                 };
 
+                // Fetch the project by issue.project_id
+                let project_crud = ProjectCrud::new(app_state.clone());
+                let project = match project_crud.find_by_id(issue.project_id).await {
+                    Ok(Some(project)) => project,
+                    Ok(None) => {
+                        error!("Project with ID {} not found", issue.project_id);
+                        return Err(format!("Project with ID {} not found", issue.project_id));
+                    }
+                    Err(e) => {
+                        error!("Failed to fetch project: {}", e);
+                        return Err(format!("Failed to fetch project: {}", e));
+                    }
+                };
+
                 let app_state_with_user = AppState {
                     db: worker_state.db.0.clone(),
                     tx: worker_state.tx.0.clone(),
                     user: Some(user),
-                    project: None,
+                    project: Some(project),
                     bearer_token: None,
                     worker: None,
                 };
@@ -82,6 +99,14 @@ impl TaskHandler for PushNotification {
                         } else {
                             description
                         };
+
+                        let broadcaster = EventBroadcaster::new(app_state_with_user.tx.clone());
+                        broadcaster.broadcast_event(
+                            issue.project_id,
+                            REMINDER_DISPATCHED,
+                            serde_json::json!(issue),
+                        );
+
                         match gotify_client
                             .send_simple_notification(settings.token, issue.title.clone(), message)
                             .await

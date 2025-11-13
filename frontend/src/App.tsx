@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import Container from "@mui/material/Container";
@@ -7,6 +7,7 @@ import Sidebar from "./navigation/Sidebar";
 import { MobileProvider } from "./context/MobileContext";
 import "./styles/mobile.css";
 import { PreviewOverlayProvider } from "./context/PreviewOverlayContext";
+import { PushNotificationService } from "./services/PushNotificationService";
 
 const theme = createTheme({
   palette: {
@@ -38,6 +39,21 @@ const GlobalStyles = styled("div")({
   },
 });
 const App: React.FC = () => {
+  useEffect(() => {
+    // Initialize notifications and request permission if needed
+    if (PushNotificationService.isSupported()) {
+      // Check if permission hasn't been decided yet
+      if (PushNotificationService.getPermissionStatus() === "default") {
+        // Optionally auto-request or let user trigger it
+        // For now, just log that it's available
+        console.info(
+          "Notifications available. Permission status:",
+          PushNotificationService.getPermissionStatus(),
+        );
+      }
+    }
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
