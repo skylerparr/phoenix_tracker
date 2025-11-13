@@ -1,13 +1,15 @@
 use crate::crud::issue::IssueCrud;
 use crate::crud::notification_settings::NotificationSettingsCrud;
 use crate::crud::status::STATUS_ACCEPTED;
+use crate::crud::status::STATUS_UNSTARTED;
 use crate::crud::user::UserCrud;
+use crate::crud::work_type::WORK_TYPE_REMINDER;
 use crate::notifications::gotify::GotifyClient;
 use crate::{AppState, WorkerAppState};
 use chrono::Utc;
 use graphile_worker::{IntoTaskHandlerResult, TaskHandler, WorkerContext};
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, info};
 
 #[derive(Deserialize, Serialize)]
 pub struct PushNotification {
@@ -35,7 +37,11 @@ impl TaskHandler for PushNotification {
 
         match issue_crud.find_by_id(self.issue_id).await {
             Ok(Some(issue)) => {
-                println!("Sending push notification for issue: {}", issue.title);
+                if issue.work_type != WORK_TYPE_REMINDER || issue.status != STATUS_UNSTARTED {
+                    return Ok(());
+                }
+
+                info!("Sending push notification for issue: {}", issue.title);
 
                 // Fetch the user who created the issue
                 let user_crud = UserCrud::new(app_state.clone());
@@ -127,7 +133,7 @@ impl TaskHandler for PushNotification {
                     }
                 }
             }
-            Ok(None) => Err(format!("Issue with ID {} not found", self.issue_id)),
+            Ok(None) => Ok(()),
             Err(e) => Err(format!("Database error: {}", e)),
         }
     }
