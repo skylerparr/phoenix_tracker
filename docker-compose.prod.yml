@@ -34,4 +34,4 @@ services:
       - GOTIFY_DEFAULTUSER_PASS=admin
       - GOTIFY_DEFAULTUSER_NAME=admin
     volumes:
-      - gotify-data:/var/lib/gotify
+      - ./gotify:/var/lib/gotify
