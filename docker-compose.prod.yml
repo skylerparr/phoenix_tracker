@@ -26,6 +26,8 @@ services:
       - FILE_STORE_SCHEME=${FILE_STORE_SCHEME}
       - BASE_FILE_PATH=${BASE_FILE_PATH}
       - PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
+    depends_on:
+      - gotify
   gotify:
     image: gotify/server:latest
     ports:
