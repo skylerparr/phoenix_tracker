@@ -18,8 +18,20 @@ services:
       - FILE_STORE_SCHEME=${FILE_STORE_SCHEME}
       - BASE_FILE_PATH=${BASE_FILE_PATH}
       - PORT=3001
+      - GOTIFY_URL=http://gotify
+      - GOTIFY_DEFAULTUSER_PASS=admin
+      - GOTIFY_DEFAULTUSER_NAME=admin
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - WEBSOCKET_BUFFER_SIZE=${WEBSOCKET_BUFFER_SIZE:-1000}
       - FILE_STORE_SCHEME=${FILE_STORE_SCHEME}
       - BASE_FILE_PATH=${BASE_FILE_PATH}
       - PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
+  gotify:
+    image: gotify/server:latest
+    ports:
+      - "8080:80"
+    environment:
+      - GOTIFY_DEFAULTUSER_PASS=admin
+      - GOTIFY_DEFAULTUSER_NAME=admin
+    volumes:
+      - gotify-data:/var/lib/gotify
