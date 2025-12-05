@@ -24,8 +24,6 @@ export const tools = [
       type: 'object',
       properties: {
         project_note_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },

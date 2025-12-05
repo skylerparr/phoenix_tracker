@@ -68,8 +68,6 @@ export const tools = [
     inputSchema: {
       type: 'object',
       properties: {
-        token: { type: 'string', description: 'JWT token (optional if provided by context)' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       }
@@ -86,8 +84,6 @@ export const tools = [
         description: { type: 'string', description: 'Detailed description' },
         work_type: { type: 'string', description: 'feature | bug | chore | release', enum: Object.keys(WORK_TYPE_MAP) },
         target_release_at: { type: 'string', description: 'ISO date string' },
-        token: { type: 'string', description: 'JWT token (optional if provided by context)' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -101,8 +97,6 @@ export const tools = [
       type: 'object',
       properties: {
         issue_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -124,8 +118,6 @@ export const tools = [
         is_icebox: { type: 'boolean' },
         work_type: { type: 'string', enum: Object.keys(WORK_TYPE_MAP) },
         target_release_at: { type: 'string' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -139,25 +131,23 @@ export const tools = [
       type: 'object',
       properties: {
         issue_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
       required: ['issue_id']
     }
   },
-  { name: 'start_issue', description: 'Start an issue', inputSchema: { type: 'object', properties: { issue_id: { type: 'number' }, token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['issue_id'] } },
-  { name: 'finish_issue', description: 'Finish an issue', inputSchema: { type: 'object', properties: { issue_id: { type: 'number' }, token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['issue_id'] } },
-  { name: 'deliver_issue', description: 'Deliver an issue', inputSchema: { type: 'object', properties: { issue_id: { type: 'number' }, token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['issue_id'] } },
-  { name: 'accept_issue', description: 'Accept an issue', inputSchema: { type: 'object', properties: { issue_id: { type: 'number' }, token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['issue_id'] } },
-  { name: 'reject_issue', description: 'Reject an issue', inputSchema: { type: 'object', properties: { issue_id: { type: 'number' }, token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['issue_id'] } },
-  { name: 'get_my_issues', description: 'List issues assigned to the current user', inputSchema: { type: 'object', properties: { token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } } } },
-  { name: 'get_issues_by_tag', description: 'List issues by tag', inputSchema: { type: 'object', properties: { tag_id: { type: 'number' }, token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['tag_id'] } },
-  { name: 'get_issues_by_user', description: 'List issues by user', inputSchema: { type: 'object', properties: { user_id: { type: 'number' }, token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['user_id'] } },
-  { name: 'get_all_accepted', description: 'List accepted issues', inputSchema: { type: 'object', properties: { token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } } } },
-  { name: 'get_all_icebox', description: 'List icebox issues', inputSchema: { type: 'object', properties: { token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } } } },
-  { name: 'get_weekly_points_average', description: 'Get weekly points average', inputSchema: { type: 'object', properties: { token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } } } }
+  { name: 'start_issue', description: 'Start an issue', inputSchema: { type: 'object', properties: { issue_id: { type: 'number' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['issue_id'] } },
+  { name: 'finish_issue', description: 'Finish an issue', inputSchema: { type: 'object', properties: { issue_id: { type: 'number' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['issue_id'] } },
+  { name: 'deliver_issue', description: 'Deliver an issue', inputSchema: { type: 'object', properties: { issue_id: { type: 'number' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['issue_id'] } },
+  { name: 'accept_issue', description: 'Accept an issue', inputSchema: { type: 'object', properties: { issue_id: { type: 'number' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['issue_id'] } },
+  { name: 'reject_issue', description: 'Reject an issue', inputSchema: { type: 'object', properties: { issue_id: { type: 'number' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['issue_id'] } },
+  { name: 'get_my_issues', description: 'List issues assigned to the current user', inputSchema: { type: 'object', properties: { base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } } } },
+  { name: 'get_issues_by_tag', description: 'List issues by tag', inputSchema: { type: 'object', properties: { tag_id: { type: 'number' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['tag_id'] } },
+  { name: 'get_issues_by_user', description: 'List issues by user', inputSchema: { type: 'object', properties: { user_id: { type: 'number' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['user_id'] } },
+  { name: 'get_all_accepted', description: 'List accepted issues', inputSchema: { type: 'object', properties: { base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } } } },
+  { name: 'get_all_icebox', description: 'List icebox issues', inputSchema: { type: 'object', properties: { base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } } } },
+  { name: 'get_weekly_points_average', description: 'Get weekly points average', inputSchema: { type: 'object', properties: { base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } } } }
 ];
 
 export async function handleToolCall(name, args = {}, context = {}) {

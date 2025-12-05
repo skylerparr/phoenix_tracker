@@ -25,8 +25,6 @@ export const tools = [
       properties: {
         title: { type: 'string' },
         detail: { type: 'string' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -40,8 +38,6 @@ export const tools = [
       type: 'object',
       properties: {
         note_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -54,8 +50,6 @@ export const tools = [
     inputSchema: {
       type: 'object',
       properties: {
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       }
@@ -70,8 +64,6 @@ export const tools = [
         note_id: { type: 'number' },
         title: { type: 'string' },
         detail: { type: 'string' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -85,8 +77,6 @@ export const tools = [
       type: 'object',
       properties: {
         note_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },

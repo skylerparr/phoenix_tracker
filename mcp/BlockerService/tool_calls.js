@@ -25,8 +25,6 @@ export const tools = [
       properties: {
         blocker_id: { type: 'number', description: 'Blocking issue ID' },
         blocked_id: { type: 'number', description: 'Blocked issue ID' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -40,8 +38,6 @@ export const tools = [
       type: 'object',
       properties: {
         blocker_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -55,8 +51,6 @@ export const tools = [
       type: 'object',
       properties: {
         blocked_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -71,8 +65,6 @@ export const tools = [
       properties: {
         blocker_id: { type: 'number' },
         blocked_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },

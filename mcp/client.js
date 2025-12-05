@@ -27,7 +27,7 @@ export const createAgent = (url, insecure = false, cacert = '') => {
  */
 export const extractRequestOptions = (options = {}) => {
   return {
-    baseUrl: options.baseUrl || process.env.BASE_URL || 'http://host.docker.internal:3001/api',
+    baseUrl: process.env.ISSUE_TRACKER_BASE_URL || 'http://host.docker.internal:3001/api',
     insecure: options.insecure || false,
     cacert: options.cacert || '',
     token: options.token || '',

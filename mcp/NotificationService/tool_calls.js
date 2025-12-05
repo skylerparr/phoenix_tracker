@@ -23,8 +23,6 @@ export const tools = [
     inputSchema: {
       type: 'object',
       properties: {
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       }
@@ -37,8 +35,6 @@ export const tools = [
       type: 'object',
       properties: {
         notification_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -51,8 +47,6 @@ export const tools = [
     inputSchema: {
       type: 'object',
       properties: {
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       }

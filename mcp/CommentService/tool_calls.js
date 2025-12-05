@@ -25,8 +25,6 @@ export const tools = [
       properties: {
         content: { type: 'string', description: 'Comment content' },
         issue_id: { type: 'number', description: 'Issue ID' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -40,8 +38,6 @@ export const tools = [
       type: 'object',
       properties: {
         issue_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -55,8 +51,6 @@ export const tools = [
       type: 'object',
       properties: {
         user_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -71,8 +65,6 @@ export const tools = [
       properties: {
         comment_id: { type: 'number' },
         content: { type: 'string' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -86,8 +78,6 @@ export const tools = [
       type: 'object',
       properties: {
         comment_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },

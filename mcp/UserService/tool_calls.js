@@ -30,8 +30,6 @@ export const tools = [
       properties: {
         name: { type: 'string' },
         email: { type: 'string', format: 'email' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -41,37 +39,37 @@ export const tools = [
   {
     name: 'get_all_users',
     description: 'Get all users in the current project',
-    inputSchema: { type: 'object', properties: { token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } } }
+    inputSchema: { type: 'object', properties: { base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } } }
   },
   {
     name: 'get_user',
     description: 'Get user by ID',
-    inputSchema: { type: 'object', properties: { user_id: { type: 'number' }, token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['user_id'] }
+    inputSchema: { type: 'object', properties: { user_id: { type: 'number' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['user_id'] }
   },
   {
     name: 'get_user_by_email',
     description: 'Get user by email',
-    inputSchema: { type: 'object', properties: { email: { type: 'string', format: 'email' }, token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['email'] }
+    inputSchema: { type: 'object', properties: { email: { type: 'string', format: 'email' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['email'] }
   },
   {
     name: 'update_user',
     description: 'Update a user',
-    inputSchema: { type: 'object', properties: { user_id: { type: 'number' }, name: { type: 'string' }, email: { type: 'string', format: 'email' }, token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['user_id'] }
+    inputSchema: { type: 'object', properties: { user_id: { type: 'number' }, name: { type: 'string' }, email: { type: 'string', format: 'email' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['user_id'] }
   },
   {
     name: 'delete_user',
     description: 'Delete a user by ID',
-    inputSchema: { type: 'object', properties: { user_id: { type: 'number' }, token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['user_id'] }
+    inputSchema: { type: 'object', properties: { user_id: { type: 'number' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['user_id'] }
   },
   {
     name: 'invite_user',
     description: 'Invite a user by email',
-    inputSchema: { type: 'object', properties: { email: { type: 'string', format: 'email' }, token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['email'] }
+    inputSchema: { type: 'object', properties: { email: { type: 'string', format: 'email' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['email'] }
   },
   {
     name: 'remove_user',
     description: 'Remove a user from the project by ID',
-    inputSchema: { type: 'object', properties: { user_id: { type: 'number' }, token: { type: 'string' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['user_id'] }
+    inputSchema: { type: 'object', properties: { user_id: { type: 'number' }, base_url: { type: 'string' }, insecure: { type: 'boolean' }, cacert: { type: 'string' } }, required: ['user_id'] }
   }
 ];
 

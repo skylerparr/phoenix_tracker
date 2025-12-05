@@ -27,8 +27,6 @@ export const tools = [
         issue_id: { type: 'number' },
         completed: { type: 'boolean' },
         percent: { type: 'number', description: 'Completion percentage (0-100)' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -42,8 +40,6 @@ export const tools = [
       type: 'object',
       properties: {
         task_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -57,8 +53,6 @@ export const tools = [
       type: 'object',
       properties: {
         issue_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -75,8 +69,6 @@ export const tools = [
         title: { type: 'string' },
         completed: { type: 'boolean' },
         percent: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -90,8 +82,6 @@ export const tools = [
       type: 'object',
       properties: {
         task_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },

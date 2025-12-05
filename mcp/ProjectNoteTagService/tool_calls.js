@@ -24,8 +24,6 @@ export const tools = [
       type: 'object',
       properties: {
         tag_name: { type: 'string', description: 'Tag name' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },

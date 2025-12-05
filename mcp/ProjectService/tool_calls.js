@@ -29,8 +29,6 @@ export const tools = [
       type: 'object',
       properties: {
         name: { type: 'string', description: 'Project name' },
-        token: { type: 'string', description: 'JWT token (optional if provided by context)' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -44,8 +42,6 @@ export const tools = [
       type: 'object',
       properties: {
         project_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -58,8 +54,6 @@ export const tools = [
     inputSchema: {
       type: 'object',
       properties: {
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       }
@@ -72,23 +66,6 @@ export const tools = [
       type: 'object',
       properties: {
         project_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
-        insecure: { type: 'boolean' },
-        cacert: { type: 'string' }
-      },
-      required: ['project_id']
-    }
-  },
-  {
-    name: 'select_project',
-    description: 'Select a project for the current user',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        project_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -120,13 +97,6 @@ export async function handleToolCall(name, args = {}, context = {}) {
         const token = await resolveToken(args, context);
         await deleteProject(Number(args.project_id), token, opts);
         return { content: [{ type: 'text', text: JSON.stringify({ success: true }, null, 2) }] };
-      }
-      case 'select_project': {
-        const token = await resolveToken(args, context);
-        const res = await selectProject(Number(args.project_id), token, opts);
-        context.updateToken(res.token, res.expires_at);
-        context.updateProjectId(Number(args.project_id));
-        return { content: [{ type: 'text', text: JSON.stringify(res, null, 2) }] };
       }
       default:
         throw new Error(`Unknown project tool: ${name}`);

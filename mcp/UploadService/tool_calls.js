@@ -25,8 +25,6 @@ export const tools = [
       properties: {
         issue_id: { type: 'number' },
         file: { type: 'string', description: 'File data or path' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -41,8 +39,6 @@ export const tools = [
       properties: {
         project_note_id: { type: 'number' },
         file: { type: 'string', description: 'File data or path' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -56,8 +52,6 @@ export const tools = [
       type: 'object',
       properties: {
         issue_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -71,8 +65,6 @@ export const tools = [
       type: 'object',
       properties: {
         issue_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -86,8 +78,6 @@ export const tools = [
       type: 'object',
       properties: {
         project_note_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -101,8 +91,6 @@ export const tools = [
       type: 'object',
       properties: {
         comment_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -117,8 +105,6 @@ export const tools = [
       properties: {
         comment_id: { type: 'number' },
         file_upload_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -133,8 +119,6 @@ export const tools = [
       properties: {
         comment_id: { type: 'number' },
         file_upload_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -148,8 +132,6 @@ export const tools = [
       type: 'object',
       properties: {
         upload_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -163,8 +145,6 @@ export const tools = [
       type: 'object',
       properties: {
         upload_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },

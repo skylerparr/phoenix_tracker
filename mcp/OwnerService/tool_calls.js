@@ -24,8 +24,6 @@ export const tools = [
       type: 'object',
       properties: {
         user_id: { type: 'number', description: 'User ID (optional)' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       }
@@ -37,8 +35,6 @@ export const tools = [
     inputSchema: {
       type: 'object',
       properties: {
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       }
@@ -51,8 +47,6 @@ export const tools = [
       type: 'object',
       properties: {
         owner_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -67,8 +61,6 @@ export const tools = [
       properties: {
         owner_id: { type: 'number' },
         user_id: { type: 'number', description: 'User ID (optional)' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -82,8 +74,6 @@ export const tools = [
       type: 'object',
       properties: {
         owner_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },

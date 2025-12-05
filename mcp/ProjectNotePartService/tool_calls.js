@@ -25,8 +25,6 @@ export const tools = [
       properties: {
         id: { type: 'number' },
         content: { type: 'string' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },

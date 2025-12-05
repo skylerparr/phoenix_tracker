@@ -25,8 +25,6 @@ export const tools = [
       properties: {
         name: { type: 'string' },
         is_epic: { type: 'boolean', description: 'Whether this is an epic tag' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -39,8 +37,6 @@ export const tools = [
     inputSchema: {
       type: 'object',
       properties: {
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       }
@@ -53,8 +49,6 @@ export const tools = [
       type: 'object',
       properties: {
         tag_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -70,8 +64,6 @@ export const tools = [
         tag_id: { type: 'number' },
         name: { type: 'string' },
         is_epic: { type: 'boolean' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -85,8 +77,6 @@ export const tools = [
       type: 'object',
       properties: {
         tag_id: { type: 'number' },
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -99,8 +89,6 @@ export const tools = [
     inputSchema: {
       type: 'object',
       properties: {
-        token: { type: 'string' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       }

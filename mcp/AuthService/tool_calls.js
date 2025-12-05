@@ -30,7 +30,6 @@ export const tools = [
       type: 'object',
       properties: {
         email: { type: 'string', format: 'email', description: 'User email' },
-        base_url: { type: 'string', description: 'Override API base URL' },
         insecure: { type: 'boolean', description: 'Allow insecure TLS' },
         cacert: { type: 'string', description: 'Path to custom CA cert file' }
       },
@@ -45,7 +44,6 @@ export const tools = [
       properties: {
         name: { type: 'string', description: 'User name' },
         email: { type: 'string', format: 'email', description: 'User email' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -59,8 +57,6 @@ export const tools = [
       type: 'object',
       properties: {
         user_id: { type: 'number', description: 'User ID' },
-        token: { type: 'string', description: 'JWT token (optional if provided by context)' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -74,8 +70,6 @@ export const tools = [
       type: 'object',
       properties: {
         project_id: { type: 'number', description: 'Project ID to switch to' },
-        token: { type: 'string', description: 'JWT token (optional if provided by context)' },
-        base_url: { type: 'string' },
         insecure: { type: 'boolean' },
         cacert: { type: 'string' }
       },
@@ -107,9 +101,6 @@ export async function handleToolCall(name, args = {}, context = {}) {
         const token = await resolveToken(args, context);
         await logout(Number(args.user_id), { ...buildOptions(args), token });
         // Clear token in context
-        if (context.updateToken) {
-          context.updateToken(null, null);
-        }
         return { content: [{ type: 'text', text: JSON.stringify({ success: true }, null, 2) }] };
       }
       case 'auth_switch_project': {
