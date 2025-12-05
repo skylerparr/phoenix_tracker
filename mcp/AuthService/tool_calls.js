@@ -115,10 +115,7 @@ export async function handleToolCall(name, args = {}, context = {}) {
       case 'auth_switch_project': {
         const token = await resolveToken(args, context);
         const resp = await switchProject(Number(args.project_id), token, buildOptions(args));
-        // Update token and project ID in context
-        if (context.updateToken) {
-          context.updateToken(resp.token, resp.expires_at);
-        }
+        context.updateToken(resp.token, resp.expires_at);
         return { content: [{ type: 'text', text: JSON.stringify(resp, null, 2) }] };
       }
       default:
