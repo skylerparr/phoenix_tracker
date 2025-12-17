@@ -31,7 +31,7 @@ services:
   gotify:
     image: gotify/server:latest
     ports:
-      - "8080:80"
+      - "8090:80"
     environment:
       - GOTIFY_DEFAULTUSER_PASS=admin
       - GOTIFY_DEFAULTUSER_NAME=admin
