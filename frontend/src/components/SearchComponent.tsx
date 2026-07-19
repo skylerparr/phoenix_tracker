@@ -45,6 +45,7 @@ const SearchComponent = () => {
     return () => {
       WebsocketService.unsubscribeToIssueUpdatedEvent(handleIssueUpdated);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const fetchIssueById = async (id: number) => {

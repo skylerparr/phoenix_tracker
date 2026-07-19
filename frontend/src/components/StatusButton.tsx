@@ -36,7 +36,6 @@ const StatusButton: React.FC<StatusButtonProps> = ({ issue }) => {
   const isReminder = issue.workType === WORK_TYPE_REMINDER;
   const showPoints =
     issue.workType === WORK_TYPE_FEATURE && issue.points === null;
-  const isChoreOrRelease = isChore || issue.workType === WORK_TYPE_RELEASE;
   const isChoreOrReleaseOrReminder = isChore || isRelease || isReminder;
 
   const handleOnEstimated = (points: number) => {

@@ -46,6 +46,7 @@ const AcceptedIssuesComponent: React.FC = () => {
     return () => {
       WebsocketService.unsubscribeToIssueUpdatedEvent(handleIssueUpdated);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleIssueUpdated = async () => {

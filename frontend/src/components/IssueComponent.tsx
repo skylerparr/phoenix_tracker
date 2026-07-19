@@ -130,6 +130,7 @@ export const IssueComponent: React.FC<IssueComponentProps> = ({
         onAssigneesUpdated,
       );
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [issue]);
 
   const onAssigneesUpdated = async () => {

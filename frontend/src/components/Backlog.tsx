@@ -33,6 +33,7 @@ const Backlog: React.FC = () => {
     return () => {
       issueService.unsubscribeFromGetAllIssues(handleIssuesChanged);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Find upcoming releases and calculate if we'll meet them

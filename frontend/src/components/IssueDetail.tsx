@@ -127,6 +127,7 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
       tagService.unsubscribeFromGetAllTags(handleTagsUpdate);
       issueService.unsubscribeFromGetAllIssues(handleIssuesUpdate);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [originalIssue]);
 
   const handleIssuesUpdate = async (issues: Issue[]) => {
@@ -329,10 +330,6 @@ export const IssueDetail: React.FC<IssueComponentProps> = ({
       targetReleaseAt: issue.targetReleaseAt,
     });
     closeHandler();
-  };
-
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
   };
 
   const handleTaskComplete = (id: number, checked: boolean) => {

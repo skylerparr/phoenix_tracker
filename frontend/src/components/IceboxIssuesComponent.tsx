@@ -13,6 +13,7 @@ const IceboxIssuesComponent: React.FC = () => {
     return () => {
       issueService.unsubscribeFromGetIcebox(handleIssuesChanged);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleIssuesChanged = (loadedIssues: Issue[]) => {

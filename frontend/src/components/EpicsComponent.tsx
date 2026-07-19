@@ -105,6 +105,7 @@ const EpicsComponent: React.FC = () => {
       tagService.unsubscribeFromGetAllTags(onEpicsUpdated);
       issueService.unsubscribeFromGetAllIssues(onEpicsUpdated);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onEpicsUpdated = () => {
@@ -147,7 +148,7 @@ const EpicsComponent: React.FC = () => {
     });
 
     setFilteredIssuesMap(newFilteredMap);
-  }, [searchTerm, epics]);
+  }, [searchTerm, epics, issuesMap]);
 
   const calculateWidth = (
     epic: Tag,

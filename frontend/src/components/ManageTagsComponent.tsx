@@ -36,6 +36,7 @@ const ManageTagsComponent: React.FC = () => {
       issueService.unsubscribeFromGetAllIssues(onTagsUpdated);
       tagService.unsubscribeFromGetAllTags(onTagsUpdated);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onTagsUpdated = () => {

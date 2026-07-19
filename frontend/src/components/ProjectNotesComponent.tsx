@@ -118,6 +118,7 @@ export const ProjectNotesComponent: React.FC = () => {
         handleExpandNote(noteExists);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, notes]);
 
   useEffect(() => {
