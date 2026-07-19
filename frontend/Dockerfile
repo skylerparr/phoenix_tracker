@@ -1,12 +1,12 @@
-FROM node:16-alpine AS build
+FROM node:18-alpine AS build
 
 WORKDIR /app
 
 # Copy package files first for better caching
 COPY package.json package-lock.json ./
 
-# Clean install dependencies including optional ones
-RUN npm ci --no-optional
+# Clean install dependencies
+RUN npm ci
 
 # Copy source code
 COPY . .
