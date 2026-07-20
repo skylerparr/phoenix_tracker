@@ -11,10 +11,7 @@ RUN apt-get update && \
 WORKDIR /usr/src/app
 COPY . .
 
-RUN cargo update --aggressive && \
-    rm -f Cargo.lock && \
-    cargo generate-lockfile && \
-    RUSTFLAGS="-C opt-level=3" cargo build --release
+RUN RUSTFLAGS="-C opt-level=3" cargo build --release --locked
 
 FROM debian:bookworm-slim
 
