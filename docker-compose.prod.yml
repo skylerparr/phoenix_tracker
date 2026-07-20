@@ -15,8 +15,6 @@ services:
       - USER_GID=1000
       - DATABASE_URL=${DATABASE_URL}
       - FRONTEND_URL=${FRONTEND_URL}
-      - FILE_STORE_SCHEME=${FILE_STORE_SCHEME}
-      - BASE_FILE_PATH=${BASE_FILE_PATH}
       - PORT=3001
       - GOTIFY_URL=http://gotify
       - GOTIFY_DEFAULTUSER_PASS=admin
