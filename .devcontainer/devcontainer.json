@@ -1,0 +1,53 @@
+{
+  "name": "Python Dev Container",
+  "build": {
+    "dockerfile": "Dockerfile",
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "version": "latest",
+      "moby": false,
+      "installDockerCompose": true,
+      "installDockerBuildx": true
+    },
+    "ghcr.io/devcontainers/features/node:2.1.0": {
+      "pnpmVersion": "11"
+    }
+  },
+
+  "remoteUser": "devuser",
+  "containerEnv": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "ms-python.isort",
+        "charliermarsh.ruff",
+        "tamasfe.even-better-toml",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "eamodio.gitlens",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.black-formatter"
+        },
+        "isort.args": [
+          "--profile",
+          "black"
+        ],
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "postCreateCommand": "poetry --version && node --version && python --version"
+}
