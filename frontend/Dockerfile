@@ -11,9 +11,13 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build with production settings
+# Build with production settings. REACT_APP_API_BASE_URL is inlined into the
+# bundle at build time (create-react-app only bakes REACT_APP_* vars present
+# during `npm run build`); default to the dev fallback if not supplied.
+ARG REACT_APP_API_BASE_URL=http://localhost:3001
 ENV NODE_ENV=production
 ENV CI=true
+ENV REACT_APP_API_BASE_URL=$REACT_APP_API_BASE_URL
 RUN npm run build
 
 FROM nginx:alpine

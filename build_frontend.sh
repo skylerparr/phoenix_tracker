@@ -16,6 +16,15 @@
 #
 # The destination static/ directory is cleared first so stale hashes from
 # previous builds don't accumulate.
+#
+# Usage:
+#   ./build_frontend.sh                          # use ApiConfig.tsx default
+#   ./build_frontend.sh --api-base-url <url>     # bake REACT_APP_API_BASE_URL into the bundle
+#   REACT_APP_API_BASE_URL=<url> ./build_frontend.sh
+#
+# REACT_APP_API_BASE_URL is inlined by create-react-app at build time, so it
+# must be present during the image build. It is forwarded to Docker via
+# --build-arg and declared as an ARG in frontend/Dockerfile.
 
 set -e  # Exit on any error
 
@@ -31,12 +40,61 @@ IMAGE_NAME="phoenix_frontend"
 CONTAINER_HTML_PATH="/usr/share/nginx/html"
 
 # ---------------------------------------------------------------------------
+# 0. Parse arguments
+# ---------------------------------------------------------------------------
+# Inherit from environment if set, allow --api-base-url to override it.
+API_BASE_URL="${REACT_APP_API_BASE_URL:-}"
+
+# Captured at top level because $0 inside a zsh function is the function name.
+SCRIPT_NAME="$0"
+
+usage() {
+  cat >&2 <<EOF
+Usage: $SCRIPT_NAME [--api-base-url <url>]
+
+Bakes REACT_APP_API_BASE_URL into the frontend bundle at build time
+(create-react-app inlines REACT_APP_* vars during the build). If omitted,
+the default from frontend/src/config/ApiConfig.tsx (http://localhost:3001)
+is used.
+
+Can also be set via the REACT_APP_API_BASE_URL environment variable.
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --api-base-url)
+      [[ $# -ge 2 ]] || { echo "Error: --api-base-url requires a value" >&2; usage; exit 1; }
+      API_BASE_URL="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Error: unknown argument '$1'" >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+BUILD_ARGS=()
+if [[ -n "$API_BASE_URL" ]]; then
+  echo "==> Baking REACT_APP_API_BASE_URL=$API_BASE_URL into the bundle"
+  BUILD_ARGS+=(--build-arg "REACT_APP_API_BASE_URL=$API_BASE_URL")
+else
+  echo "==> No API base URL specified; using ApiConfig.tsx default (http://localhost:3001)"
+fi
+
+# ---------------------------------------------------------------------------
 # 1. Build the frontend Docker image (multi-stage: node build -> nginx)
 # ---------------------------------------------------------------------------
 echo "==> Building frontend Docker image '$IMAGE_NAME'..."
 (
   cd "$FRONTEND_DIR"
-  docker build -t "$IMAGE_NAME" .
+  docker build -t "$IMAGE_NAME" "${BUILD_ARGS[@]}" .
 )
 
 # ---------------------------------------------------------------------------
