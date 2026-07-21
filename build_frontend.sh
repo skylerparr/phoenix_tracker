@@ -1,12 +1,21 @@
 #!/bin/zsh
 #
 # Build the frontend for production inside Docker (no Node required on the
-# host) and copy the resulting JavaScript artifacts into the backend's
-# static directory so the Rust backend can serve them.
+# host) and copy the resulting build output into the backend's static
+# directory so the Rust backend can serve it.
 #
-# The CRA build emits content-hashed filenames (main.<hash>.js plus its
-# .map and .LICENSE.txt), so the destination js/ directory is cleared
-# first to avoid accumulating stale hashes from previous builds.
+# The CRA build emits content-hashed filenames (e.g. main.<hash>.js) and a
+# fresh index.html that references those hashes. The backend's ServeDir
+# serves everything under backend/static/, so we copy the WHOLE build
+# output (index.html, asset-manifest.json, manifest.json, favicon, logos,
+# robots.txt, runtime-config.js, static/js, static/css) — not just the JS —
+# to keep the hashes referenced by index.html in sync with the files on
+# disk. Copying only the JS leaves index.html pointing at stale hashes,
+# which makes ServeDir fall back to serving index.html where the browser
+# expects JS, so nothing runs.
+#
+# The destination static/ directory is cleared first so stale hashes from
+# previous builds don't accumulate.
 
 set -e  # Exit on any error
 
@@ -15,11 +24,11 @@ SCRIPT_DIR="${0:A:h}"
 REPO_ROOT="$SCRIPT_DIR"
 
 FRONTEND_DIR="$REPO_ROOT/frontend"
-DEST_JS_DIR="$REPO_ROOT/backend/static/static/js"
+DEST_STATIC_DIR="$REPO_ROOT/backend/static"
 
 IMAGE_NAME="phoenix_frontend"
-# Path to the built JS artifacts inside the nginx image (see frontend/Dockerfile).
-CONTAINER_JS_PATH="/usr/share/nginx/html/static/js"
+# Path to the full CRA build output inside the nginx image (see frontend/Dockerfile).
+CONTAINER_HTML_PATH="/usr/share/nginx/html"
 
 # ---------------------------------------------------------------------------
 # 1. Build the frontend Docker image (multi-stage: node build -> nginx)
@@ -31,13 +40,14 @@ echo "==> Building frontend Docker image '$IMAGE_NAME'..."
 )
 
 # ---------------------------------------------------------------------------
-# 2. Copy the JS artifacts out of the image into the backend static dir
+# 2. Copy the full build output out of the image into the backend static dir
 # ---------------------------------------------------------------------------
-echo "==> Extracting JS artifacts from image into $DEST_JS_DIR ..."
-mkdir -p "$DEST_JS_DIR"
+echo "==> Extracting build artifacts from image into $DEST_STATIC_DIR ..."
 
-# Remove stale hashed JS artifacts before copying fresh ones.
-rm -f "$DEST_JS_DIR"/*.js "$DEST_JS_DIR"/*.js.map "$DEST_JS_DIR"/*.js.LICENSE.txt
+# Clear the destination so stale hashed artifacts from prior builds don't
+# linger (CRA emits content-hashed filenames that index.html references).
+rm -rf "$DEST_STATIC_DIR"
+mkdir -p "$DEST_STATIC_DIR"
 
 # Create a throwaway container from the image so we can docker cp out of it.
 CONTAINER_ID=$(docker create "$IMAGE_NAME")
@@ -47,17 +57,24 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# Copy the whole js/ directory from the image, then move its contents into place.
+# Copy the whole build output (index.html, manifest.json, favicon, logos,
+# robots.txt, runtime-config.js, static/js/*, static/css/*, and the
+# asset-manifest.json) into a temp dir, then move it into place.
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"; cleanup' EXIT INT TERM
 
-docker cp "$CONTAINER_ID:$CONTAINER_JS_PATH/." "$TMP_DIR"/
+docker cp "$CONTAINER_ID:$CONTAINER_HTML_PATH/." "$TMP_DIR"/
 
-cp "$TMP_DIR"/*.js             "$DEST_JS_DIR"/
-cp "$TMP_DIR"/*.js.map         "$DEST_JS_DIR"/ 2>/dev/null || true
-cp "$TMP_DIR"/*.js.LICENSE.txt "$DEST_JS_DIR"/ 2>/dev/null || true
+# Copy the extracted build output into the backend static dir.
+cp -a "$TMP_DIR"/. "$DEST_STATIC_DIR"/
+
+# Drop nginx's default error page; it ships in the base image and isn't part
+# of the CRA build output.
+rm -f "$DEST_STATIC_DIR"/50x.html
 
 rm -rf "$TMP_DIR"
 
-echo "==> Done. JS artifacts now in backend/static/static/js/:"
-ls -1 "$DEST_JS_DIR"
+echo "==> Done. Build artifacts now in backend/static/:"
+ls -1 "$DEST_STATIC_DIR"
+echo "==> Static subdirs:"
+ls -1 "$DEST_STATIC_DIR/static"
