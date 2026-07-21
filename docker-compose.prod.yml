@@ -26,6 +26,9 @@ services:
       - PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
     depends_on:
       - gotify
+    networks:
+      - default
+      - phoenix_db_default
   gotify:
     image: gotify/server:latest
     ports:
@@ -35,3 +38,7 @@ services:
       - GOTIFY_DEFAULTUSER_NAME=admin
     volumes:
       - ./gotify:/var/lib/gotify
+
+networks:
+  phoenix_db_default:
+    external: true
